@@ -3,6 +3,7 @@ package com.hatto.domain.auth;
 import com.hatto.common.model.enums.SuccessMessage;
 import com.hatto.common.model.response.GlobalResponse;
 import com.hatto.domain.auth.dto.SignRequest;
+import com.hatto.domain.token.TokenResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +23,8 @@ public class AuthController {
     @PostMapping("/sign")
     public ResponseEntity<GlobalResponse> sign(@Valid @RequestBody SignRequest request) {
 
-        authService.signup(request);
+        TokenResponse tokenResponse = authService.signup(request);
 
-        return ResponseEntity.ok(GlobalResponse.successNodata(SuccessMessage.AUTH_SIGNUP_SUCCESS));
+        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.AUTH_SIGNUP_SUCCESS, tokenResponse));
     }
 }

@@ -1,6 +1,11 @@
 package com.hatto.common.util;
 
 
+import com.hatto.common.exception.CustomException;
+import com.hatto.common.exception.ErrorMessage;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,92 +13,82 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
+import java.security.Key;
 import java.security.SignatureException;
 import java.util.Date;
 
 @Slf4j(topic = "JwtUtil")
 @Component
 public class JwtUtil {
-    public static final String BEARER_PREFIX = "Bearer ";
-    public static final String AUTHORIZATION = "Authorization";
-    
-    // 토큰 만료 시간
-    public static final long TOKEN_TIME = 30 * 60 * 1000L;  // 30분
-    public static final long REFRESH_TOKEN_TIME = 7 * 24 * 60 * 60 * 1000L; // 7일
 
-    @Value("${jwt.secret}")
-    private String jwtSecretKey;
-    private SecretKey secretKey;
-    private JwtParser jwtParser;
+    public static final String BEARER_PREFIX = "Bearer ";
+    public static final long ACCESS_TOKEN_TIME = 24 * 60 * 60 * 1000L;
+    public static final long REFRESH_TOKEN_TIME = 14 * 24 * 60 * 60 * 1000L;
+
+    @Value("${JWT_SECRET_KEY}")
+    private String secretKeyString;
+
+    private SecretKey key;
+    private JwtParser parser;
 
     @PostConstruct
     public void init() {
-        byte[] bytes = Decoders.BASE64.decode(jwtSecretKey);
-        this.secretKey = Keys.hmacShaKeyFor(bytes);
-        this.jwtParser = Jwts.parser().verifyWith(secretKey).build();
+
+        byte[] bytes = Decoders.BASE64.decode(secretKeyString);
+        this.key = Keys.hmacShaKeyFor(bytes);
+        this.parser = Jwts.parser()
+                .verifyWith(this.key)
+                .build();
     }
 
-    // Access Token 생성
-    public String generateToken(Long userId) {
+    public String generateAccessToken(String loginId, String nickName) {
+
         Date now = new Date();
-        return Jwts.builder()
-                .subject(userId.toString())
-                .claim("userRole", userRole)
+        return BEARER_PREFIX + Jwts.builder()
+                .subject(loginId)
+                .claim("nickName", nickName)
                 .issuedAt(now)
-                .expiration(new Date(now.getTime() + TOKEN_TIME))
-                .signWith(secretKey, Jwts.SIG.HS256)
+                .expiration(new Date(now.getTime() + ACCESS_TOKEN_TIME))
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 
-    // Refresh Token 생성
     public String generateRefreshToken(Long userId) {
+
         Date now = new Date();
-        return Jwts.builder()
+        return BEARER_PREFIX + Jwts.builder()
                 .subject(userId.toString())
-                .claim(AUTHORIZATION, userRole.name())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + REFRESH_TOKEN_TIME))
-                .signWith(secretKey, Jwts.SIG.HS256)
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 
-    // 토큰 검증
-    public boolean validateToken(String token) {
-        if (token == null || token.isBlank()) {
-            return false;
-        }
-        if (StringUtils.hasText(token) && token.startsWith(BEARER_PREFIX)) {
-            token = token.substring(7);
-        }
+    public void validateToken(String token) {
 
         try {
-            jwtParser.parseSignedClaims(token);
-            return true;
-        } catch (SecurityException | MalformedJwtException | SignatureException e) {
-            log.error("유효하지 않는 JWT 입니다.");
-        } catch (ExpiredJwtException e) {
-            log.error("만료된 JWT token 입니다.");
-        } catch (UnsupportedJwtException e) {
-            log.error("지원되지 않는 JWT 토큰 입니다.");
-        } catch (IllegalArgumentException e) {
-            log.error("잘못된 JWT 토큰 입니다.");
+            parser.parseSignedClaims(token);
+        } catch (ExpiredJwtException expired) {
+            throw new CustomException(ErrorMessage.EXPIRED_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorMessage.INVALID_TOKEN);
         }
-        return false;
     }
 
-    // Claims 추출
-    public Claims extractAllClaims(String token) {
-        if (token.startsWith(BEARER_PREFIX)) {
-            token = token.substring(7);
-        }
-        return jwtParser.parseSignedClaims(token).getPayload();
+    private Claims extractAllClaims(String token) {
+        return parser.parseSignedClaims(token).getPayload();
     }
 
-    // ID 추출
     public Long extractUserId(String token) {
-        if (token.startsWith(BEARER_PREFIX)) token = token.substring(7);
-        return Long.valueOf(extractAllClaims(token).getSubject());
+        return Long.parseLong(extractAllClaims(token).getSubject());
     }
 
+    public String extractUserEmail(String token) {
+        return extractAllClaims(token).get("email", String.class);
+    }
+
+    public String extractName(String token) {
+        return extractAllClaims(token).get("name", String.class);
+    }
 
 }

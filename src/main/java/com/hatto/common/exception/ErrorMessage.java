@@ -35,8 +35,8 @@ public enum ErrorMessage {
     NO_DELETE_PERMISSION(HttpStatus.FORBIDDEN, "삭제 권한이 없습니다."),
     USER_WITHDRAWN(HttpStatus.FORBIDDEN, "탈퇴한 회원입니다."),
     REJECT_PAYMENT(HttpStatus.FORBIDDEN, "결제 승인이 거절되었습니다."),
-    INVALID_ADMIN_TOKEN(HttpStatus.BAD_REQUEST, "관리자 토큰값이 일치하지 않습니다."),
     INVALID_TOKEN(HttpStatus.BAD_REQUEST, "토큰값이 일치하지 않습니다."),
+    EXPIRED_TOKEN(HttpStatus.BAD_REQUEST, "토큰이 만료되었습니다."),
     USER_LOGOUT(HttpStatus.BAD_REQUEST, "로그아웃된 계정입니다."),
     NO_CHECK_PERMISSION(HttpStatus.INTERNAL_SERVER_ERROR, "권한이 없습니다."),
 

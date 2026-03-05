@@ -2,7 +2,11 @@ package com.hatto.domain.auth;
 
 import com.hatto.common.exception.CustomException;
 import com.hatto.common.exception.ErrorMessage;
+import com.hatto.common.util.JwtUtil;
 import com.hatto.domain.auth.dto.SignRequest;
+import com.hatto.domain.token.RefreshToken;
+import com.hatto.domain.token.RefreshTokenRepository;
+import com.hatto.domain.token.TokenResponse;
 import com.hatto.domain.user.User;
 import com.hatto.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +28,7 @@ public class AuthService {
 
     //회원가입
     @Transactional
-    public void signup(SignRequest request) {
+    public TokenResponse signup(SignRequest request) {
 
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
 
@@ -46,8 +50,9 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String accessToken = jwtUtil.generateToken(user.getId(), user.getRole());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getRole());
+        //토큰생성
+        String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         // DB에 Refresh Token 저장 (기존 토큰 있으면 update)
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
@@ -55,5 +60,8 @@ public class AuthService {
 
         refreshTokenEntity.updateToken(refreshToken);
         refreshTokenRepository.save(refreshTokenEntity);
+
+        return new TokenResponse(accessToken, refreshToken);
+
     }
 }

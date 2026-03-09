@@ -17,6 +17,7 @@ public enum ErrorMessage {
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "이메일 형식이 올바르지 않습니다."),
     INVALID_PASSWORD_LENGTH(HttpStatus.BAD_REQUEST, "비밀번호는 8자 이상이어야 합니다."),
     MISSING_EMAIL_OR_PASSWORD(HttpStatus.BAD_REQUEST, "이메일 또는 비밀번호가 누락되었습니다."),
+    INVALID_PASSWORD(HttpStatus.CONFLICT, "비밀번호가 일치하지 않습니다"),
 
 
     /* --- 401 Unauthorized --- */

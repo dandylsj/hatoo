@@ -3,6 +3,7 @@ package com.hatto.domain.auth;
 import com.hatto.common.exception.CustomException;
 import com.hatto.common.exception.ErrorMessage;
 import com.hatto.common.util.JwtUtil;
+import com.hatto.domain.auth.dto.LoginRequest;
 import com.hatto.domain.auth.dto.SignRequest;
 import com.hatto.domain.token.RefreshToken;
 import com.hatto.domain.token.RefreshTokenRepository;
@@ -64,4 +65,29 @@ public class AuthService {
         return new TokenResponse(accessToken, refreshToken);
 
     }
+
+    //로그인
+    @Transactional
+    public TokenResponse login(LoginRequest request) {
+
+        User user = userRepository.findByLoginId(request.getLoginId())
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new CustomException(ErrorMessage.INVALID_PASSWORD);
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
+                .orElse(new RefreshToken(user.getId(), refreshToken));
+
+        refreshTokenEntity.updateToken(refreshToken);
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        return new TokenResponse(accessToken, refreshToken);
+    }
+
+
 }

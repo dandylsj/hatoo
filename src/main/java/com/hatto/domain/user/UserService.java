@@ -6,10 +6,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
-@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
+
+
+    @Transactional(readOnly = true)
+    public boolean checkLoginIdApi(String loginId) {
+
+        if(userRepository.existsByLoginId(loginId)) {
+            return true;
+        }
+        return false;
+    }
 
 
 }

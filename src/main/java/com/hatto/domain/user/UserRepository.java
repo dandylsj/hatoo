@@ -13,4 +13,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(@NotBlank(message = "이메일은 필수입니다.") @Email(message = "올바른 이메일 형식이 아닙니다.") String email);
 
     Optional<User> findByLoginId(String loginId);
+
+    boolean existsByLoginId(String loginId);
 }

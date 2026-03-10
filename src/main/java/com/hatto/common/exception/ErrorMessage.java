@@ -29,6 +29,7 @@ public enum ErrorMessage {
     INVALID_DEFERMENT_STATUS(HttpStatus.UNAUTHORIZED, "없는 연기 상태 입니다."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "유효하지 않은 인증 코드입니다."),
+    INVALID_TIME_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증시간이 초과했습니다."),
 
     /* --- 403 Forbidden --- */
     // 인가 실패 (권한 부족 - 작성자가 아님 등)

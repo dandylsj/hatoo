@@ -21,19 +21,19 @@ public class EmailVerification extends BaseEntity {
     private String email;
 
     @Column(nullable = false)
-    private String verificationCode;
+    private String token;
 
     @Column(nullable = false)
     private LocalDateTime expiryDate;
 
-    public EmailVerification(String email, String verificationCode, LocalDateTime expiryDate) {
+    public EmailVerification(String email, String token, LocalDateTime expiryDate) {
         this.email = email;
-        this.verificationCode = verificationCode;
+        this.token = token;
         this.expiryDate = expiryDate;
     }
 
-    public void updateCode(String verificationCode, LocalDateTime expiryDate) {
-        this.verificationCode = verificationCode;
+    public void updateCode(String token, LocalDateTime expiryDate) {
+        this.token = token;
         this.expiryDate = expiryDate;
     }
 }

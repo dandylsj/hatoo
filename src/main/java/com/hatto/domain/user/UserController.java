@@ -17,7 +17,7 @@ public class UserController {
     private final UserService userService;
     private final UserRepository userRepository;
 
-
+    //아이디 중복 확인
     @GetMapping("/check-login-id")
     public ResponseEntity<GlobalResponse> checkLoginId(String loginId) {
 

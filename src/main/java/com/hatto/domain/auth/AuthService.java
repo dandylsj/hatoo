@@ -5,6 +5,7 @@ import com.hatto.common.exception.ErrorMessage;
 import com.hatto.common.util.JwtUtil;
 import com.hatto.domain.auth.dto.LoginRequest;
 import com.hatto.domain.auth.dto.SignRequest;
+import com.hatto.domain.auth.dto.UserInfoResposne;
 import com.hatto.domain.token.RefreshToken;
 import com.hatto.domain.token.RefreshTokenRepository;
 import com.hatto.domain.token.TokenResponse;
@@ -47,6 +48,8 @@ public class AuthService {
                 request.getNickname(),
                 request.getLoginId(),
                 passwordEncoder.encode(request.getPassword())
+
+
         );
 
         userRepository.save(user);
@@ -87,6 +90,24 @@ public class AuthService {
         refreshTokenRepository.save(refreshTokenEntity);
 
         return new TokenResponse(accessToken, refreshToken);
+    }
+
+    //유저정보 불러오기
+    @Transactional(readOnly = true)
+    public UserInfoResposne getUserInfoApi(String loginId) {
+
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        return new UserInfoResposne(
+                user.getId(),
+                user.getStatus(),
+                user.getLoginId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getProfileImg(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
     }
 
 

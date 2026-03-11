@@ -39,7 +39,8 @@ public enum SuccessMessage {
     PRODUCT_CREATE_SUCCESS("상품 등록 완료"),
     ORDER_CREATE_SUCCESS("주문이 생성되었습니다."),
     PAYMENT_CREATE_SUCCESS("결제 요청 생성 완료"),
-    USER_CHECK_LOGIN_ID_SUCCESS("사용할 수 있는 아이디 입니다.");
+    USER_CHECK_LOGIN_ID_SUCCESS("아이디 중복 확인 완료."),
+    USER_CHECK_NICKNAME_SUCCESS("닉네임 중복 확인 완료.");
 
 
 

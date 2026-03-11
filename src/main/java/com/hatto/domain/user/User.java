@@ -19,6 +19,9 @@ public class User extends BaseEntity {
     private Long id;
 
     @Column
+    private String status;
+
+    @Column
     private String loginId;
 
     @Column
@@ -29,6 +32,15 @@ public class User extends BaseEntity {
 
     @Column
     private String nickname;
+
+    @Column
+    private boolean isDeleted;
+
+    @Column
+    private String profileImg;
+
+    @Column
+    private String fcmToken;
 
     @Builder
     public User(String email, String nickname, String loginId, String password) {

@@ -20,5 +20,14 @@ public class UserService {
         return false;
     }
 
+    @Transactional
+    public boolean checkNicknameApi(String nickname) {
+
+        if(userRepository.existsByNickname(nickname)) {
+            return true;
+        }
+        return false;
+    }
+
 
 }

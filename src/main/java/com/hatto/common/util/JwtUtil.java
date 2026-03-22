@@ -10,11 +10,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
-import java.security.SignatureException;
 import java.util.Date;
 
 @Slf4j(topic = "JwtUtil")
@@ -77,6 +74,10 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         return parser.parseSignedClaims(token).getPayload();
+    }
+
+    public String extractLoginId(String token) {
+        return extractAllClaims(token).getSubject();
     }
 
     public Long extractUserId(String token) {

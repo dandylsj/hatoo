@@ -34,13 +34,28 @@ public class User extends BaseEntity {
     private String nickname;
 
     @Column
-    private boolean isDeleted;
+    private Boolean isDeleted = false;
 
     @Column
     private String profileImg;
 
     @Column
     private String fcmToken;
+
+    @Column
+    private Boolean isTermsAgreed = false;
+
+    @Column
+    private Boolean isPrivacyAgreed = false;
+
+    @Column
+    private Boolean isOverFourteen = false;
+
+    @Column
+    private Boolean isChoreNotiAllowed = false;
+
+    @Column
+    private Boolean isMarketingNotiAllowed = false;
 
     @Builder
     public User(String email, String nickname, String loginId, String password) {
@@ -51,6 +66,21 @@ public class User extends BaseEntity {
     }
 
     public boolean isDeleted() {
-        return false;
+        return Boolean.TRUE.equals(this.isDeleted);
+    }
+
+    public void updateInfo(String nickname, String password, String profileImg, String fcmToken) {
+        if (nickname != null && !nickname.isBlank()) {
+            this.nickname = nickname;
+        }
+        if (password != null && !password.isBlank()) {
+            this.password = password;
+        }
+        if (profileImg != null) {
+            this.profileImg = profileImg;
+        }
+        if (fcmToken != null) {
+            this.fcmToken = fcmToken;
+        }
     }
 }

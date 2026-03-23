@@ -61,7 +61,8 @@ public enum ErrorMessage {
 
     /* --- 409 Conflict --- */
     // 데이터 충돌
-    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다.");
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),
+    SAME_PASSWORD(HttpStatus.CONFLICT, "이전 비밀번호와 동일합니다.");
 
 
     private final HttpStatus status;

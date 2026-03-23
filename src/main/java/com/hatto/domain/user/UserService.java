@@ -83,4 +83,32 @@ public class UserService {
         // 4. 비밀번호 일치 여부 확인
         return passwordEncoder.matches(password, user.getPassword());
     }
+
+    //비밀번호 변경
+    @Transactional
+    public boolean changePassword(String accessToken, String password) {
+
+        //1.토큰 검증
+        jwtUtil.validateToken(accessToken);
+
+        //2. 토큰에서 로그인 아이디 추출 하기;
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        //3. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        //4. 이전 비밀번호와 같을경우 예외
+        if(passwordEncoder.matches(password, user.getPassword())) {
+            throw new CustomException(ErrorMessage.SAME_PASSWORD);
+        }
+        //5. 비밀번호 암호화
+        String encodedPassword = passwordEncoder.encode(password);
+
+        //6. 변경된 비밀번호 저장
+        user.changePassword(encodedPassword);
+
+        return true;
+
+    }
 }

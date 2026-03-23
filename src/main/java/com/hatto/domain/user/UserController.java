@@ -5,6 +5,7 @@ import com.hatto.common.model.response.GlobalResponse;
 import com.hatto.domain.user.dto.UserInfoModifyRequest;
 import com.hatto.domain.user.dto.UserInfoModifyResponse;
 import com.hatto.domain.user.dto.PasswordCheckRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,11 +53,24 @@ public class UserController {
     @GetMapping("/check-password")
     public ResponseEntity<GlobalResponse> prePasswordVerification(
             @RequestHeader("AccessToken") String accessToken,
-            @RequestBody PasswordCheckRequest request) {
+            @Valid @RequestBody PasswordCheckRequest request) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         Boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
 
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.PRE_PASSWORD_VERIFICATION_SUCCESS, isMatch));
+    }
+
+    //비밀번호 변경
+    @PatchMapping("/{loginId}/{email}")
+    public ResponseEntity<GlobalResponse> changePassword(
+            @RequestHeader("AccessToken") String accessToken,
+            @Valid @RequestBody PasswordCheckRequest request) {
+
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+        Boolean isChange = userService.changePassword(token, request.getPassword());
+
+        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.CHANGE_PASSWORD_SUCCESS, isChange));
     }
 }

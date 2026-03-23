@@ -83,4 +83,8 @@ public class User extends BaseEntity {
             this.fcmToken = fcmToken;
         }
     }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }

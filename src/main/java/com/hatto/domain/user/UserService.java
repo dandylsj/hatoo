@@ -66,4 +66,21 @@ public class UserService {
         // 6. 응답 DTO 생성 반환
         return new UserInfoModifyResponse(user.getId(), user.getNickname(), user.getProfileImg());
     }
+
+    //이전 비밀번호 확인
+    @Transactional(readOnly = true)
+    public boolean prePasswordVerification(String accessToken, String password) {
+        // 1. 토큰 검증
+        jwtUtil.validateToken(accessToken);
+
+        // 2. 토큰에서 로그인 아이디 추출
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        // 3. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 4. 비밀번호 일치 여부 확인
+        return passwordEncoder.matches(password, user.getPassword());
+    }
 }

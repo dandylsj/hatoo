@@ -4,6 +4,7 @@ import com.hatto.common.model.enums.SuccessMessage;
 import com.hatto.common.model.response.GlobalResponse;
 import com.hatto.domain.user.dto.UserInfoModifyRequest;
 import com.hatto.domain.user.dto.UserInfoModifyResponse;
+import com.hatto.domain.user.dto.PasswordCheckRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,17 +35,28 @@ public class UserController {
     }
 
     //유저 정보 수정
-    @PatchMapping()
+    @PatchMapping
     public ResponseEntity<GlobalResponse> modifyMemberInfo(
-            @RequestHeader("AccessToen") String AccessToken,
+            @RequestHeader("AccessToken") String accessToken,
             @RequestBody UserInfoModifyRequest userInfoModify) {
-            
-        // "Bearer " 접두사 제거
-        String token = AccessToken.substring(7);
 
-        // UserService에 토큰과 수정 정보를 넘겨서 처리
+        // Exception 방지를 위해 안전하게 토큰 문자열 추출
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
         UserInfoModifyResponse response = userService.userInfoModifyResponse(token, userInfoModify);
 
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.USER_INFO_MODIFY_SUCCESS, response));
+    }
+
+    //이전 비밀번호 확인
+    @GetMapping("/check-password")
+    public ResponseEntity<GlobalResponse> prePasswordVerification(
+            @RequestHeader("AccessToken") String accessToken,
+            @RequestBody PasswordCheckRequest request) {
+
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        Boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
+
+        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.PRE_PASSWORD_VERIFICATION_SUCCESS, isMatch));
     }
 }

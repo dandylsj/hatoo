@@ -41,14 +41,9 @@ public enum SuccessMessage {
     PAYMENT_CREATE_SUCCESS("결제 요청 생성 완료"),
     USER_CHECK_LOGIN_ID_SUCCESS("아이디 중복 확인 완료."),
     USER_CHECK_NICKNAME_SUCCESS("닉네임 중복 확인 완료."),
-    USER_INFO_MODIFY_SUCCESS("유저 정보 수정 완료");
-
-
+    USER_INFO_MODIFY_SUCCESS("유저 정보 수정 완료"),
+    PRE_PASSWORD_VERIFICATION_SUCCESS("이전 비밀번호 확인 완료.");
 
     private final String message;
 
-
 }
-
-
-

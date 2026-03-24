@@ -1,0 +1,44 @@
+name: Spring Boot → NAS Docker 배포
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted          # ← Synology NAS runner 사용
+
+    steps:
+      - name: 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: Java 17 + Gradle 설정
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Gradle 빌드 (JAR 생성)
+        run: ./gradlew clean build -x test
+
+      - name: Docker 이미지 빌드 & GHCR에 Push
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker build -t ghcr.io/dandylsj/hatoo:latest .
+          docker push ghcr.io/dandylsj/hatoo:latest
+
+      - name: NAS에 자동 배포 (컨테이너 재시작)
+        run: |
+          # NAS에서 실행 중인 기존 컨테이너 중지 및 삭제
+          docker stop hatoo-app 2>/dev/null || true
+          docker rm hatoo-app 2>/dev/null || true
+          
+          # 새 이미지 Pull & 실행
+          docker pull ghcr.io/dandylsj/hatoo:latest
+          docker run -d \
+            --name hatoo-app \
+            --restart always \
+            -p 8080:8080 \
+            ghcr.io/dandylsj/hatoo:latest

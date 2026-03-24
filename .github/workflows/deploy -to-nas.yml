@@ -58,17 +58,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: NAS에 자동 배포 (.env 파일 정확히 마운트)
+      # 1. 깃액션 작업 공간(Workspace)에 .env 파일을 동적으로 생성합니다.
+      - name: 환경 변수 파일(.env) 생성
+        run: |
+          touch .env
+          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
+          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
+          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
+          echo "SPRING_JPA_HIBERNATE_DDL_AUTO=update" >> .env
+          echo "TZ=Asia/Seoul" >> .env
+          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+
+      # 2. 생성된 .env 파일을 참조하여 컨테이너를 실행합니다.
+      - name: NAS에 자동 배포
         run: |
           echo "🧹 기존 컨테이너 정리 중..."
           docker stop hatoo-app 2>/dev/null || true
           docker rm -f hatoo-app 2>/dev/null || true
           
-          echo "🚀 새 컨테이너 실행 중... (.env 환경 변수 주입)"
+          echo "🚀 새 컨테이너 실행 중..."
+          # 절대 경로 대신, 현재 작업 공간에 생성된 .env 파일을 사용합니다.
           docker run -d \
             --name hatoo-app \
             --restart always \
             --network hatoo \
             -p 8080:8080 \
-            --env-file /volume1/docker/hatoo/.env \
+            --env-file .env \
             ghcr.io/dandylsj/hatoo:latest

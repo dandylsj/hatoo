@@ -51,6 +51,13 @@ jobs:
       packages: read
 
     steps:
+      - name: GHCR 로그인 (PAT 사용)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}     # ← 여기서 PAT 사용!
+
       - name: NAS에 자동 배포
         run: |
           docker stop hatoo-app 2>/dev/null || true

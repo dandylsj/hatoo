@@ -61,6 +61,7 @@ jobs:
       # 1. 깃액션 작업 공간(Workspace)에 .env 파일을 동적으로 생성합니다.
       - name: 환경 변수 파일(.env) 생성
         run: |
+          rm -f .env
           touch .env
           echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
           echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env

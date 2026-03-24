@@ -69,6 +69,8 @@ jobs:
           echo "SPRING_JPA_HIBERNATE_DDL_AUTO=update" >> .env
           echo "TZ=Asia/Seoul" >> .env
           echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+          echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
+          echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
 
       # 2. 생성된 .env 파일을 참조하여 컨테이너를 실행합니다.
       - name: NAS에 자동 배포

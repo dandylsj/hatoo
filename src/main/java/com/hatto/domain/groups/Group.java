@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "groups")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class group extends BaseEntity {
+public class Group extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

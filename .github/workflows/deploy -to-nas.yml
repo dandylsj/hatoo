@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted          # ← Synology NAS runner 사용
+    runs-on: self-hosted
 
     steps:
       - name: 코드 가져오기
@@ -23,19 +23,27 @@ jobs:
       - name: Gradle 빌드 (JAR 생성)
         run: ./gradlew clean build -x test
 
-      - name: Docker 이미지 빌드 & GHCR에 Push
-        run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker build -t ghcr.io/dandylsj/hatoo:latest .
-          docker push ghcr.io/dandylsj/hatoo:latest
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+
+      - name: GHCR 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker 이미지 빌드 & GHCR Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/dandylsj/hatoo:latest
 
       - name: NAS에 자동 배포 (컨테이너 재시작)
         run: |
-          # NAS에서 실행 중인 기존 컨테이너 중지 및 삭제
           docker stop hatoo-app 2>/dev/null || true
           docker rm hatoo-app 2>/dev/null || true
-          
-          # 새 이미지 Pull & 실행
           docker pull ghcr.io/dandylsj/hatoo:latest
           docker run -d \
             --name hatoo-app \

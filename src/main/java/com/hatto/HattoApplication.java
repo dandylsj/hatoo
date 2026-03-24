@@ -12,8 +12,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class HattoApplication {
 
     public static void main(String[] args) {
-        Dotenv dotenv = Dotenv.configure().load();
-        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+        Dotenv dotenv = Dotenv.configure()
+                .ignoreIfMissing()
+                .load();
 
         SpringApplication.run(HattoApplication.class, args);
     }

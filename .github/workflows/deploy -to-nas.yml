@@ -6,9 +6,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  # 1. 빌드 & Push (GitHub 클라우드에서 진행)
   build:
     runs-on: ubuntu-latest
+
+    # ←←← 이 permissions 블록이 핵심입니다!
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: 코드 가져오기
@@ -22,7 +26,7 @@ jobs:
           cache: 'gradle'
 
       - name: Gradle 빌드 (JAR 생성)
-        run: ./gradlew clean bootJar -x test
+        run: ./gradlew clean build -x test
 
       - name: Docker Buildx 설정
         uses: docker/setup-buildx-action@v3
@@ -41,13 +45,12 @@ jobs:
           push: true
           tags: ghcr.io/dandylsj/hatoo:latest
 
-  # 2. NAS에 배포 (self-hosted runner에서만 실행)
   deploy:
     needs: build
     runs-on: self-hosted
 
     steps:
-      - name: NAS에 자동 배포 (컨테이너 재시작)
+      - name: NAS에 자동 배포
         run: |
           docker stop hatoo-app 2>/dev/null || true
           docker rm hatoo-app 2>/dev/null || true

@@ -80,7 +80,7 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 4. 비밀번호 일치 여부 확인
+        // 4. 비밀번호 일치 여부 확인.
         return passwordEncoder.matches(password, user.getPassword());
     }
 

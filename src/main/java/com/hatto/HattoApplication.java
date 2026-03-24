@@ -10,12 +10,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableJpaAuditing
 @SpringBootApplication
 public class HattoApplication {
-
     public static void main(String[] args) {
-        Dotenv dotenv = Dotenv.configure()
-                .ignoreIfMissing()
-                .load();
-
         SpringApplication.run(HattoApplication.class, args);
     }
 

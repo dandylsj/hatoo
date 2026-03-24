@@ -70,5 +70,5 @@ jobs:
             --restart always \
             --network hatoo \
             -p 8080:8080 \
-            -v /volume1/docker/hatoo/.env:/app/.env:ro \   # ← 여기서 /app/.env로 수정!
+            -v /volume1/docker/hatoo/.env:/app/.env:ro \
             ghcr.io/dandylsj/hatoo:latest

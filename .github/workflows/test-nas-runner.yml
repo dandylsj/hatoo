@@ -2,7 +2,7 @@ name: NAS Runner 테스트
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, dev ]
 
 jobs:
   test-on-nas:

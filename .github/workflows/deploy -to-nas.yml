@@ -56,18 +56,19 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}     # ← 여기서 PAT 사용!
+          password: ${{ secrets.GHCR_PAT }}
 
-      - name: NAS에 자동 배포
+      - name: NAS에 자동 배포 (.env 파일 정확히 마운트)
         run: |
           echo "🧹 기존 컨테이너 정리 중..."
           docker stop hatoo-app 2>/dev/null || true
           docker rm -f hatoo-app 2>/dev/null || true
-          sleep 2
-
-          echo "🚀 새 컨테이너 실행 중..."
+          
+          echo "🚀 새 컨테이너 실행 중... (/app/.env 마운트)"
           docker run -d \
             --name hatoo-app \
             --restart always \
+            --network hatoo \
             -p 8080:8080 \
+            -v /volume1/docker/hatoo/.env:/app/.env:ro \   # ← 여기서 /app/.env로 수정!
             ghcr.io/dandylsj/hatoo:latest

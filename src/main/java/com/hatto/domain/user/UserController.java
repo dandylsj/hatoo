@@ -5,11 +5,14 @@ import com.hatto.common.model.response.GlobalResponse;
 import com.hatto.domain.user.dto.UserInfoModifyRequest;
 import com.hatto.domain.user.dto.UserInfoModifyResponse;
 import com.hatto.domain.user.dto.PasswordCheckRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "User", description = "유저 관련 API")
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -17,7 +20,7 @@ public class UserController {
 
     private final UserService userService;
 
-    //아이디 중복 확인
+    @Operation(summary = "아이디 중복 확인", description = "회원가입 시 로그인 아이디의 중복 여부를 확인합니다.")
     @GetMapping("/check-login-id")
     public ResponseEntity<GlobalResponse> checkLoginId(@RequestParam String loginId) {
 
@@ -26,7 +29,7 @@ public class UserController {
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.USER_CHECK_LOGIN_ID_SUCCESS, checked));
     }
 
-    //닉네임 중복 확인
+    @Operation(summary = "닉네임 중복 확인", description = "회원가입 시 닉네임의 중복 여부를 확인합니다.")
     @GetMapping("/check-nickname")
     public ResponseEntity<GlobalResponse> checkNickname(@RequestParam String nickname) {
 
@@ -35,7 +38,7 @@ public class UserController {
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.USER_CHECK_LOGIN_ID_SUCCESS, checkNickName));
     }
 
-    //유저 정보 수정
+    @Operation(summary = "유저 정보 수정", description = "로그인한 유저의 정보를 수정합니다.")
     @PatchMapping
     public ResponseEntity<GlobalResponse> modifyMemberInfo(
             @RequestHeader("AccessToken") String accessToken,
@@ -49,7 +52,7 @@ public class UserController {
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.USER_INFO_MODIFY_SUCCESS, response));
     }
 
-    //이전 비밀번호 확인
+    @Operation(summary = "이전 비밀번호 확인", description = "비밀번호 변경 전, 현재 비밀번호가 맞는지 확인합니다.")
     @GetMapping("/check-password")
     public ResponseEntity<GlobalResponse> prePasswordVerification(
             @RequestHeader("AccessToken") String accessToken,
@@ -61,7 +64,7 @@ public class UserController {
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.PRE_PASSWORD_VERIFICATION_SUCCESS, isMatch));
     }
 
-    //비밀번호 변경
+    @Operation(summary = "비밀번호 변경", description = "유저의 비밀번호를 변경합니다.")
     @PatchMapping("/{loginId}/{email}")
     public ResponseEntity<GlobalResponse> changePassword(
             @RequestHeader("AccessToken") String accessToken,

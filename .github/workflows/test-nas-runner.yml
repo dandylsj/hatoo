@@ -1,0 +1,21 @@
+name: NAS Runner 테스트
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  test-on-nas:
+    runs-on: self-hosted        # ← 이게 중요! NAS runner 사용
+
+    steps:
+      - name: 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: NAS에서 실행 중인지 확인
+        run: |
+          echo "✅ Synology NAS Self-hosted Runner에서 실행되었습니다!"
+          echo "현재 시간: $(date)"
+          echo "Java 버전:"
+          java -version
+          echo "작업 디렉토리: $PWD"

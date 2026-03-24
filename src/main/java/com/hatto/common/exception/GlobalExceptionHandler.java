@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -40,6 +41,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(GlobalResponse.exception("파일 크기가 너무 큽니다. 최대 5MB까지 업로드 가능합니다."));
+    }
+
+    // 필수 헤더 누락 예외 처리 추가
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<GlobalResponse> handleMissingRequestHeaderException(MissingRequestHeaderException e) {
+        log.error("필수 요청 헤더 누락 : {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(GlobalResponse.exception("요청 시 필수 헤더가 누락되었습니다: " + e.getHeaderName()));
     }
 
     // 그 외 모든 예외 처리

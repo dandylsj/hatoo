@@ -76,6 +76,9 @@ jobs:
           docker stop hatoo-app 2>/dev/null || true
           docker rm -f hatoo-app 2>/dev/null || true
           
+          echo "📥 최신 도커 이미지 다운로드 중..."
+          docker pull ghcr.io/dandylsj/hatoo:latest
+          
           echo "🚀 새 컨테이너 실행 중..."
           # 절대 경로 대신, 현재 작업 공간에 생성된 .env 파일을 사용합니다.
           docker run -d \

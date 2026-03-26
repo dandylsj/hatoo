@@ -3,6 +3,7 @@ package com.hatoo.domain.groups;
 import com.hatoo.common.model.enums.SuccessMessage;
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.groups.dto.MyGroupResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ public class GroupController {
 
     private final GroupService groupService;
 
+    @Operation(summary = "내가 속한 그룹 조회", description = "로그인한 유저가 속한 그룹 정보를 조회합니다.")
     @GetMapping
     public ResponseEntity<GlobalResponse> myGroupInfoApi(@RequestHeader("AccessToken") String accessToken) {
 

@@ -18,22 +18,24 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
+    //아이디 중복 확인
     @Transactional(readOnly = true)
     public boolean checkLoginIdApi(String loginId) {
 
         if(userRepository.existsByLoginId(loginId)) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
+    //닉네임 중복 확인
     @Transactional
     public boolean checkNicknameApi(String nickname) {
 
         if(userRepository.existsByNickname(nickname)) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     //유저 정보 수정

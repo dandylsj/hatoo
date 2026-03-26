@@ -63,7 +63,7 @@ public class EmailService {
         return true;
     }
 
-    //이메일 코드 인증
+    //이메일 코드 인증.
     @Transactional
     public boolean enterTheVerifcationCodeApi(String email,String token) {
 

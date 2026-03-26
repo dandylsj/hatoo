@@ -18,26 +18,48 @@ public class EmailService {
     private final UserRepository userRepository;
     private final EmailRepository emailRepository;
 
+    private static final int MAX_SEND_COUNT = 3;
+    private static final int COOLDOWN_SECONDS = 10;
+    private static final int COUNT_RESET_MINUTES = 5;
+
     //이메일 중복체크 후 인증코드 전송
     @Transactional
     public boolean checkEmailSend(String email) {
         if (userRepository.findByEmail(email).isPresent()) {
             return false;
-        } else {
-            String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
-            LocalDateTime expiry = LocalDateTime.now().plusMinutes(7);
-
-            // 기존 내역이 있으면 업데이트, 없으면 생성
-            EmailVerification verification = emailRepository.findByEmail(email)
-                    .orElse(new EmailVerification(email, token, expiry));
-
-            if (verification.getId() != null) {
-                verification.updateCode(token, expiry);
-            }
-            emailRepository.save(verification);
-
-            smtpEmailSender.sendVerificationCode(email, token);
         }
+
+        LocalDateTime now = LocalDateTime.now();
+        EmailVerification verification = emailRepository.findByEmail(email)
+                .orElse(new EmailVerification(email, "", now)); // New verification
+
+        // 쿨다운 확인
+        if (verification.getLastSendTime() != null && verification.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
+            throw new CustomException(ErrorMessage.EMAIL_SEND_COOLDOWN);
+        }
+
+        // 5분 내 전송 횟수 초기화 확인
+        if (verification.getCountResetTime() != null && verification.getCountResetTime().isBefore(now)) {
+            verification.resetCount(now, COUNT_RESET_MINUTES);
+        }
+
+        if (verification.getSendCount() >= MAX_SEND_COUNT) {
+            throw new CustomException(ErrorMessage.EMAIL_SEND_LIMIT_EXCEEDED);
+        }
+
+        if (verification.getCountResetTime() == null) {
+            verification.resetCount(now, COUNT_RESET_MINUTES);
+        }
+
+        String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
+        LocalDateTime expiry = now.plusMinutes(7);
+
+        verification.updateCode(token, expiry);
+        verification.recordSend(now);
+        emailRepository.save(verification);
+
+        smtpEmailSender.sendVerificationCode(email, token);
+
         return true;
     }
 

@@ -64,8 +64,11 @@ public enum ErrorMessage {
     /* --- 409 Conflict --- */
     // 데이터 충돌
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),
-    SAME_PASSWORD(HttpStatus.CONFLICT, "이전 비밀번호와 동일합니다.");
+    SAME_PASSWORD(HttpStatus.CONFLICT, "이전 비밀번호와 동일합니다."),
 
+    /* --- 429 Too Many Requests --- */
+    EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "10초 후에 다시 시도해주세요."),
+    EMAIL_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "이메일 전송 횟수를 초과했습니다. 5분 후에 다시 시도해주세요.");
 
     private final HttpStatus status;
     private final String message;

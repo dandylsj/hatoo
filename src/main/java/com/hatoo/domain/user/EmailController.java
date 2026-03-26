@@ -36,7 +36,7 @@ public class EmailController {
 
     @Operation(summary = "이메일 코드 인증", description = "이메일로 발송된 인증코드를 확인하여 이메일을 인증합니다.")
     @PostMapping("/check-email")
-    public ResponseEntity<GlobalResponse> enterTheVerificationCode(@RequestParam @Email String email,String token) {
+    public ResponseEntity<GlobalResponse> enterTheVerificationCode(@RequestBody @Email String email,String token) {
 
          boolean verify = emailService.enterTheVerifcationCodeApi(email,token);
 

@@ -5,6 +5,10 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import com.hatoo.domain.user.User;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "`groups`") // groups는 MySQL의 예약어이므로 백틱(`)으로 감싸야 합니다.
@@ -25,5 +29,14 @@ public class Group extends BaseEntity {
 
     @Column
     private String assignerId;
+
+    @Column
+    private Integer stock;
+
+    @Column
+    private String status;
+
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<User> users = new ArrayList<>();
 
 }

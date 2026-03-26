@@ -33,8 +33,8 @@ public class SwaggerConfig {
 
     private Info apiInfo() {
         return new Info()
-                .title("Hatto API")
-                .description("Hatto API Document")
+                .title("Hatoo API")
+                .description("Hatoo API Document")
                 .version("1.0.0");
     }
 }

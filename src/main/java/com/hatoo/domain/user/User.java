@@ -1,6 +1,7 @@
 package com.hatoo.domain.user;
 
 import com.hatoo.common.BaseEntity;
+import com.hatoo.domain.groups.Group;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -56,6 +57,10 @@ public class User extends BaseEntity {
 
     @Column
     private Boolean isMarketingNotiAllowed = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private Group group;
 
     @Builder
     public User(String email, String nickname, String loginId, String password) {

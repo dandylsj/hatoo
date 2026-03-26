@@ -43,7 +43,8 @@ public enum SuccessMessage {
     USER_CHECK_NICKNAME_SUCCESS("닉네임 중복 확인 완료."),
     USER_INFO_MODIFY_SUCCESS("유저 정보 수정 완료"),
     PRE_PASSWORD_VERIFICATION_SUCCESS("이전 비밀번호 확인 완료."),
-    CHANGE_PASSWORD_SUCCESS("비밀번호가 변경 되었습니다.");
+    CHANGE_PASSWORD_SUCCESS("비밀번호가 변경 되었습니다."),
+    GROUP_INFO_SUCCESS("내 그룹이 조회 되었습니다.");
 
     private final String message;
 

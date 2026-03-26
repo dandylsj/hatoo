@@ -58,6 +58,8 @@ public enum ErrorMessage {
     NOT_FOUND_PAYMENT(HttpStatus.NOT_FOUND, "존재하지 않는 결제 정보 입니다."),
     CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
     CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 메세지입니다."),
+    GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 그룹입니다"),
+    USER_NOT_IN_GROUP(HttpStatus.NOT_FOUND, "유저가 속한 그룹이 없습니다"),
 
     /* --- 409 Conflict --- */
     // 데이터 충돌

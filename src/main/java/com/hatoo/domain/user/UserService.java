@@ -38,12 +38,12 @@ public class UserService {
 
     //유저 정보 수정
     @Transactional
-    public UserInfoModifyResponse userInfoModifyResponse(String AccessToken, UserInfoModifyRequest request) {
+    public UserInfoModifyResponse userInfoModifyResponse(String accessToken, UserInfoModifyRequest request) {
         // 1. 토큰 검증
-        jwtUtil.validateToken(AccessToken);
+        jwtUtil.validateToken(accessToken);
 
         // 2. 토큰에서 로그인 아이디 추출
-        String loginId = jwtUtil.extractLoginId(AccessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
 
         // 3. 유저 조회
         User user = userRepository.findByLoginId(loginId)

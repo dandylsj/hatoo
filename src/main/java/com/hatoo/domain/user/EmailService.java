@@ -25,6 +25,7 @@ public class EmailService {
     //이메일 중복체크 후 인증코드 전송
     @Transactional
     public boolean checkEmailSend(String email) {
+
         if (userRepository.findByEmail(email).isPresent()) {
             return false;
         }

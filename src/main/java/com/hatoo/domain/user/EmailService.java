@@ -3,6 +3,7 @@ package com.hatoo.domain.user;
 import com.hatoo.common.email.SmtpEmailSender;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
+import com.hatoo.domain.user.dto.EmailVerifiRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,15 +67,15 @@ public class EmailService {
 
     //이메일 코드 인증.
     @Transactional
-    public boolean enterTheVerifcationCodeApi(String email,String token) {
+    public boolean enterTheVerifcationCodeApi(EmailVerifiRequest request) {
 
-        EmailVerification verification = emailRepository.findByEmail(email)
+        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorMessage.EMAIL_NOT_FOUND));
 
         if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE); // 만료됨
         }
-        if (!verification.getToken().equals(token)) {
+        if (!verification.getToken().equals(request.getToken())) {
             throw new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE);
         }
 

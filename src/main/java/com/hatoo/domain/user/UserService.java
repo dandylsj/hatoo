@@ -38,7 +38,7 @@ public class UserService {
         return true;
     }
 
-    //유저 정보 수정
+    //유저 정보 수정.
     @Transactional
     public UserInfoModifyResponse userInfoModifyResponse(String accessToken, UserInfoModifyRequest request) {
         // 1. 토큰 검증

@@ -41,9 +41,11 @@ public class AuthController {
 
     @Operation(summary = "유저 프로필 조회", description = "로그인 아이디를 기반으로 유저의 프로필 정보를 조회합니다.")
     @GetMapping("/profile")
-    public ResponseEntity userInfo(@RequestParam String loginId) {
+    public ResponseEntity userInfo(@RequestHeader("Authorization") String accessToken) {
 
-        UserInfoResposne user = authService.getUserInfoApi(loginId);
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+        UserInfoResposne user = authService.getUserInfoApi(token);
 
         return ResponseEntity.ok(user);
     }

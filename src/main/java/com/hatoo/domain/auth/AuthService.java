@@ -94,7 +94,11 @@ public class AuthService {
 
     //유저정보 불러오기
     @Transactional(readOnly = true)
-    public UserInfoResposne getUserInfoApi(String loginId) {
+    public UserInfoResposne getUserInfoApi(String accessToken) {
+
+        jwtUtil.validateToken(accessToken);
+
+        String loginId = jwtUtil.extractLoginId(accessToken);
 
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 

@@ -92,7 +92,7 @@ public class GroupService {
 
     //그룹 참여
     @Transactional
-    public void joinGroup(String accessToken, Long groupId) {
+    public void joinGroupApi(String accessToken, Long groupId) {
         // 1. 토큰 검증 및 유저 로그인 ID 추출
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
@@ -116,6 +116,7 @@ public class GroupService {
 
         // 5. 유저를 그룹에 할당 (User 엔티티의 assignGroup 메서드 사용)
         user.assignGroup(group);
+
         // @Transactional 어노테이션 덕분에 user 엔티티의 변경 사항은 트랜잭션 커밋 시 자동으로 DB에 반영됩니다.
     }
 }

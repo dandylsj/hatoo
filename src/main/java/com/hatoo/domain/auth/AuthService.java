@@ -6,6 +6,8 @@ import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.auth.dto.LoginRequest;
 import com.hatoo.domain.auth.dto.SignRequest;
 import com.hatoo.domain.auth.dto.UserInfoResposne;
+import com.hatoo.domain.groups.Group;
+import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.token.RefreshToken;
 import com.hatoo.domain.token.RefreshTokenRepository;
 import com.hatoo.domain.token.TokenResponse;
@@ -15,8 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Optional;
+
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final GroupRepository groupRepository;
+
 
 
     //회원가입
@@ -48,11 +52,17 @@ public class AuthService {
                 request.getNickname(),
                 request.getLoginId(),
                 passwordEncoder.encode(request.getPassword())
-
-
         );
-
         userRepository.save(user);
+
+        // 회원가입 시 본인이 방장인 기본 그룹 자동 생성
+        Group defaultGroup = new Group(
+                request.getNickname() + "의 그룹",
+                "기본 그룹",
+                user.getLoginId()  // 방장 = 본인
+        );
+        groupRepository.save(defaultGroup);
+        user.assignGroup(defaultGroup);
 
         //토큰생성
         String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
@@ -113,6 +123,4 @@ public class AuthService {
                 user.getUpdatedAt()
         );
     }
-
-
 }

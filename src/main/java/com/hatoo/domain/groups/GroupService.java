@@ -57,7 +57,8 @@ public class GroupService {
 
         Group group = new Group(
                 request.getName(),
-                request.getDescription()
+                request.getDescription(),
+                request.getAssignerId()
         );
 
         groupRepository.save(group);

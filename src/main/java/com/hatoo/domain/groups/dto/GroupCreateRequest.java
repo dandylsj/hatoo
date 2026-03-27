@@ -8,4 +8,7 @@ public class GroupCreateRequest {
     private String name;
 
     private String description;
+
+    private Long assignerId;
+
 }

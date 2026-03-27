@@ -21,7 +21,7 @@ public class GroupController {
 
     @Operation(summary = "내가 속한 그룹 조회", description = "로그인한 유저가 속한 그룹 정보를 조회합니다.")
     @GetMapping
-    public ResponseEntity<GlobalResponse> myGroupInfoApi(@RequestHeader("AccessToken") String accessToken) {
+        public ResponseEntity<GlobalResponse> myGroupInfoApi(@RequestHeader("Authorization") String accessToken) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
@@ -48,7 +48,7 @@ public class GroupController {
 
     @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
     @PostMapping("/members/{groupId}")
-    public ResponseEntity<GlobalResponse> joinGroup(@RequestHeader("AccessToken") String accessToken,
+    public ResponseEntity<GlobalResponse> joinGroup(@RequestHeader("Authorization") String accessToken,
                                     @PathVariable Long groupId) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;

@@ -2,6 +2,8 @@ package com.hatoo.domain.user;
 
 import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.groups.Group;
+import com.hatoo.domain.groups.GroupService;
+import com.hatoo.domain.groups.dto.GroupMemberListResponse;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -96,6 +98,8 @@ public class User extends BaseEntity {
     /**
      * 유저를 특정 그룹에 소속시킵니다.
      * 연관관계의 주인인 User 엔티티의 group 필드를 설정합니다.
+     *
+     * @return
      */
     public void assignGroup(Group group) {
         this.group = group;

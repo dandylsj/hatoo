@@ -45,7 +45,8 @@ public enum SuccessMessage {
     PRE_PASSWORD_VERIFICATION_SUCCESS("이전 비밀번호 확인 완료."),
     CHANGE_PASSWORD_SUCCESS("비밀번호가 변경 되었습니다."),
     GROUP_INFO_SUCCESS("내 그룹이 조회 되었습니다."),
-    GROUP_CREATE_SUCCESS("그룹이 생성 되었습니다.");
+    GROUP_CREATE_SUCCESS("그룹이 생성 되었습니다."),
+    GROUP_JOIN_SUCCESS("그룹에 참여 되었습니다.");
 
     private final String message;
 

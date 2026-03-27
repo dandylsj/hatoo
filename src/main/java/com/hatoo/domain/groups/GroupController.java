@@ -25,7 +25,7 @@ public class GroupController {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
-        MyGroupResponse myGroup = groupService.myGroupInfoResponse(accessToken);
+        MyGroupResponse myGroup = groupService.myGroupInfoResponse(token);
 
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_INFO_SUCCESS,myGroup));
     }
@@ -48,10 +48,13 @@ public class GroupController {
 
     @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
     @PostMapping("/members/{groupId}")
-    public ResponseEntity joinGroup(@RequestHeader("AccessToken") String accessToken,
+    public ResponseEntity<GlobalResponse> joinGroup(@RequestHeader("AccessToken") String accessToken,
                                     @PathVariable Long groupId) {
 
-        return ResponseEntity.ok(groupService.groupMemberListResponse(groupId));
-    }
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
+        boolean result = groupService.joinGroupApi(token, groupId);
+
+        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_JOIN_SUCCESS, result));
+    }
 }

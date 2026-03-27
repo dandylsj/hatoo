@@ -8,6 +8,7 @@ import com.hatoo.domain.groups.dto.GroupCreateResponse;
 import com.hatoo.domain.groups.dto.GroupMemberListResponse;
 import com.hatoo.domain.groups.dto.GroupMemberDto;
 import com.hatoo.domain.groups.dto.MyGroupResponse;
+
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +72,7 @@ public class GroupService {
         );
     }
 
-    //그룹 멤버 조회
+    //그룹 멤버 리스트 조회
     @Transactional
     public GroupMemberListResponse groupMemberListResponse(Long groupId) {
 
@@ -92,7 +93,7 @@ public class GroupService {
 
     //그룹 참여
     @Transactional
-    public void joinGroupApi(String accessToken, Long groupId) {
+    public boolean joinGroupApi(String accessToken, Long groupId) {
         // 1. 토큰 검증 및 유저 로그인 ID 추출
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
@@ -115,8 +116,7 @@ public class GroupService {
                 .orElseThrow(()-> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         // 5. 유저를 그룹에 할당 (User 엔티티의 assignGroup 메서드 사용)
-        user.assignGroup(group);
-
         // @Transactional 어노테이션 덕분에 user 엔티티의 변경 사항은 트랜잭션 커밋 시 자동으로 DB에 반영됩니다.
+        return user.assignGroup(group);
     }
 }

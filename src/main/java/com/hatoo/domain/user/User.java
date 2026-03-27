@@ -2,8 +2,6 @@ package com.hatoo.domain.user;
 
 import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.groups.Group;
-import com.hatoo.domain.groups.GroupService;
-import com.hatoo.domain.groups.dto.GroupMemberListResponse;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -101,7 +99,8 @@ public class User extends BaseEntity {
      *
      * @return
      */
-    public void assignGroup(Group group) {
+    public boolean assignGroup(Group group) {
         this.group = group;
+        return true;
     }
 }

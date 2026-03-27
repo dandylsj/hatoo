@@ -41,7 +41,7 @@ public class JwtUtil {
     public String generateAccessToken(String loginId, String nickName) {
 
         Date now = new Date();
-        return BEARER_PREFIX + Jwts.builder()
+        return Jwts.builder()
                 .subject(loginId)
                 .claim("nickName", nickName)
                 .issuedAt(now)
@@ -53,7 +53,7 @@ public class JwtUtil {
     public String generateRefreshToken(Long userId) {
 
         Date now = new Date();
-        return BEARER_PREFIX + Jwts.builder()
+        return Jwts.builder()
                 .subject(userId.toString())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + REFRESH_TOKEN_TIME))

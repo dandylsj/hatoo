@@ -92,4 +92,12 @@ public class User extends BaseEntity {
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
+
+    /**
+     * 유저를 특정 그룹에 소속시킵니다.
+     * 연관관계의 주인인 User 엔티티의 group 필드를 설정합니다.
+     */
+    public void assignGroup(Group group) {
+        this.group = group;
+    }
 }

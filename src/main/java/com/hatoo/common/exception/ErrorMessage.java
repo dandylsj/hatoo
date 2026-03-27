@@ -68,7 +68,9 @@ public enum ErrorMessage {
 
     /* --- 429 Too Many Requests --- */
     EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "10초 후에 다시 시도해주세요."),
-    EMAIL_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "이메일 전송 횟수를 초과했습니다. 5분 후에 다시 시도해주세요.");
+    EMAIL_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "이메일 전송 횟수를 초과했습니다. 5분 후에 다시 시도해주세요."),
+    ALREADY_IN_ANOTHER_GROUP(HttpStatus.CONFLICT, "이미 다른 그룹에 속해있습니다."),
+    ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 가입된 그룹입니다.");
 
     private final HttpStatus status;
     private final String message;

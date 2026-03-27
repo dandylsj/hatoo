@@ -38,4 +38,20 @@ public class GroupController {
 
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_CREATE_SUCCESS,group));
     }
+
+    @Operation(summary = "그룹의 모든 멤버 조회", description = "그룹 내의 모든 멤버를 조회합니다.")
+    @GetMapping("/members/{groupId}")
+    public ResponseEntity getGroupMembers(@PathVariable Long groupId) {
+
+        return ResponseEntity.ok(groupService.groupMemberListResponse(groupId));
+    }
+
+    @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
+    @PostMapping("/members/{groupId}")
+    public ResponseEntity joinGroup(@RequestHeader("AccessToken") String accessToken,
+                                    @PathVariable Long groupId) {
+
+        return ResponseEntity.ok(groupService.groupMemberListResponse(groupId));
+    }
+
 }

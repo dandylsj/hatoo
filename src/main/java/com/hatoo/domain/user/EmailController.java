@@ -2,6 +2,7 @@ package com.hatoo.domain.user;
 
 import com.hatoo.common.model.enums.SuccessMessage;
 import com.hatoo.common.model.response.GlobalResponse;
+import com.hatoo.domain.user.dto.EmailVerifiRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Email;
@@ -36,9 +37,9 @@ public class EmailController {
 
     @Operation(summary = "이메일 코드 인증", description = "이메일로 발송된 인증코드를 확인하여 이메일을 인증합니다.")
     @PostMapping("/check-email")
-    public ResponseEntity<GlobalResponse> enterTheVerificationCode(@RequestBody @Email String email,String token) {
+    public ResponseEntity<GlobalResponse> enterTheVerificationCode(@RequestBody EmailVerifiRequest request) {
 
-         boolean verify = emailService.enterTheVerifcationCodeApi(email,token);
+         boolean verify = emailService.enterTheVerifcationCodeApi(request);
 
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.EMAIL_VERIFICATION_SUCCESSFUL,verify));
     }

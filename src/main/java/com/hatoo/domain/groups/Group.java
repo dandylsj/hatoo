@@ -39,4 +39,8 @@ public class Group extends BaseEntity {
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<User> users = new ArrayList<>();
 
+    public Group(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 }

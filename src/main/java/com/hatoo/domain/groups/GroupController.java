@@ -2,6 +2,8 @@ package com.hatoo.domain.groups;
 
 import com.hatoo.common.model.enums.SuccessMessage;
 import com.hatoo.common.model.response.GlobalResponse;
+import com.hatoo.domain.groups.dto.GroupCreateRequest;
+import com.hatoo.domain.groups.dto.GroupCreateResponse;
 import com.hatoo.domain.groups.dto.MyGroupResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,5 +28,14 @@ public class GroupController {
         MyGroupResponse myGroup = groupService.myGroupInfoResponse(accessToken);
 
         return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_INFO_SUCCESS,myGroup));
+    }
+
+    @Operation(summary = "그룹생성", description = "새로운 그룹을 생성합니다.")
+    @PostMapping
+    public ResponseEntity<GlobalResponse> createGroup(@RequestBody GroupCreateRequest request) {
+
+        GroupCreateResponse group = groupService.groupCreateResponse(request);
+
+        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_CREATE_SUCCESS,group));
     }
 }

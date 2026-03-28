@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Group", description = "그룹 관련 API")
@@ -26,9 +27,9 @@ public class GroupController {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
-        MyGroupResponse myGroup = groupService.myGroupInfoResponse(token);
+        List<MyGroupResponse> myGroups = groupService.myGroupInfoResponse(token);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_INFO_SUCCESS,myGroup));
+        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_INFO_SUCCESS, myGroups));
     }
 
     @Operation(summary = "그룹생성", description = "새로운 그룹을 생성합니다.")

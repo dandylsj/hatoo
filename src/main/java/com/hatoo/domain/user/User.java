@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -60,9 +62,13 @@ public class User extends BaseEntity {
     @Column
     private Boolean isMarketingNotiAllowed = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id", referencedColumnName = "id")
-    private Group group;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_groups",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "group_id")
+    )
+    private List<Group> groups = new ArrayList<>();
 
     @Builder
     public User(String email, String nickname, String loginId, String password) {
@@ -97,12 +103,11 @@ public class User extends BaseEntity {
 
     /**
      * 유저를 특정 그룹에 소속시킵니다.
-     * 연관관계의 주인인 User 엔티티의 group 필드를 설정합니다.
      *
      * @return
      */
     public boolean assignGroup(Group group) {
-        this.group = group;
+        this.groups.add(group);
         return true;
     }
 }

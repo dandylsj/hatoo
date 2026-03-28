@@ -20,5 +20,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByNickname(String nickname);
 
-    List<User> findAllByGroupId(UUID groupId);
+    List<User> findAllByGroupsId(UUID groupId);
 }

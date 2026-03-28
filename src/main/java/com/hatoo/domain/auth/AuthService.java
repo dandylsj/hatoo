@@ -63,6 +63,7 @@ public class AuthService {
         );
         groupRepository.save(defaultGroup);
         user.assignGroup(defaultGroup);
+        userRepository.save(user);
 
         //토큰생성
         String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());

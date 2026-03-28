@@ -39,7 +39,7 @@ public class Group extends BaseEntity {
     @Column
     private LocalDateTime inviteCodeExpiryDate;
 
-    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(mappedBy = "groups")
     private List<User> users = new ArrayList<>();
 
     public Group(String name, String description) {

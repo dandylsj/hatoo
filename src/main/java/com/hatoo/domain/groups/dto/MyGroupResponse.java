@@ -4,11 +4,12 @@ import com.hatoo.domain.groups.Group;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 public class MyGroupResponse {
 
-    private Long id;
+    private UUID id;
 
     private String name;
 

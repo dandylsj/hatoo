@@ -3,11 +3,12 @@ package com.hatoo.domain.groups.dto;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 public class GroupCreateResponse {
 
-    private Long id;
+    private UUID id;
 
     private String name;
 
@@ -19,7 +20,7 @@ public class GroupCreateResponse {
 
     private LocalDateTime updatedAt;
 
-    public GroupCreateResponse(Long id, String name, String description, String assignerId, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public GroupCreateResponse(UUID id, String name, String description, String assignerId, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.description = description;

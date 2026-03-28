@@ -4,10 +4,12 @@ import com.hatoo.domain.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.UUID;
+
 @Getter
 @AllArgsConstructor
 public class GroupMemberDto {
-    private Long userId;
+    private UUID id;
     private String email;
     private String nickname;
     private String profileImg;

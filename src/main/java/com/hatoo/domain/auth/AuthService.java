@@ -57,9 +57,9 @@ public class AuthService {
 
         // 회원가입 시 본인이 방장인 기본 그룹 자동 생성
         Group defaultGroup = new Group(
-                request.getNickname() + "의 그룹",
+                request.getNickname(),
                 "기본 그룹",
-                user.getLoginId()  // 방장 = 본인
+                user.getId().toString()
         );
         groupRepository.save(defaultGroup);
         user.assignGroup(defaultGroup);

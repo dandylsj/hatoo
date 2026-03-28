@@ -6,6 +6,7 @@ import com.hatoo.domain.user.dto.UserInfoModifyRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyResponse;
 import com.hatoo.domain.user.dto.PasswordCheckRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class UserController {
     @Operation(summary = "유저 정보 수정", description = "로그인한 유저의 정보를 수정합니다.")
     @PatchMapping
     public ResponseEntity<GlobalResponse> modifyMemberInfo(
-            @RequestHeader("Authorization") String accessToken,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody UserInfoModifyRequest userInfoModify) {
 
         // Exception 방지를 위해 안전하게 토큰 문자열 추출
@@ -55,7 +56,7 @@ public class UserController {
     @Operation(summary = "이전 비밀번호 확인", description = "비밀번호 변경 전, 현재 비밀번호가 맞는지 확인합니다.")
     @GetMapping("/check-password")
     public ResponseEntity<GlobalResponse> prePasswordVerification(
-            @RequestHeader("Authorization") String accessToken,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
@@ -67,7 +68,7 @@ public class UserController {
     @Operation(summary = "비밀번호 변경", description = "유저의 비밀번호를 변경합니다.")
     @PatchMapping("/{loginId}/{email}")
     public ResponseEntity<GlobalResponse> changePassword(
-            @RequestHeader("Authorization") String accessToken,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;

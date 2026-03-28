@@ -2,13 +2,16 @@ package com.hatoo.domain.groups;
 
 import com.hatoo.common.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import com.hatoo.domain.user.User;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "`groups`") // groups는 MySQL의 예약어이므로 백틱(`)으로 감싸야 합니다.
@@ -17,9 +20,9 @@ import java.util.List;
 public class Group extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID id;
 
     @Column
     private String name;
@@ -31,14 +34,18 @@ public class Group extends BaseEntity {
     private String assignerId;
 
     @Column
-    private Integer stock;
+    private String inviteCode;
 
     @Column
-    private String status;
+    private LocalDateTime inviteCodeExpiryDate;
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<User> users = new ArrayList<>();
 
+    public Group(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 
     public Group(String name, String description, String assignerId) {
         this.name = name;
@@ -46,21 +53,8 @@ public class Group extends BaseEntity {
         this.assignerId = assignerId;
     }
 
-    public Group(String name, String description, String assignerId, Integer stock, String status) {
-        this.name = name;
-        this.description = description;
-        this.assignerId = assignerId;
-        this.stock = stock;
-        this.status = status;
-    }
-
-    public Group(String aDefault, String 기본_그룹) {
-        super();
-    }
-
-    public Group(String name, String description, Long assignerId) {
-        this.name = name;
-        this.description = description;
-        this.assignerId = String.valueOf(assignerId);
+    public void updateInviteCode(String inviteCode, LocalDateTime expiryDate) {
+        this.inviteCode = inviteCode;
+        this.inviteCodeExpiryDate = expiryDate;
     }
 }

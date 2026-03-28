@@ -2,6 +2,8 @@ package com.hatoo.domain.groups.dto;
 
 import lombok.Getter;
 
+import java.util.UUID;
+
 @Getter
 public class GroupCreateRequest {
 
@@ -9,6 +11,6 @@ public class GroupCreateRequest {
 
     private String description;
 
-    private Long assignerId;
+    private UUID assignerId;
 
 }

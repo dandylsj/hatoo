@@ -1,5 +1,6 @@
 package com.hatoo.config;
 
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -16,7 +17,7 @@ public class SwaggerConfig {
         String jwtSchemeName = "jwtAuth";
         // API 요청헤더에 인증정보 포함
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwtSchemeName);
-        
+
         // SecuritySchemes 등록
         Components components = new Components()
                 .addSecuritySchemes(jwtSchemeName, new SecurityScheme()
@@ -26,6 +27,10 @@ public class SwaggerConfig {
                         .bearerFormat("JWT")); // 토큰 형식을 지정하는 임의의 문자(Optional)
 
         return new OpenAPI()
+                // ▼ 새롭게 추가된 HTTPS 및 로컬 서버 주소 설정 부분 ▼
+                .addServersItem(new Server().url("https://lsjyahoo.synology.me").description("HTTPS Server (NAS)"))
+                .addServersItem(new Server().url("http://localhost:8080").description("Local HTTP Server"))
+                // ▲ 여기까지 추가 ▲
                 .info(apiInfo())
                 .addSecurityItem(securityRequirement)
                 .components(components);
@@ -37,4 +42,5 @@ public class SwaggerConfig {
                 .description("Hatoo API Document")
                 .version("1.0.0");
     }
+}
 }

@@ -1,31 +1,26 @@
 package com.hatoo.common.model.response;
 
-import com.hatoo.common.model.enums.SuccessMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor
 public class GlobalResponse {
 
-    private final String message;
     private final Object data;
 
-
-    // 성공 시 (사용 예시: GlobalResponse.success(SuccessMessage 이넘, 반환 DTO)
-    public static GlobalResponse success(SuccessMessage successMessage, Object data) {
-        return new GlobalResponse(successMessage.getMessage(), data);
+    // 성공 - 데이터 있을 때
+    public static GlobalResponse success(Object data) {
+        return new GlobalResponse(data);
     }
 
-    // 성공 했는데 응답 데이터는 없을 시 (사용 예시: GlobalResponse.successNodata(SuccessMessage 이넘)
-    public static GlobalResponse successNodata(SuccessMessage successMessage) {
-        return new GlobalResponse(successMessage.getMessage(), null);
+    // 성공 - 데이터 없을 때
+    public static GlobalResponse successNodata() {
+        return new GlobalResponse(null);
     }
 
-    // 예외 처리 시
-    public static GlobalResponse exception(String errorMessage) {
-        return new GlobalResponse(errorMessage, null);
+    // 실패 - 항상 false 반환
+    public static GlobalResponse exception(boolean b) {
+        return new GlobalResponse(Boolean.FALSE);
     }
 }

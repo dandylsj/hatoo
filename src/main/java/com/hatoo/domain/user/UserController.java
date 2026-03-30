@@ -1,6 +1,5 @@
 package com.hatoo.domain.user;
 
-import com.hatoo.common.model.enums.SuccessMessage;
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.user.dto.UserInfoModifyRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyResponse;
@@ -25,18 +24,24 @@ public class UserController {
     @GetMapping("/check-login-id")
     public ResponseEntity<GlobalResponse> checkLoginId(@RequestParam String loginId) {
 
-        Boolean checked = userService.checkLoginIdApi(loginId);
+        boolean checked = userService.checkLoginIdApi(loginId);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.USER_CHECK_LOGIN_ID_SUCCESS, checked));
+        if (!checked) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "닉네임 중복 확인", description = "회원가입 시 닉네임의 중복 여부를 확인합니다.")
     @GetMapping("/check-nickname")
     public ResponseEntity<GlobalResponse> checkNickname(@RequestParam String nickname) {
 
-        Boolean checkNickName = userService.checkNicknameApi(nickname);
+        boolean checkNickName = userService.checkNicknameApi(nickname);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.USER_CHECK_LOGIN_ID_SUCCESS, checkNickName));
+        if (!checkNickName) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "유저 정보 수정", description = "로그인한 유저의 정보를 수정합니다.")
@@ -50,7 +55,10 @@ public class UserController {
 
         UserInfoModifyResponse response = userService.userInfoModifyResponse(token, userInfoModify);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.USER_INFO_MODIFY_SUCCESS, response));
+        if (response == null) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(response));
     }
 
     @Operation(summary = "이전 비밀번호 확인", description = "비밀번호 변경 전, 현재 비밀번호가 맞는지 확인합니다.")
@@ -60,9 +68,12 @@ public class UserController {
             @Valid @RequestBody PasswordCheckRequest request) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        Boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
+        boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.PRE_PASSWORD_VERIFICATION_SUCCESS, isMatch));
+        if (!isMatch) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "비밀번호 변경", description = "유저의 비밀번호를 변경합니다.")
@@ -73,8 +84,11 @@ public class UserController {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
-        Boolean isChange = userService.changePassword(token, request.getPassword());
+        boolean isChange = userService.changePassword(token, request.getPassword());
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.CHANGE_PASSWORD_SUCCESS, isChange));
+        if (!isChange) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(true));
     }
 }

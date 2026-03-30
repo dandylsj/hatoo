@@ -1,6 +1,5 @@
 package com.hatoo.domain.groups;
 
-import com.hatoo.common.model.enums.SuccessMessage;
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.groups.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +28,10 @@ public class GroupController {
 
         List<MyGroupResponse> myGroups = groupService.myGroupInfoResponse(token);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_INFO_SUCCESS, myGroups));
+        if (myGroups == null) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(myGroups));
     }
 
     @Operation(summary = "그룹생성", description = "새로운 그룹을 생성합니다.")
@@ -38,14 +40,21 @@ public class GroupController {
 
         GroupCreateResponse group = groupService.groupCreateResponse(request);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_CREATE_SUCCESS,group));
+        if (group == null) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(group));
     }
 
     @Operation(summary = "그룹의 모든 멤버 조회", description = "그룹 내의 모든 멤버를 조회합니다.")
     @GetMapping("/members/{groupId}")
-    public ResponseEntity getGroupMembers(@PathVariable UUID groupId) {
+    public ResponseEntity<GlobalResponse> getGroupMembers(@PathVariable UUID groupId) {
 
-        return ResponseEntity.ok(groupService.groupMemberListResponse(groupId));
+        GroupMemberListResponse members = groupService.groupMemberListResponse(groupId);
+        if (members == null) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(members));
     }
 
     @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
@@ -57,7 +66,10 @@ public class GroupController {
 
         boolean result = groupService.joinGroupApi(token, groupId);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.GROUP_JOIN_SUCCESS, result));
+        if (!result) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "그룹 초대코드 생성", description = "그룹 초대코드를 생성합니다.")
@@ -66,7 +78,9 @@ public class GroupController {
 
         GroupInviteCodeResponse response = groupService.inviteCodeAPi(request);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.INVITE_CODE_CREATE_SUCCESS, response));
+        if (response == null) {
+            return ResponseEntity.ok(GlobalResponse.exception(false));
+        }
+        return ResponseEntity.ok(GlobalResponse.success(response));
     }
-
 }

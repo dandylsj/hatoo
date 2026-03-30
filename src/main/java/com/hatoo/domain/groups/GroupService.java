@@ -27,100 +27,116 @@ public class GroupService {
     //내가 속한 그룹 조회
     @Transactional(readOnly = true)
     public List<MyGroupResponse> myGroupInfoResponse(String accessToken) {
+        try {
+            jwtUtil.validateToken(accessToken);
 
-        jwtUtil.validateToken(accessToken);
+            String loginId = jwtUtil.extractLoginId(accessToken);
 
-        String loginId = jwtUtil.extractLoginId(accessToken);
+            User user = userRepository.findByLoginId(loginId)
+                    .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        User user = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
-
-        // 2. 유저가 속한 그룹 리스트를 DTO로 변환하여 반환
-        return user.getGroups().stream()
-                .map(MyGroupResponse::from)
-                .collect(Collectors.toList());
+            // 2. 유저가 속한 그룹 리스트를 DTO로 변환하여 반환
+            return user.getGroups().stream()
+                    .map(MyGroupResponse::from)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     //그룹 생성
     @Transactional
     public GroupCreateResponse groupCreateResponse(GroupCreateRequest request) {
+        try {
+            Group group = new Group(
+                    request.getName(),
+                    request.getDescription()
+            );
 
-        Group group = new Group(
-                request.getName(),
-                request.getDescription()
-        );
+            groupRepository.save(group);
 
-        groupRepository.save(group);
-
-        return new GroupCreateResponse(
-                group.getId(),
-                group.getName(),
-                group.getDescription(),
-                group.getAssignerId(),
-                group.getCreatedAt(),
-                group.getUpdatedAt()
-        );
+            return new GroupCreateResponse(
+                    group.getId(),
+                    group.getName(),
+                    group.getDescription(),
+                    group.getAssignerId(),
+                    group.getCreatedAt(),
+                    group.getUpdatedAt()
+            );
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     //그룹 멤버 리스트 조회
     @Transactional
     public GroupMemberListResponse groupMemberListResponse(UUID groupId) {
+        try {
+            groupRepository.findById(groupId)
+                    .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        groupRepository.findById(groupId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+            // 1. 해당 그룹에 속한 유저 리스트 조회
+            List<User> users = userRepository.findAllByGroupsId(groupId);
 
-        // 1. 해당 그룹에 속한 유저 리스트 조회
-        List<User> users = userRepository.findAllByGroupsId(groupId);
+            // 2. User 엔티티 리스트를 GroupMemberDto 리스트로 변환
+            List<GroupMemberDto> memberDtos = users.stream()
+                    .map(GroupMemberDto::from)
+                    .collect(Collectors.toList());
 
-        // 2. User 엔티티 리스트를 GroupMemberDto 리스트로 변환
-        List<GroupMemberDto> memberDtos = users.stream()
-                .map(GroupMemberDto::from)
-                .collect(Collectors.toList());
-
-        // 3. DTO에 감싸서 반환 (총 멤버 수와 함께 반환)
-        return new GroupMemberListResponse(memberDtos.size(), memberDtos);
+            // 3. DTO에 감싸서 반환 (총 멤버 수와 함께 반환)
+            return new GroupMemberListResponse(memberDtos.size(), memberDtos);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     //그룹 참여
     @Transactional
     public boolean joinGroupApi(String accessToken, UUID groupId) {
-        // 1. 토큰 검증 및 유저 로그인 ID 추출
-        jwtUtil.validateToken(accessToken);
-        String loginId = jwtUtil.extractLoginId(accessToken);
+        try {
+            // 1. 토큰 검증 및 유저 로그인 ID 추출
+            jwtUtil.validateToken(accessToken);
+            String loginId = jwtUtil.extractLoginId(accessToken);
 
-        // 2. 유저 조회
-        User user = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+            // 2. 유저 조회
+            User user = userRepository.findByLoginId(loginId)
+                    .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 3. 이미 해당 그룹에 참여 중인지 확인
-        boolean alreadyJoined = user.getGroups().stream()
-                .anyMatch(g -> g.getId().equals(groupId));
-        if (alreadyJoined) {
-            throw new CustomException(ErrorMessage.ALREADY_JOINED_GROUP);
+            // 3. 이미 해당 그룹에 참여 중인지 확인
+            boolean alreadyJoined = user.getGroups().stream()
+                    .anyMatch(g -> g.getId().equals(groupId));
+            if (alreadyJoined) {
+                return false;
+            }
+
+            // 4. 참여하려는 그룹 조회
+            Group group = groupRepository.findById(groupId)
+                    .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+            // 5. 유저를 그룹에 추가
+            return user.assignGroup(group);
+        } catch (Exception e) {
+            return false;
         }
-
-        // 4. 참여하려는 그룹 조회
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
-
-        // 5. 유저를 그룹에 추가
-        return user.assignGroup(group);
     }
 
     //그룹 초대코드 생성
     @Transactional
     public GroupInviteCodeResponse inviteCodeAPi(GroupInviteCodeRequest request) {
+        try {
+            Group group = groupRepository.findById(request.getGroupId())
+                    .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        Group group = groupRepository.findById(request.getGroupId())
-                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+            // 그룹 초대 코드 생성 및 유효기간 설정
+            String inviteCode = generateInviteCode();
+            LocalDateTime expiryDate = LocalDateTime.now().plusDays(7);
 
-        // 그룹 초대 코드 생성 및 유효기간 설정
-        String inviteCode = generateInviteCode();
-        LocalDateTime expiryDate = LocalDateTime.now().plusDays(7);
+            group.updateInviteCode(inviteCode, expiryDate);
 
-        group.updateInviteCode(inviteCode, expiryDate);
-
-        return new GroupInviteCodeResponse(inviteCode, expiryDate);
+            return new GroupInviteCodeResponse(inviteCode, expiryDate);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String generateInviteCode() {

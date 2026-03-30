@@ -26,60 +26,66 @@ public class EmailService {
     //이메일 중복체크 후 인증코드 전송
     @Transactional
     public boolean checkEmailSend(String email) {
+        try {
+            if (userRepository.findByEmail(email).isPresent()) {
+                return false;
+            }
 
-        if (userRepository.findByEmail(email).isPresent()) {
+            LocalDateTime now = LocalDateTime.now();
+            EmailVerification verification = emailRepository.findByEmail(email)
+                    .orElse(new EmailVerification(email, "", now)); // New verification
+
+            // 쿨다운 확인
+            if (verification.getLastSendTime() != null && verification.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
+                return false;
+            }
+
+            // 5분 내 전송 횟수 초기화 확인
+            if (verification.getCountResetTime() != null && verification.getCountResetTime().isBefore(now)) {
+                verification.resetCount(now, COUNT_RESET_MINUTES);
+            }
+
+            if (verification.getSendCount() >= MAX_SEND_COUNT) {
+                return false;
+            }
+
+            if (verification.getCountResetTime() == null) {
+                verification.resetCount(now, COUNT_RESET_MINUTES);
+            }
+
+            String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
+            LocalDateTime expiry = now.plusMinutes(7);
+
+            verification.updateCode(token, expiry);
+            verification.recordSend(now);
+            emailRepository.save(verification);
+
+            smtpEmailSender.sendVerificationCode(email, token);
+
+            return true;
+        } catch (Exception e) {
             return false;
         }
-
-        LocalDateTime now = LocalDateTime.now();
-        EmailVerification verification = emailRepository.findByEmail(email)
-                .orElse(new EmailVerification(email, "", now)); // New verification
-
-        // 쿨다운 확인
-        if (verification.getLastSendTime() != null && verification.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
-            throw new CustomException(ErrorMessage.EMAIL_SEND_COOLDOWN);
-        }
-
-        // 5분 내 전송 횟수 초기화 확인
-        if (verification.getCountResetTime() != null && verification.getCountResetTime().isBefore(now)) {
-            verification.resetCount(now, COUNT_RESET_MINUTES);
-        }
-
-        if (verification.getSendCount() >= MAX_SEND_COUNT) {
-            throw new CustomException(ErrorMessage.EMAIL_SEND_LIMIT_EXCEEDED);
-        }
-
-        if (verification.getCountResetTime() == null) {
-            verification.resetCount(now, COUNT_RESET_MINUTES);
-        }
-
-        String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
-        LocalDateTime expiry = now.plusMinutes(7);
-
-        verification.updateCode(token, expiry);
-        verification.recordSend(now);
-        emailRepository.save(verification);
-
-        smtpEmailSender.sendVerificationCode(email, token);
-
-        return true;
     }
 
     //이메일 코드 인증.
     @Transactional
     public boolean enterTheVerifcationCodeApi(EmailVerifiRequest request) {
+        try {
+            EmailVerification verification = emailRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new CustomException(ErrorMessage.EMAIL_NOT_FOUND));
 
-        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException(ErrorMessage.EMAIL_NOT_FOUND));
+            if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
+                return false; // 만료됨
+            }
+            if (!verification.getToken().equals(request.getToken())) {
+                return false;
+            }
 
-        if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE); // 만료됨
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-        if (!verification.getToken().equals(request.getToken())) {
-            throw new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE);
-        }
-
-        return true;
     }
 
 }

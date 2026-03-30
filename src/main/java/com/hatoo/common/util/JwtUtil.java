@@ -63,14 +63,7 @@ public class JwtUtil {
     }
 
     public void validateToken(String token) {
-
-        try {
-            parser.parseSignedClaims(token);
-        } catch (ExpiredJwtException expired) {
-            throw new CustomException(ErrorMessage.EXPIRED_TOKEN);
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new CustomException(ErrorMessage.INVALID_TOKEN);
-        }
+        parser.parseSignedClaims(token);
     }
 
     private Claims extractAllClaims(String token) {

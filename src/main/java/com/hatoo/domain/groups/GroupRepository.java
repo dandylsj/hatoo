@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface GroupRepository extends JpaRepository<Group, UUID> {
 
     Optional<Group> findByName(String name);
+
+    Optional<Group> findByAssignerId(String assignerId);
 }

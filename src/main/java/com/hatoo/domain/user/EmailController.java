@@ -1,6 +1,5 @@
 package com.hatoo.domain.user;
 
-import com.hatoo.common.model.enums.SuccessMessage;
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.user.dto.EmailVerifiRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,9 +28,9 @@ public class EmailController {
         boolean isSent = emailService.checkEmailSend(email);
 
         if (isSent) {
-            return ResponseEntity.ok(GlobalResponse.successNodata(SuccessMessage.SEND_AUTHENTICATION_CODE));
+            return ResponseEntity.ok(GlobalResponse.success(true));
         } else {
-            return ResponseEntity.ok(GlobalResponse.successNodata(SuccessMessage.EMAIL_VERIFICATION_DUPLICATED));
+            return ResponseEntity.ok(GlobalResponse.exception(false));
         }
     }
 
@@ -41,6 +40,10 @@ public class EmailController {
 
          boolean verify = emailService.enterTheVerifcationCodeApi(request);
 
-        return ResponseEntity.ok(GlobalResponse.success(SuccessMessage.EMAIL_VERIFICATION_SUCCESSFUL,verify));
+         if (verify) {
+             return ResponseEntity.ok(GlobalResponse.success(true));
+         } else {
+             return ResponseEntity.ok(GlobalResponse.exception(false));
+         }
     }
 }

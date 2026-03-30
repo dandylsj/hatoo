@@ -84,25 +84,37 @@ public class GroupService {
 
     //그룹 참여
     @Transactional
-    public boolean joinGroupApi(String accessToken, UUID groupId) {
+    public boolean joinGroupApi(String accessToken,UUID groupId, String inviteCode) {
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
 
-        User user = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+         // 1. 토큰으로 유저 조회
+         User user = userRepository.findByLoginId(loginId)
+                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        boolean alreadyJoined = user.getGroups().stream()
-                .anyMatch(g -> g.getId().equals(groupId));
-        if (alreadyJoined) {
-            throw new CustomException(ErrorMessage.ALREADY_JOINED_GROUP);
-        }
+         // 2. 참여하려는 그룹 조회
+         Group group = groupRepository.findById(groupId)
+                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+         // 3. 초대 코드 유효성 및 만료 여부 확인
+         if (!inviteCode.equals(group.getInviteCode()) ||
+             (group.getInviteCodeExpiryDate() != null && group.getInviteCodeExpiryDate().isBefore(LocalDateTime.now()))) {
+             return false;
+         }
 
-        return user.assignGroup(group);
+         // 4. 이미 그룹에 가입되어 있는지 확인
+         boolean alreadyJoined = user.getGroups().stream()
+                 .anyMatch(g -> g.getId().equals(groupId));
+         if (alreadyJoined) {
+             return false;
+         }
+
+         // 5. 유저를 그룹에 추가
+         user.assignGroup(group);
+         return true;
     }
+
 
     //그룹 초대코드 생성
     @Transactional

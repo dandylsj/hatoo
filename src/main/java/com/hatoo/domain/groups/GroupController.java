@@ -50,14 +50,18 @@ public class GroupController {
     }
 
     @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
-    @PostMapping("/members/{groupId}")
+    @PostMapping("/members/add-user")
     public ResponseEntity<GlobalResponse> joinGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @PathVariable UUID groupId) {
+            @RequestParam UUID groupId,
+            @RequestParam String inviteCode) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.joinGroupApi(token, groupId);
-        return ResponseEntity.ok(GlobalResponse.success(result));
+        boolean result = groupService.joinGroupApi(token, groupId, inviteCode);
+        if (!result) {
+            return ResponseEntity.ok(GlobalResponse.exception());
+        }
+        return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "그룹 초대코드 생성", description = "그룹 초대코드를 생성합니다.")
@@ -65,6 +69,9 @@ public class GroupController {
     public ResponseEntity<GlobalResponse> inviteCode(@RequestBody GroupInviteCodeRequest request) {
 
         GroupInviteCodeResponse response = groupService.inviteCodeAPi(request);
+        if (response == null) {
+            return ResponseEntity.ok(GlobalResponse.exception());
+        }
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
 

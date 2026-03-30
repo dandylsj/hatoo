@@ -12,4 +12,6 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
     Optional<Group> findByName(String name);
 
     Optional<Group> findByAssignerId(UUID assignerId);
+
+    Optional<Group> findByInviteCode(String inviteCode);
 }

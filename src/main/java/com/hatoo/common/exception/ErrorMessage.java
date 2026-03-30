@@ -56,6 +56,7 @@ public enum ErrorMessage {
     /* --- 409 Conflict --- */
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),
     SAME_PASSWORD(HttpStatus.CONFLICT, "이전 비밀번호와 동일합니다."),
+    NOT_SAME_INVITED(HttpStatus.CONFLICT, "초대코드가 맞지 않습니다."),
 
     /* --- 429 Too Many Requests --- */
     EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "10초 후에 다시 시도해주세요."),

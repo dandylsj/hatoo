@@ -27,10 +27,6 @@ public class SwaggerConfig {
                         .bearerFormat("JWT")); // 토큰 형식을 지정하는 임의의 문자(Optional)
 
         return new OpenAPI()
-                // ▼ 새롭게 추가된 HTTPS 및 로컬 서버 주소 설정 부분 ▼
-                .addServersItem(new Server().url("https://lsjyahoo.synology.me").description("HTTPS Server (NAS)"))
-                .addServersItem(new Server().url("http://localhost:8080").description("Local HTTP Server"))
-                // ▲ 여기까지 추가 ▲
                 .info(apiInfo())
                 .addSecurityItem(securityRequirement)
                 .components(components);

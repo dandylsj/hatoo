@@ -50,14 +50,13 @@ public class GroupController {
     }
 
     @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
-    @PostMapping("/members/add-user")
+    @PostMapping("/add-user?groupId={groupId}&token={token}")
     public ResponseEntity<GlobalResponse> joinGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @RequestParam UUID groupId,
-            @RequestParam String inviteCode) {
+            @PathVariable UUID groupId,@PathVariable String token) {
 
-        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.joinGroupApi(token, groupId, inviteCode);
+        String inviteToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        boolean result = groupService.joinGroupApi(token, groupId, token);
         if (!result) {
             return ResponseEntity.ok(GlobalResponse.exception());
         }
@@ -84,4 +83,23 @@ public class GroupController {
         boolean result = groupService.deleteGroup(token);
         return ResponseEntity.ok(GlobalResponse.success(result));
     }
+
+    @Operation(summary = "그룹 탈퇴", description = "현재 그룹을 탈퇴합니다.")
+    @DeleteMapping("/{groupId}/leave")
+    public ResponseEntity<GlobalResponse> leaveGroup(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId) {
+
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        boolean result = groupService.leaveGroup(token, groupId);
+        return ResponseEntity.ok(GlobalResponse.success(result));
+    }
+//    @Operation(summary = "그룹 맴버 내보내기", description = "그룹장이 멤버를 탈퇴 시킵니다.")
+
+//    @DeleteMapping("/{groupId}/{memberId}")
+//    public ResponseEntity<GlobalResponse> forcedExpulsionOfMembers(
+//            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+//            @PathVariable UUID groupId ,UUID memberId) {
+//
+//    }
 }

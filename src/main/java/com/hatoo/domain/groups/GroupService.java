@@ -84,7 +84,7 @@ public class GroupService {
 
     //그룹 참여
     @Transactional
-    public boolean joinGroupApi(String accessToken,UUID groupId, String inviteCode) {
+    public boolean joinGroupApi(String accessToken,UUID groupId, String token) {
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
@@ -98,7 +98,7 @@ public class GroupService {
                  .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
          // 3. 초대 코드 유효성 및 만료 여부 확인
-         if (!inviteCode.equals(group.getInviteCode()) ||
+         if (!token.equals(group.getInviteCode()) ||
              (group.getInviteCodeExpiryDate() != null && group.getInviteCodeExpiryDate().isBefore(LocalDateTime.now()))) {
              return false;
          }
@@ -148,6 +148,32 @@ public class GroupService {
         return true;
     }
 
+    //그룹 탈퇴
+    @Transactional
+    public boolean leaveGroup(String accessToken, UUID groupId) {
+
+        //1.토큰 검증
+        jwtUtil.validateToken(accessToken);
+
+        //2. 토큰에서 로그인 아이디 추출 하기
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        //3. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        //4. 그룹 조회
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(()-> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        //5.그룹 탈퇴하기
+        user.leaveGroup(group);
+
+        return true;
+    }
+
+    //그룹 멤버 내보내기
+
     private String generateInviteCode() {
         int length = 4;
         String characters = "0123456789";
@@ -158,4 +184,6 @@ public class GroupService {
         }
         return sb.toString();
     }
+
+
 }

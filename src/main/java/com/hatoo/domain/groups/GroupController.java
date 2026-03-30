@@ -2,6 +2,7 @@ package com.hatoo.domain.groups;
 
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.groups.dto.*;
+import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,13 +51,13 @@ public class GroupController {
     }
 
     @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
-    @PostMapping("/add-user?groupId={groupId}&token={token}")
+    @PostMapping("/add-user/{groupId}/{token}")
     public ResponseEntity<GlobalResponse> joinGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId,@PathVariable String token) {
 
-        String inviteToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.joinGroupApi(token, groupId, token);
+        String userToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        boolean result = groupService.joinGroupApi(userToken, groupId, token);
         if (!result) {
             return ResponseEntity.ok(GlobalResponse.exception());
         }
@@ -94,12 +95,30 @@ public class GroupController {
         boolean result = groupService.leaveGroup(token, groupId);
         return ResponseEntity.ok(GlobalResponse.success(result));
     }
-//    @Operation(summary = "그룹 맴버 내보내기", description = "그룹장이 멤버를 탈퇴 시킵니다.")
 
-//    @DeleteMapping("/{groupId}/{memberId}")
-//    public ResponseEntity<GlobalResponse> forcedExpulsionOfMembers(
-//            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-//            @PathVariable UUID groupId ,UUID memberId) {
-//
-//    }
+    @Operation(summary = "그룹 맴버 내보내기", description = "그룹장이 멤버를 탈퇴 시킵니다.")
+    @DeleteMapping("/{groupId}/{memberId}")
+    public ResponseEntity<GlobalResponse> forcedExpulsionOfMembers(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId ,@PathVariable UUID memberId) {
+
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        boolean result = groupService.forcedLeaveGroup(token, groupId, memberId);
+        return ResponseEntity.ok(GlobalResponse.success(result));
+    }
+
+    @Operation(summary = "초대코드 생성 후 해당되는 그룹 전체 조회", description = "초대코드로 보이는 그룹 전체를 조회")
+    @GetMapping("/{token}")
+    public ResponseEntity<GlobalResponse> tokenGroupList(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable String token) {
+
+        String authToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+        List<GroupTokenSameListDto> result = groupService.tokenGroupListApi(authToken, token);
+
+
+        return ResponseEntity.ok(GlobalResponse.success(result));
+    }
+
 }

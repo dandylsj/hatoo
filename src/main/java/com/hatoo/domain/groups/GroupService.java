@@ -7,6 +7,7 @@ import com.hatoo.domain.groups.dto.*;
 
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
+import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,6 +88,7 @@ public class GroupService {
     public boolean joinGroupApi(String accessToken,UUID groupId, String token) {
 
         jwtUtil.validateToken(accessToken);
+
         String loginId = jwtUtil.extractLoginId(accessToken);
 
          // 1. 토큰으로 유저 조회
@@ -173,6 +175,53 @@ public class GroupService {
     }
 
     //그룹 멤버 내보내기
+    @Transactional
+    public boolean forcedLeaveGroup(String accessToken, UUID groupId, UUID memberId) {
+
+        //1.토큰 검증
+        jwtUtil.validateToken(accessToken);
+
+        //2. 토큰에서 로그인 아이디 추출 하기
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        //3. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        //4. 그룹 조회
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(()-> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        //그룹장 인지 검증
+        if(!user.getId().equals(group.getAssignerId())) {
+            return false;
+        }
+        //멤버 탈퇴시키기
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        member.leaveGroup(group);
+
+        return true;
+    }
+
+    //초대코드 생성 후 해당되는 그룹 전체를 조회
+    @Transactional
+    public List<GroupTokenSameListDto> tokenGroupListApi(String accessToken, String token) {
+
+        jwtUtil.validateToken(accessToken);
+
+        jwtUtil.extractLoginId(accessToken);
+
+        //같은 초대코드가 있는 그룹들을 찾기
+        List<Group> groups = groupRepository.findAllByInviteCode(token);
+
+        return groups.stream()
+                .map(GroupTokenSameListDto::from)
+                .collect(Collectors.toList());
+    }
+
+
 
     private String generateInviteCode() {
         int length = 4;
@@ -184,6 +233,4 @@ public class GroupService {
         }
         return sb.toString();
     }
-
-
 }

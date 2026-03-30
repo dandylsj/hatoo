@@ -20,7 +20,7 @@ public class GlobalResponse {
     }
 
     // 실패 - 항상 false 반환
-    public static GlobalResponse exception(boolean b) {
+    public static GlobalResponse exception() {
         return new GlobalResponse(Boolean.FALSE);
     }
 }

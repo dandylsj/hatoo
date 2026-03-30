@@ -27,7 +27,7 @@ public class UserController {
         boolean checked = userService.checkLoginIdApi(loginId);
 
         if (!checked) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
@@ -39,7 +39,7 @@ public class UserController {
         boolean checkNickName = userService.checkNicknameApi(nickname);
 
         if (!checkNickName) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
@@ -56,7 +56,7 @@ public class UserController {
         UserInfoModifyResponse response = userService.userInfoModifyResponse(token, userInfoModify);
 
         if (response == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
@@ -71,7 +71,7 @@ public class UserController {
         boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
 
         if (!isMatch) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
@@ -87,7 +87,7 @@ public class UserController {
         boolean isChange = userService.changePassword(token, request.getPassword());
 
         if (!isChange) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(true));
     }

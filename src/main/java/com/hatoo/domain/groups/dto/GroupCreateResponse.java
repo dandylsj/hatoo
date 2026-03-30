@@ -14,13 +14,13 @@ public class GroupCreateResponse {
 
     private String description;
 
-    private String assignerId;
+    private UUID assignerId;
 
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
 
-    public GroupCreateResponse(UUID id, String name, String description, String assignerId, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public GroupCreateResponse(UUID id, String name, String description, UUID assignerId, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.description = description;

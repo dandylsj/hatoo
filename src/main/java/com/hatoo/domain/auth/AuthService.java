@@ -33,96 +33,86 @@ public class AuthService {
     //회원가입
     @Transactional
     public TokenResponse signup(SignRequest request) {
-        try {
-            Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
 
-            if (existingUser.isPresent()) {
-                User user = existingUser.get();
-                if (!user.isDeleted()) {
-                    return null; // 중복 이메일 시 null 반환 (실패)
-                }
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            if (!user.isDeleted()) {
+                throw new CustomException(ErrorMessage.DUPLICATE_EMAIL);
             }
-
-            User user = new User(
-                    request.getEmail(),
-                    request.getNickname(),
-                    request.getLoginId(),
-                    passwordEncoder.encode(request.getPassword())
-            );
-            userRepository.save(user);
-
-            // 회원가입 시 본인이 방장인 기본 그룹 자동 생성
-            Group defaultGroup = new Group(
-                    request.getNickname(),
-                    "기본 그룹",
-                    user.getId().toString()
-            );
-            groupRepository.save(defaultGroup);
-            user.assignGroup(defaultGroup);
-            userRepository.save(user);
-
-            String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-
-            RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
-                    .orElse(new RefreshToken(user.getId(), refreshToken));
-            refreshTokenEntity.updateToken(refreshToken);
-            refreshTokenRepository.save(refreshTokenEntity);
-
-            return new TokenResponse(accessToken, refreshToken);
-        } catch (Exception e) {
-            return null;
         }
+
+        User user = new User(
+                request.getEmail(),
+                request.getNickname(),
+                request.getLoginId(),
+                passwordEncoder.encode(request.getPassword())
+        );
+        userRepository.save(user);
+
+        // 회원가입 시 본인이 방장인 기본 그룹 자동 생성
+        Group defaultGroup = new Group(
+                request.getNickname(),
+                "기본 그룹",
+                user.getId()
+        );
+        groupRepository.save(defaultGroup);
+        user.assignGroup(defaultGroup);
+        userRepository.save(user);
+
+        String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
+                .orElse(new RefreshToken(user.getId(), refreshToken));
+        refreshTokenEntity.updateToken(refreshToken);
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        return new TokenResponse(accessToken, refreshToken);
     }
 
     //로그인
     @Transactional
     public TokenResponse login(LoginRequest request) {
-        try {
-            User user = userRepository.findByLoginId(request.getLoginId())
-                    .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                return null;
-            }
+        User user = userRepository.findByLoginId(request.getLoginId())
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-            String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-
-            RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
-                    .orElse(new RefreshToken(user.getId(), refreshToken));
-            refreshTokenEntity.updateToken(refreshToken);
-            refreshTokenRepository.save(refreshTokenEntity);
-
-            return new TokenResponse(accessToken, refreshToken);
-        } catch (Exception e) {
-            return null;
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new CustomException(ErrorMessage.INVALID_PASSWORD);
         }
+
+        String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
+                .orElse(new RefreshToken(user.getId(), refreshToken));
+        refreshTokenEntity.updateToken(refreshToken);
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        return new TokenResponse(accessToken, refreshToken);
     }
 
     //유저정보 불러오기
     @Transactional(readOnly = true)
     public UserInfoResposne getUserInfoApi(String accessToken) {
-        try {
-            jwtUtil.validateToken(accessToken);
 
-            String loginId = jwtUtil.extractLoginId(accessToken);
+        jwtUtil.validateToken(accessToken);
 
-            User user = userRepository.findByLoginId(loginId)
-                    .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+        String loginId = jwtUtil.extractLoginId(accessToken);
 
-            return new UserInfoResposne(
-                    user.getId(),
-                    user.getStatus(),
-                    user.getLoginId(),
-                    user.getEmail(),
-                    user.getNickname(),
-                    user.getProfileImg(),
-                    user.getCreatedAt(),
-                    user.getUpdatedAt()
-            );
-        } catch (Exception e) {
-            return null;
-        }
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        return new UserInfoResposne(
+                user.getId(),
+                user.getStatus(),
+                user.getLoginId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getProfileImg(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
     }
 }

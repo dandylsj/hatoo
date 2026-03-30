@@ -22,27 +22,22 @@ public class GroupController {
 
     @Operation(summary = "내가 속한 그룹 조회", description = "로그인한 유저가 속한 그룹 정보를 조회합니다.")
     @GetMapping
-    public ResponseEntity<GlobalResponse> myGroupInfoApi(@Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
+    public ResponseEntity<GlobalResponse> myGroupInfoApi(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-
         List<MyGroupResponse> myGroups = groupService.myGroupInfoResponse(token);
-
-        if (myGroups == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
-        }
         return ResponseEntity.ok(GlobalResponse.success(myGroups));
     }
 
     @Operation(summary = "그룹생성", description = "새로운 그룹을 생성합니다.")
     @PostMapping
-    public ResponseEntity<GlobalResponse> createGroup(@RequestBody GroupCreateRequest request) {
+    public ResponseEntity<GlobalResponse> createGroup(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @RequestBody GroupCreateRequest request) {
 
-        GroupCreateResponse group = groupService.groupCreateResponse(request);
-
-        if (group == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
-        }
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        GroupCreateResponse group = groupService.groupCreateResponse(token, request);
         return ResponseEntity.ok(GlobalResponse.success(group));
     }
 
@@ -51,25 +46,18 @@ public class GroupController {
     public ResponseEntity<GlobalResponse> getGroupMembers(@PathVariable UUID groupId) {
 
         GroupMemberListResponse members = groupService.groupMemberListResponse(groupId);
-        if (members == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
-        }
         return ResponseEntity.ok(GlobalResponse.success(members));
     }
 
     @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
     @PostMapping("/members/{groupId}")
-    public ResponseEntity<GlobalResponse> joinGroup(@Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-                                    @PathVariable UUID groupId) {
+    public ResponseEntity<GlobalResponse> joinGroup(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-
         boolean result = groupService.joinGroupApi(token, groupId);
-
-        if (!result) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
-        }
-        return ResponseEntity.ok(GlobalResponse.success(true));
+        return ResponseEntity.ok(GlobalResponse.success(result));
     }
 
     @Operation(summary = "그룹 초대코드 생성", description = "그룹 초대코드를 생성합니다.")
@@ -77,10 +65,16 @@ public class GroupController {
     public ResponseEntity<GlobalResponse> inviteCode(@RequestBody GroupInviteCodeRequest request) {
 
         GroupInviteCodeResponse response = groupService.inviteCodeAPi(request);
-
-        if (response == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
-        }
         return ResponseEntity.ok(GlobalResponse.success(response));
+    }
+
+    @Operation(summary = "그룹 삭제", description = "방장이 그룹을 삭제합니다.")
+    @DeleteMapping
+    public ResponseEntity<GlobalResponse> deleteGroup(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
+
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        boolean result = groupService.deleteGroup(token);
+        return ResponseEntity.ok(GlobalResponse.success(result));
     }
 }

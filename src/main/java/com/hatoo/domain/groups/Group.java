@@ -2,7 +2,6 @@ package com.hatoo.domain.groups;
 
 import com.hatoo.common.BaseEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "`groups`") // groups는 MySQL의 예약어이므로 백틱(`)으로 감싸야 합니다.
+@Table(name = "`groups`")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Group extends BaseEntity {
@@ -30,8 +29,8 @@ public class Group extends BaseEntity {
     @Column
     private String description;
 
-    @Column
-    private String assignerId;
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID assignerId;
 
     @Column
     private String inviteCode;
@@ -47,7 +46,7 @@ public class Group extends BaseEntity {
         this.description = description;
     }
 
-    public Group(String name, String description, String assignerId) {
+    public Group(String name, String description, UUID assignerId) {
         this.name = name;
         this.description = description;
         this.assignerId = assignerId;

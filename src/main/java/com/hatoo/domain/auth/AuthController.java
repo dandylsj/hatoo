@@ -28,7 +28,7 @@ public class AuthController {
         TokenResponse tokenResponse = authService.signup(request);
 
         if (tokenResponse == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
     }
@@ -40,7 +40,7 @@ public class AuthController {
         TokenResponse tokenResponse = authService.login(request);
 
         if (tokenResponse == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
     }
@@ -54,7 +54,7 @@ public class AuthController {
         UserInfoResposne user = authService.getUserInfoApi(token);
 
         if (user == null) {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
         return ResponseEntity.ok(GlobalResponse.success(user));
     }

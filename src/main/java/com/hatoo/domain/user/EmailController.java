@@ -30,7 +30,7 @@ public class EmailController {
         if (isSent) {
             return ResponseEntity.ok(GlobalResponse.success(true));
         } else {
-            return ResponseEntity.ok(GlobalResponse.exception(false));
+            return ResponseEntity.ok(GlobalResponse.exception());
         }
     }
 
@@ -43,7 +43,7 @@ public class EmailController {
          if (verify) {
              return ResponseEntity.ok(GlobalResponse.success(true));
          } else {
-             return ResponseEntity.ok(GlobalResponse.exception(false));
+             return ResponseEntity.ok(GlobalResponse.exception());
          }
     }
 }

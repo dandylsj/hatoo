@@ -7,8 +7,7 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public class GroupMemberListResponse {
-    
-    private int memberCount;
+
     private List<GroupMemberDto> members;
 
 

@@ -80,7 +80,7 @@ public class GroupService {
                 .map(GroupMemberDto::from)
                 .collect(Collectors.toList());
 
-        return new GroupMemberListResponse(memberDtos.size(), memberDtos);
+        return new GroupMemberListResponse(memberDtos);
     }
 
     //그룹 참여

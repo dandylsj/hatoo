@@ -54,7 +54,7 @@ public class GroupController {
     @PostMapping("/add-user/{groupId}/{token}")
     public ResponseEntity<GlobalResponse> joinGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @PathVariable UUID groupId,@PathVariable String token) {
+            @PathVariable UUID groupId, @PathVariable String token) {
 
         String userToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         boolean result = groupService.joinGroupApi(userToken, groupId, token);
@@ -76,12 +76,13 @@ public class GroupController {
     }
 
     @Operation(summary = "그룹 삭제", description = "방장이 그룹을 삭제합니다.")
-    @DeleteMapping
+    @DeleteMapping("/{groupId}")
     public ResponseEntity<GlobalResponse> deleteGroup(
-            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.deleteGroup(token);
+        boolean result = groupService.deleteGroup(token, groupId);
         return ResponseEntity.ok(GlobalResponse.success(result));
     }
 
@@ -100,7 +101,7 @@ public class GroupController {
     @DeleteMapping("/{groupId}/{memberId}")
     public ResponseEntity<GlobalResponse> forcedExpulsionOfMembers(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @PathVariable UUID groupId ,@PathVariable UUID memberId) {
+            @PathVariable UUID groupId, @PathVariable UUID memberId) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         boolean result = groupService.forcedLeaveGroup(token, groupId, memberId);
@@ -114,11 +115,7 @@ public class GroupController {
             @PathVariable String token) {
 
         String authToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-
         List<GroupTokenSameListDto> result = groupService.tokenGroupListApi(authToken, token);
-
-
         return ResponseEntity.ok(GlobalResponse.success(result));
     }
-
 }

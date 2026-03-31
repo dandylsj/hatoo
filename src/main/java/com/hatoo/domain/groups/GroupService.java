@@ -85,38 +85,37 @@ public class GroupService {
 
     //그룹 참여
     @Transactional
-    public boolean joinGroupApi(String accessToken,UUID groupId, String token) {
+    public boolean joinGroupApi(String accessToken, UUID groupId, String token) {
 
         jwtUtil.validateToken(accessToken);
 
         String loginId = jwtUtil.extractLoginId(accessToken);
 
-         // 1. 토큰으로 유저 조회
-         User user = userRepository.findByLoginId(loginId)
-                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+        // 1. 토큰으로 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-         // 2. 참여하려는 그룹 조회
-         Group group = groupRepository.findById(groupId)
-                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+        // 2. 참여하려는 그룹 조회
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-         // 3. 초대 코드 유효성 및 만료 여부 확인
-         if (!token.equals(group.getInviteCode()) ||
-             (group.getInviteCodeExpiryDate() != null && group.getInviteCodeExpiryDate().isBefore(LocalDateTime.now()))) {
-             return false;
-         }
+        // 3. 초대 코드 유효성 및 만료 여부 확인
+        if (!token.equals(group.getInviteCode()) ||
+            (group.getInviteCodeExpiryDate() != null && group.getInviteCodeExpiryDate().isBefore(LocalDateTime.now()))) {
+            return false;
+        }
 
-         // 4. 이미 그룹에 가입되어 있는지 확인
-         boolean alreadyJoined = user.getGroups().stream()
-                 .anyMatch(g -> g.getId().equals(groupId));
-         if (alreadyJoined) {
-             return false;
-         }
+        // 4. 이미 그룹에 가입되어 있는지 확인
+        boolean alreadyJoined = user.getGroups().stream()
+                .anyMatch(g -> g.getId().equals(groupId));
+        if (alreadyJoined) {
+            return false;
+        }
 
-         // 5. 유저를 그룹에 추가
-         user.assignGroup(group);
-         return true;
+        // 5. 유저를 그룹에 추가
+        user.assignGroup(group);
+        return true;
     }
-
 
     //그룹 초대코드 생성
     @Transactional
@@ -135,7 +134,7 @@ public class GroupService {
 
     //그룹 삭제
     @Transactional
-    public boolean deleteGroup(String accessToken) {
+    public boolean deleteGroup(String accessToken, UUID groupId) {
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
@@ -143,10 +142,22 @@ public class GroupService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        Group group = groupRepository.findByAssignerId(user.getId())
+        Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
+        // 방장 여부 검증
+        if (!user.getId().equals(group.getAssignerId())) {
+            throw new CustomException(ErrorMessage.NO_DELETE_PERMISSION);
+        }
+
+        // user_groups 중간 테이블 관계 먼저 제거 (외래키 제약 해소)
+        List<User> members = userRepository.findAllByGroupsId(groupId);
+        for (User member : members) {
+            member.leaveGroup(group);
+        }
+
         groupRepository.delete(group);
+
         return true;
     }
 
@@ -166,7 +177,7 @@ public class GroupService {
 
         //4. 그룹 조회
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(()-> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         //5.그룹 탈퇴하기
         user.leaveGroup(group);
@@ -190,12 +201,13 @@ public class GroupService {
 
         //4. 그룹 조회
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(()-> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         //그룹장 인지 검증
-        if(!user.getId().equals(group.getAssignerId())) {
-            return false;
+        if (!user.getId().equals(group.getAssignerId())) {
+            throw new CustomException(ErrorMessage.NO_DELETE_PERMISSION);
         }
+
         //멤버 탈퇴시키기
         User member = userRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
@@ -220,8 +232,6 @@ public class GroupService {
                 .map(GroupTokenSameListDto::from)
                 .collect(Collectors.toList());
     }
-
-
 
     private String generateInviteCode() {
         int length = 4;

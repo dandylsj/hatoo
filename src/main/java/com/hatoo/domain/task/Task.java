@@ -3,6 +3,7 @@ package com.hatoo.domain.task;
 
 import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.groups.Group;
+import com.hatoo.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,10 +40,21 @@ public class Task extends BaseEntity {
     private String finished;
 
     @Column
-    private String assigneeId;
+    private String deadLine;
+
+    @Column
+    private Boolean starter;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignee_id")
+    private User assignee;
 
     @Column
     private String recurringTaskId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "frequency", nullable = false)
+    private Frequency frequency;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

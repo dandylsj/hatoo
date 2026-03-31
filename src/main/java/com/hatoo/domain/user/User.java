@@ -113,6 +113,6 @@ public class User extends BaseEntity {
 
     public void leaveGroup(Group group) {
         this.groups.remove(group);
-
     }
 }
+

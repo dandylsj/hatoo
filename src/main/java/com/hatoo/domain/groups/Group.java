@@ -10,6 +10,7 @@ import com.hatoo.domain.user.User;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,5 +60,9 @@ public class Group extends BaseEntity {
     public void updateInviteCode(String inviteCode, LocalDateTime expiryDate) {
         this.inviteCode = inviteCode;
         this.inviteCodeExpiryDate = expiryDate;
+    }
+
+    public Collection<User> getMembers() {
+        return users;
     }
 }

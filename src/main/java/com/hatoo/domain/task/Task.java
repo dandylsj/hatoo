@@ -84,4 +84,12 @@ public class Task extends BaseEntity {
     public void addGroup(Group group) {
         this.groups.add(group);
     }
+
+    public UUID getGroupId() {
+        return this.groups.get(0).getId();
+    }
+
+    public UUID getAssigneeId() {
+        return this.assignees.get(0).getId();
+    }
 }

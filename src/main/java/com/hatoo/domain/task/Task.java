@@ -1,6 +1,5 @@
 package com.hatoo.domain.task;
 
-
 import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.user.User;
@@ -45,10 +44,6 @@ public class Task extends BaseEntity {
     @Column
     private Boolean starter;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id")
-    private User assignee;
-
     @Column
     private String recurringTaskId;
 
@@ -58,12 +53,35 @@ public class Task extends BaseEntity {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
+            name = "task_assignees",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> assignees = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
             name = "group_tasks",
             joinColumns = @JoinColumn(name = "task_id"),
             inverseJoinColumns = @JoinColumn(name = "group_id")
     )
     private List<Group> groups = new ArrayList<>();
 
+    public Task(String title, String description, Frequency frequency, String dueFrom, String dueTo, String deadLine, Boolean starter) {
+        this.title = title;
+        this.description = description;
+        this.frequency = frequency;
+        this.dueFrom = dueFrom;
+        this.dueTo = dueTo;
+        this.deadLine = deadLine;
+        this.starter = starter;
+    }
 
+    public void addAssignee(User user) {
+        this.assignees.add(user);
+    }
 
+    public void addGroup(Group group) {
+        this.groups.add(group);
+    }
 }

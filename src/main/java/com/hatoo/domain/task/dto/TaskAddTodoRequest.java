@@ -12,7 +12,7 @@ public class TaskAddTodoRequest {
 
     private String description;
 
-    private String assigneeId;
+    private UUID assigneeId;
 
     private UUID groupId;
 
@@ -27,6 +27,4 @@ public class TaskAddTodoRequest {
     private String deadLine;
 
     private Boolean starter;
-
-
 }

@@ -82,11 +82,12 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 3. 그룹에 속한 할일 목록 조회
+        // 3. 그룹에 속한 할일 중 finished가 false 인 할일 조회
         List<Task> tasks = taskRepository.findByGroupsId(groupId);
 
         // 4. 응답 변환
         List<TaskAllGroupListResponse.TaskList> taskItems = tasks.stream()
+                .filter(task -> task.getFinished() == false)
                 .map(task -> {
                     User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
                     return new TaskAllGroupListResponse.TaskList(
@@ -108,6 +109,26 @@ public class TaskService {
                 })
                 .collect(Collectors.toList());
 
-        return new TaskAllGroupListResponse(taskItems);
+        List<TaskAllGroupListResponse.FinishedTaskList> finishedTaskItems = tasks.stream()
+                .filter(task -> task.getFinished() == true)
+                .map(task -> {
+                    User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
+                    return new TaskAllGroupListResponse.FinishedTaskList(
+                            task.getCreatedAt(),
+                            task.getUpdatedAt(),
+                            task.getId(),
+                            task.getTitle(),
+                            task.getDescription(),
+                            groupId,
+                            task.getDueFrom(),
+                            task.getDueTo(),
+                            task.getFinished() != null,
+                            firstAssignee != null ? firstAssignee.getId().toString() : null,
+                            task.getRecurringTaskId()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        return new TaskAllGroupListResponse(taskItems, finishedTaskItems, tasks.size(), finishedTaskItems.size());
     }
 }

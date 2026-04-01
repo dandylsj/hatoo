@@ -6,8 +6,6 @@ import lombok.Getter;
 @Getter
 public class UserInfoModifyRequest {
 
-    private String preNickname;
-
     private String nickname;
 
     private String password;

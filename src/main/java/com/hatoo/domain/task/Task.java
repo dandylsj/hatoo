@@ -36,7 +36,7 @@ public class Task extends BaseEntity {
     private String dueFrom;
 
     @Column
-    private String finished;
+    private Boolean finished = false;
 
     @Column
     private String deadLine;

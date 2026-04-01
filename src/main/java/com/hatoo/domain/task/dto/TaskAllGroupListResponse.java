@@ -12,6 +12,9 @@ import java.util.UUID;
 public class TaskAllGroupListResponse {
 
     private List<TaskList> tasks;
+    private List<FinishedTaskList> finishedTask;
+    private Integer totalCount;
+    private Integer finishedCount;
 
     @Getter
     @AllArgsConstructor
@@ -35,5 +38,21 @@ public class TaskAllGroupListResponse {
         public static class AssigneeDto {
             private String nickname;
         }
+    }
+    @Getter
+    @AllArgsConstructor
+    public static class FinishedTaskList {
+
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+        private UUID id;
+        private String title;
+        private String description;
+        private UUID groupId;
+        private String dueFrom;
+        private String dueTo;
+        private Boolean finished;
+        private String assigneeId;
+        private String recurringTaskId;
     }
 }

@@ -9,4 +9,8 @@ import java.util.UUID;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByGroupsId(UUID groupId);
+
+    List<Task> findByGroupsIdAndFinishedFalse(UUID groupId);
+
+    List<Task> findByGroupsIdAndFinishedTrue(UUID groupId);
 }

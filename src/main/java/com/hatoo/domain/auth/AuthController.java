@@ -23,39 +23,24 @@ public class AuthController {
 
     @Operation(summary = "회원가입", description = "새로운 유저를 등록합니다.")
     @PostMapping("/sign")
-    public ResponseEntity<GlobalResponse> sign(@Valid @RequestBody SignRequest request) {
-
+    public ResponseEntity<GlobalResponse<TokenResponse>> sign(@Valid @RequestBody SignRequest request) {
         TokenResponse tokenResponse = authService.signup(request);
-
-        if (tokenResponse == null) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
         return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
     }
 
     @Operation(summary = "로그인", description = "아이디와 비밀번호로 로그인하여 토큰을 발급받습니다.")
     @PostMapping("/login")
-    public ResponseEntity<GlobalResponse> login(@Valid @RequestBody LoginRequest request) {
-
+    public ResponseEntity<GlobalResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request) {
         TokenResponse tokenResponse = authService.login(request);
-
-        if (tokenResponse == null) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
         return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
     }
 
     @Operation(summary = "유저 프로필 조회", description = "로그인 아이디를 기반으로 유저의 프로필 정보를 조회합니다.")
     @GetMapping("/profile")
-    public ResponseEntity<GlobalResponse> userInfo(@Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
-
+    public ResponseEntity<GlobalResponse<UserInfoResposne>> userInfo(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-
         UserInfoResposne user = authService.getUserInfoApi(token);
-
-        if (user == null) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
         return ResponseEntity.ok(GlobalResponse.success(user));
     }
 }

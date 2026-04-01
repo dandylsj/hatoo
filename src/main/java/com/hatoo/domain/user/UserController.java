@@ -22,73 +22,49 @@ public class UserController {
 
     @Operation(summary = "아이디 중복 확인", description = "회원가입 시 로그인 아이디의 중복 여부를 확인합니다.")
     @GetMapping("/check-login-id")
-    public ResponseEntity<GlobalResponse> checkLoginId(@RequestParam String loginId) {
-
+    public ResponseEntity<GlobalResponse<Boolean>> checkLoginId(@RequestParam String loginId) {
         boolean checked = userService.checkLoginIdApi(loginId);
-
-        if (!checked) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
+        if (!checked) return ResponseEntity.ok(GlobalResponse.exception());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "닉네임 중복 확인", description = "회원가입 시 닉네임의 중복 여부를 확인합니다.")
     @GetMapping("/check-nickname")
-    public ResponseEntity<GlobalResponse> checkNickname(@RequestParam String nickname) {
-
+    public ResponseEntity<GlobalResponse<Boolean>> checkNickname(@RequestParam String nickname) {
         boolean checkNickName = userService.checkNicknameApi(nickname);
-
-        if (!checkNickName) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
+        if (!checkNickName) return ResponseEntity.ok(GlobalResponse.exception());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "유저 정보 수정", description = "로그인한 유저의 정보를 수정합니다.")
     @PatchMapping
-    public ResponseEntity<GlobalResponse> modifyMemberInfo(
+    public ResponseEntity<GlobalResponse<UserInfoModifyResponse>> modifyMemberInfo(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody UserInfoModifyRequest userInfoModify) {
-
-        // Exception 방지를 위해 안전하게 토큰 문자열 추출
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-
         UserInfoModifyResponse response = userService.userInfoModifyResponse(token, userInfoModify);
-
-        if (response == null) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
 
     @Operation(summary = "이전 비밀번호 확인", description = "비밀번호 변경 전, 현재 비밀번호가 맞는지 확인합니다.")
     @GetMapping("/check-password")
-    public ResponseEntity<GlobalResponse> prePasswordVerification(
+    public ResponseEntity<GlobalResponse<Boolean>> prePasswordVerification(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
-
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
-
-        if (!isMatch) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
+        if (!isMatch) return ResponseEntity.ok(GlobalResponse.exception());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
     @Operation(summary = "비밀번호 변경", description = "유저의 비밀번호를 변경합니다.")
     @PatchMapping("/{loginId}/{email}")
-    public ResponseEntity<GlobalResponse> changePassword(
+    public ResponseEntity<GlobalResponse<Boolean>> changePassword(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
-
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-
         boolean isChange = userService.changePassword(token, request.getPassword());
-
-        if (!isChange) {
-            return ResponseEntity.ok(GlobalResponse.exception());
-        }
+        if (!isChange) return ResponseEntity.ok(GlobalResponse.exception());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 }

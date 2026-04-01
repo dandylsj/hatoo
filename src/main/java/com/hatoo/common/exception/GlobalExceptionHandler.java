@@ -10,38 +10,36 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import java.util.Objects;
-
 @RestControllerAdvice
 @Slf4j(topic = "CustomExceptionHandler")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<GlobalResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<GlobalResponse<Boolean>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         log.error("MethodArgumentNotValidException 발생 : {} ", ex.getMessage());
         return ResponseEntity.status(ex.getStatusCode()).body(GlobalResponse.exception());
     }
 
     @ExceptionHandler(value = CustomException.class)
-    public ResponseEntity<GlobalResponse> handlerCustomException(CustomException ex) {
+    public ResponseEntity<GlobalResponse<Boolean>> handlerCustomException(CustomException ex) {
         log.error("CustomException 발생 : {} ", ex.getMessage());
         return ResponseEntity.status(ex.getErrorMessage().getStatus()).body(GlobalResponse.exception());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<GlobalResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+    public ResponseEntity<GlobalResponse<Boolean>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
         log.error("파일 업로드 용량 초과 : {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(GlobalResponse.exception());
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
-    public ResponseEntity<GlobalResponse> handleMissingRequestHeaderException(MissingRequestHeaderException e) {
+    public ResponseEntity<GlobalResponse<Boolean>> handleMissingRequestHeaderException(MissingRequestHeaderException e) {
         log.error("필수 요청 헤더 누락 : {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(GlobalResponse.exception());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<GlobalResponse> handleException(Exception e) {
+    public ResponseEntity<GlobalResponse<Boolean>> handleException(Exception e) {
         log.error("알 수 없는 에러 발생 : ", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(GlobalResponse.exception());
     }

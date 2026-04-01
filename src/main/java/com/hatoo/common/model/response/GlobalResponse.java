@@ -5,22 +5,18 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class GlobalResponse {
+public class GlobalResponse<T> {
 
-    private final Object data;
+    private final T data;
 
     // 성공 - 데이터 있을 때
-    public static GlobalResponse success(Object data) {
-        return new GlobalResponse(data);
+    public static <T> GlobalResponse<T> success(T data) {
+        return new GlobalResponse<>(data);
     }
 
-    // 성공 - 데이터 없을 때
-    public static GlobalResponse successNodata() {
-        return new GlobalResponse(null);
-    }
-
-    // 실패 - 항상 false 반환
-    public static GlobalResponse exception() {
-        return new GlobalResponse(Boolean.FALSE);
+    // 실패 - 항상 false 반환 (제네릭으로 어느 타입 컨텍스트에서도 사용 가능)
+    @SuppressWarnings("unchecked")
+    public static <T> GlobalResponse<T> exception() {
+        return (GlobalResponse<T>) new GlobalResponse<>(Boolean.FALSE);
     }
 }

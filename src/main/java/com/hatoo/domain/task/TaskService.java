@@ -131,4 +131,21 @@ public class TaskService {
 
         return new TaskAllGroupListResponse(taskItems, finishedTaskItems, tasks.size(), finishedTaskItems.size());
     }
+
+    //할 일 삭제
+    @Transactional
+    public Boolean deleteTaskApi(String accessToken, UUID taskId) {
+
+        //1. 토큰 검증
+        jwtUtil.validateToken(accessToken);
+
+        // 2. 할 일 존재 확인
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
+
+        //3. 할 일 삭제 하기
+        taskRepository.delete(task);
+
+        return true;
+    }
 }

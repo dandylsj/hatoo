@@ -40,4 +40,17 @@ public class TaskContoroller {
         TaskAllGroupListResponse response = taskService.getTasksByGroupListApi(token, groupId);
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
+
+    @Operation(summary = "할 일 삭제", description = "할 일을 삭제합니다.")
+    @DeleteMapping("/{taskId}")
+    public ResponseEntity<GlobalResponse<Boolean>> deleteTask(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID taskId) {
+       String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+       Boolean response = taskService.deleteTaskApi(token, taskId);
+
+       return ResponseEntity.ok(GlobalResponse.success(response));
+    }
+
 }

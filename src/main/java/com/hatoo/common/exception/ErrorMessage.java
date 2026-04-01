@@ -64,7 +64,8 @@ public enum ErrorMessage {
     EMAIL_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "이메일 전송 횟수를 초과했습니다. 5분 후에 다시 시도해주세요."),
     ALREADY_IN_ANOTHER_GROUP(HttpStatus.CONFLICT, "이미 다른 그룹에 속해있습니다."),
     ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 가입된 그룹입니다."),
-    NO_PERMISSION(HttpStatus.CONFLICT, "권한이 없습니다.");
+    NO_PERMISSION(HttpStatus.CONFLICT, "권한이 없습니다."),
+    TASK_NOT_FOUND(HttpStatus.CONFLICT,"할 일 이 없습니다.");
 
     private final HttpStatus status;
     private final String message;

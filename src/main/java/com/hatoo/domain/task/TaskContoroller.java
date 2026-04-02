@@ -21,7 +21,7 @@ public class TaskContoroller {
 
     private final TaskService taskService;
 
-    @Operation(summary = "할 일 추가", description = "할 일을 추가 합니다.")
+    @Operation(summary = "할 일 생성", description = "할 일을 생성 합니다.")
     @PostMapping
     public ResponseEntity<GlobalResponse<TaskAddTodoResponse>> addToDo(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,

@@ -47,6 +47,9 @@ public class Task extends BaseEntity {
     @Column
     private String recurringTaskId;
 
+    @Column
+    private Integer interval;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "frequency", nullable = false)
     private Frequency frequency;

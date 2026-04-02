@@ -38,8 +38,8 @@ public class Task extends BaseEntity {
     @Column
     private Boolean finished = false;
 
-    @Column
-    private String deadLine;
+    @Enumerated(EnumType.STRING)
+    private DeadLine deadLine;
 
     @Column
     private Boolean starter;
@@ -70,7 +70,7 @@ public class Task extends BaseEntity {
     )
     private List<Group> groups = new ArrayList<>();
 
-    public Task(String title, String description, Frequency frequency, String dueFrom, String dueTo, String deadLine, Boolean starter) {
+    public Task(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
         this.title = title;
         this.description = description;
         this.frequency = frequency;
@@ -97,7 +97,7 @@ public class Task extends BaseEntity {
     }
 
 
-    public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, String deadLine, Boolean starter) {
+    public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
         this.title = title;
         this.description = description;
         this.frequency = frequency;

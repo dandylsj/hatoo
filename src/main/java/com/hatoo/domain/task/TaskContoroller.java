@@ -2,7 +2,7 @@ package com.hatoo.domain.task;
 
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.task.dto.TaskAddTodoRequest;
-import com.hatoo.domain.task.dto.TaskAddTodoResponse;
+import com.hatoo.domain.task.dto.TaskListResponse;
 import com.hatoo.domain.task.dto.TaskAllGroupListResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,12 +23,12 @@ public class TaskContoroller {
 
     @Operation(summary = "할 일 생성", description = "할 일을 생성 합니다.")
     @PostMapping
-    public ResponseEntity<GlobalResponse<TaskAddTodoResponse>> addToDo(
+    public ResponseEntity<GlobalResponse<TaskListResponse>> addToDo(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody TaskAddTodoRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
-        TaskAddTodoResponse response = taskService.taskAddTodoResponse(token, request);
+        TaskListResponse response = taskService.taskAddTodoResponse(token, request);
 
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
@@ -59,12 +59,12 @@ public class TaskContoroller {
 
     @Operation(summary = "할 일 수정", description = "할 일을 수정 합니다.")
     @PatchMapping("/{taskId}")
-    public ResponseEntity<GlobalResponse<TaskAddTodoResponse>> taskModification(
+    public ResponseEntity<GlobalResponse<TaskListResponse>> taskModification(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID taskId, @RequestBody TaskAddTodoRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
-        TaskAddTodoResponse response = taskService.taskModificationApi(token, taskId, request);
+        TaskListResponse response = taskService.taskModificationApi(token, taskId, request);
 
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
@@ -93,7 +93,6 @@ public class TaskContoroller {
         taskService.taskBatchDeleteApi(token, groupId);
 
         return ResponseEntity.ok(GlobalResponse.success(true));
-
-
     }
+
 }

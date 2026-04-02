@@ -6,7 +6,7 @@ import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.dto.TaskAddTodoRequest;
-import com.hatoo.domain.task.dto.TaskAddTodoResponse;
+import com.hatoo.domain.task.dto.TaskListResponse;
 import com.hatoo.domain.task.dto.TaskAllGroupListResponse;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
@@ -29,7 +29,7 @@ public class TaskService {
 
     // 할일 추가
     @Transactional
-    public TaskAddTodoResponse taskAddTodoResponse(String accessToken, TaskAddTodoRequest request) {
+    public TaskListResponse taskAddTodoResponse(String accessToken, TaskAddTodoRequest request) {
 
         // 1. 토큰 검증
         jwtUtil.validateToken(accessToken);
@@ -58,7 +58,7 @@ public class TaskService {
         task.addGroup(group);
         taskRepository.save(task);
 
-        return new TaskAddTodoResponse(
+        return new TaskListResponse(
                 task.getId(),
                 task.getTitle(),
                 task.getDescription(),
@@ -67,7 +67,7 @@ public class TaskService {
                 task.getDueTo(),
                 false,
                 task.getRecurringTaskId(),
-                new TaskAddTodoResponse.AssigneeDto(assignee.getNickname())
+                new TaskListResponse.AssigneeDto(assignee.getNickname())
         );
     }
 
@@ -148,7 +148,7 @@ public class TaskService {
 
     //할 일 수정
     @Transactional
-    public TaskAddTodoResponse taskModificationApi(String accessToken, UUID taskId, TaskAddTodoRequest request) {
+    public TaskListResponse taskModificationApi(String accessToken, UUID taskId, TaskAddTodoRequest request) {
 
         jwtUtil.validateToken(accessToken);
 
@@ -165,7 +165,7 @@ public class TaskService {
                 request.getStarter()
         );
 
-        return new TaskAddTodoResponse(
+        return new TaskListResponse(
                 task.getId(),
                 task.getTitle(),
                 task.getDescription(),
@@ -174,7 +174,7 @@ public class TaskService {
                 task.getDueTo(),
                 false,
                 task.getRecurringTaskId(),
-                new TaskAddTodoResponse.AssigneeDto(task.getAssigneeId().toString())
+                new TaskListResponse.AssigneeDto(task.getAssigneeId().toString())
         );
     }
 

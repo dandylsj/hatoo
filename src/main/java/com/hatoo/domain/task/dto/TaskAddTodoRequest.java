@@ -1,5 +1,6 @@
 package com.hatoo.domain.task.dto;
 
+import com.hatoo.domain.task.DeadLine;
 import com.hatoo.domain.task.Frequency;
 import lombok.Getter;
 
@@ -24,7 +25,7 @@ public class TaskAddTodoRequest {
 
     private String dueTo;
 
-    private String deadLine;
+    private DeadLine deadLine;
 
     private Boolean starter;
 }

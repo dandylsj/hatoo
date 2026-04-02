@@ -78,6 +78,10 @@ public class AuthService {
         User user = userRepository.findByLoginId(request.getLoginId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorMessage.USER_WITHDRAWN);
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException(ErrorMessage.INVALID_PASSWORD);
         }

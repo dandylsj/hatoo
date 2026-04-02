@@ -67,4 +67,15 @@ public class UserController {
         if (!isChange) return ResponseEntity.ok(GlobalResponse.exception());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
+
+    @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. isDeleted가 true로 변경됩니다.")
+    @DeleteMapping
+    public ResponseEntity<GlobalResponse<Boolean>> withdrawUser(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        userService.withdrawUser(token);
+        return ResponseEntity.ok(GlobalResponse.success(true));
+    }
 }
+
+ 

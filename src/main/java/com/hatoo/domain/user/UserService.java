@@ -122,4 +122,28 @@ public class UserService {
         }
     }
 
+    //회원탈퇴
+    @Transactional
+    public boolean withdrawUser(String accessToken) {
+        // 1. 토큰 검증
+        jwtUtil.validateToken(accessToken);
+
+        // 2. 토큰에서 로그인 아이디 추출
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        // 3. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 4. 이미 탈퇴한 유저인지 확인
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorMessage.USER_DELETED_NOT_FOUND);
+        }
+
+        // 5. 소프트 딜리트 처리
+        user.withdraw();
+
+        return true;
+    }
+
 }

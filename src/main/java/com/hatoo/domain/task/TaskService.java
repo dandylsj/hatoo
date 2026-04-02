@@ -99,7 +99,7 @@ public class TaskService {
                             groupId,
                             task.getDueFrom(),
                             task.getDueTo(),
-                            task.getFinished() != null,
+                            false,
                             firstAssignee != null ? firstAssignee.getId().toString() : null,
                             task.getRecurringTaskId(),
                             firstAssignee != null
@@ -122,7 +122,7 @@ public class TaskService {
                             groupId,
                             task.getDueFrom(),
                             task.getDueTo(),
-                            task.getFinished() != null,
+                            true,
                             firstAssignee != null ? firstAssignee.getId().toString() : null,
                             task.getRecurringTaskId()
                     );
@@ -136,16 +136,75 @@ public class TaskService {
     @Transactional
     public Boolean deleteTaskApi(String accessToken, UUID taskId) {
 
-        //1. 토큰 검증
         jwtUtil.validateToken(accessToken);
 
-        // 2. 할 일 존재 확인
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
 
-        //3. 할 일 삭제 하기
         taskRepository.delete(task);
 
         return true;
     }
+
+    //할 일 수정
+    @Transactional
+    public TaskAddTodoResponse taskModificationApi(String accessToken, UUID taskId, TaskAddTodoRequest request) {
+
+        jwtUtil.validateToken(accessToken);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
+
+        task.updateTask(
+                request.getTitle(),
+                request.getDescription(),
+                request.getFrequency(),
+                request.getDueFrom(),
+                request.getDueTo(),
+                request.getDeadLine(),
+                request.getStarter()
+        );
+
+        return new TaskAddTodoResponse(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getGroupId(),
+                task.getDueFrom(),
+                task.getDueTo(),
+                false,
+                task.getRecurringTaskId(),
+                new TaskAddTodoResponse.AssigneeDto(task.getAssigneeId().toString())
+        );
+    }
+
+    //할 일 완료 처리
+    @Transactional
+    public Boolean taskFinishApi(String accessToken, UUID taskId) {
+
+        jwtUtil.validateToken(accessToken);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
+
+        task.setFinished(true);
+
+        return true;
+    }
+
+    //완료된 할 일 일괄 삭제
+    @Transactional
+    public void taskBatchDeleteApi(String accessToken, UUID groupId) {
+
+        jwtUtil.validateToken(accessToken);
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        List<Task> finishedTasks = taskRepository.findAllByGroupsContainingAndFinishedTrue(group);
+
+        taskRepository.deleteAll(finishedTasks);
+
+    }
+
 }

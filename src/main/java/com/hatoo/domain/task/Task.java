@@ -95,4 +95,19 @@ public class Task extends BaseEntity {
     public UUID getAssigneeId() {
         return this.assignees.get(0).getId();
     }
+
+
+    public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, String deadLine, Boolean starter) {
+        this.title = title;
+        this.description = description;
+        this.frequency = frequency;
+        this.dueFrom = dueFrom;
+        this.dueTo = dueTo;
+        this.deadLine = deadLine;
+        this.starter = starter;
+    }
+
+    public void setFinished(boolean finished) {
+        this.finished = finished;
+    }
 }

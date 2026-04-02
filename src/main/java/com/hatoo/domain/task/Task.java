@@ -51,7 +51,7 @@ public class Task extends BaseEntity {
     private Integer interval;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "frequency", nullable = false)
+    @Column(name = "frequency")
     private Frequency frequency;
 
     @ManyToMany(fetch = FetchType.LAZY)

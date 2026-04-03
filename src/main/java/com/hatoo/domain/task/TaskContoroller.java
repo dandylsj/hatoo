@@ -68,7 +68,7 @@ public class TaskContoroller {
     }
 
     @Operation(summary = "할 일 상태 변경", description = "할 일 상태를 완료,미완료 로 변경합니다.")
-    @PatchMapping("/{taskId}/finish")
+    @PatchMapping("/{taskId}/task-status")
     public ResponseEntity<GlobalResponse<TaskStatusUpdateResponse>> taskFinish(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID taskId, @RequestBody TaskStatusUpdateRequest request) {

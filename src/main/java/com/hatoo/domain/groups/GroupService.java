@@ -136,7 +136,9 @@ public class GroupService {
 
     // 그룹 초대코드 생성
     @Transactional
-    public GroupInviteCodeResponse inviteCodeAPi(GroupInviteCodeRequest request) {
+    public GroupInviteCodeResponse inviteCodeAPi(String accessToken, GroupInviteCodeRequest request) {
+
+        jwtUtil.validateToken(accessToken);
 
         Group group = groupRepository.findById(request.getGroupId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));

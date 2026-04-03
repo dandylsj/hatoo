@@ -61,9 +61,11 @@ public class GroupController {
     }
 
     @Operation(summary = "그룹 초대코드 생성", description = "그룹 초대코드를 생성합니다.")
-    @PostMapping("/{groupId}/token")
-    public ResponseEntity<GlobalResponse<GroupInviteCodeResponse>> inviteCode(@RequestBody GroupInviteCodeRequest request) {
-        GroupInviteCodeResponse response = groupService.inviteCodeAPi(request);
+    @PostMapping("/token")
+    public ResponseEntity<GlobalResponse<GroupInviteCodeResponse>> inviteCode(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @RequestBody GroupInviteCodeRequest request) {
+        GroupInviteCodeResponse response = groupService.inviteCodeAPi(accessToken, request);
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
 

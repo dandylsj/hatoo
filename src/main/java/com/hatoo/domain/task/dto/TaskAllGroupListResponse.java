@@ -12,7 +12,7 @@ import java.util.UUID;
 public class TaskAllGroupListResponse {
 
     private List<TaskList> tasks;
-    private List<FinishedTaskList> finishedTask;
+    private List<FinishedTaskList> finishedTasks;
     private Integer totalCount;
     private Integer finishedCount;
 

@@ -1,9 +1,7 @@
 package com.hatoo.domain.task;
 
 import com.hatoo.common.model.response.GlobalResponse;
-import com.hatoo.domain.task.dto.TaskAddTodoRequest;
-import com.hatoo.domain.task.dto.TaskListResponse;
-import com.hatoo.domain.task.dto.TaskAllGroupListResponse;
+import com.hatoo.domain.task.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,15 +67,15 @@ public class TaskContoroller {
         return ResponseEntity.ok(GlobalResponse.success(response));
     }
 
-    @Operation(summary = "할 일 완료", description = "할 일을 완료로 변경합니다.")
+    @Operation(summary = "할 일 상태 변경", description = "할 일 상태를 완료,미완료 로 변경합니다.")
     @PatchMapping("/{taskId}/finish")
-    public ResponseEntity<GlobalResponse<Boolean>> taskFinish(
+    public ResponseEntity<GlobalResponse<TaskStatusUpdateResponse>> taskFinish(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @PathVariable UUID taskId) {
+            @PathVariable UUID taskId, @RequestBody TaskStatusUpdateRequest request) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
-        Boolean response = taskService.taskFinishApi(token, taskId);
+        TaskStatusUpdateResponse response = taskService.taskFinishApi(token, taskId, request);
 
         return ResponseEntity.ok(GlobalResponse.success(response));
     }

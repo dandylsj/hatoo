@@ -1,5 +1,6 @@
 package com.hatoo.domain.task.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,7 +14,10 @@ public class TaskAllGroupListResponse {
 
     private List<TaskList> tasks;
     private List<FinishedTaskList> finishedTasks;
+    @Schema(example = "0")
     private Integer totalCount;
+
+    @Schema(example = "0")
     private Integer finishedCount;
 
     @Getter

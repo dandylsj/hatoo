@@ -5,9 +5,7 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
-import com.hatoo.domain.task.dto.TaskAddTodoRequest;
-import com.hatoo.domain.task.dto.TaskListResponse;
-import com.hatoo.domain.task.dto.TaskAllGroupListResponse;
+import com.hatoo.domain.task.dto.*;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -180,16 +178,20 @@ public class TaskService {
 
     //할 일 완료 처리
     @Transactional
-    public Boolean taskFinishApi(String accessToken, UUID taskId) {
+    public TaskStatusUpdateResponse taskFinishApi(String accessToken, UUID taskId, TaskStatusUpdateRequest request) {
 
         jwtUtil.validateToken(accessToken);
 
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
 
-        task.setFinished(true);
+        if(!request.getTaskStatus()) {
+            task.setFinished(true);
+        }else {
+            task.setFinished(false);
+        }
 
-        return true;
+        return new TaskStatusUpdateResponse(task.getFinished());
     }
 
     //완료된 할 일 일괄 삭제

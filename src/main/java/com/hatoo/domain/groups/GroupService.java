@@ -81,7 +81,7 @@ public class GroupService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
+        List<GroupMember> members = groupMemberRepository.findByGroupIdOrderByCreatedAtAsc(groupId);
 
         List<GroupMemberDto> memberDtos = members.stream()
                 .map(GroupMemberDto::from)
@@ -170,7 +170,7 @@ public class GroupService {
         }
 
         // group_members 전체 삭제 후 그룹 삭제
-        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
+        List<GroupMember> members = groupMemberRepository.findByGroupIdOrderByCreatedAtAsc(groupId);
         groupMemberRepository.deleteAll(members);
 
         groupRepository.delete(group);

@@ -1,5 +1,6 @@
 package com.hatoo.domain.groupMember;
 
+import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.user.User;
 import jakarta.persistence.*;
@@ -13,7 +14,7 @@ import java.util.UUID;
 @Table(name = "group_members")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class GroupMember {
+public class GroupMember extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

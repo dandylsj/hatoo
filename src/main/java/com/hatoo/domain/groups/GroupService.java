@@ -92,7 +92,7 @@ public class GroupService {
 
     // 그룹 참여
     @Transactional
-    public boolean joinGroupApi(String accessToken, UUID groupId, String token, ProfileImg profileImg) {
+    public boolean joinGroupApi(String accessToken, UUID groupId, String token) {
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
@@ -128,7 +128,7 @@ public class GroupService {
 //        }
 
         // 7. GroupMember 생성 및 저장
-        GroupMember groupMember = new GroupMember(user, group, profileImg);
+        GroupMember groupMember = new GroupMember(user, group, null);
         groupMemberRepository.save(groupMember);
 
         return true;

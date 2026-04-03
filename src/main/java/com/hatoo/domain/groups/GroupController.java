@@ -53,10 +53,9 @@ public class GroupController {
     public ResponseEntity<GlobalResponse<Boolean>> joinGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId,
-            @PathVariable String token,
-            @RequestParam ProfileImg profileImg) {
+            @PathVariable String token) {
         String userToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.joinGroupApi(userToken, groupId, token, profileImg);
+        boolean result = groupService.joinGroupApi(userToken, groupId, token);
         return ResponseEntity.ok(GlobalResponse.success(result));
     }
 

@@ -1,7 +1,7 @@
 package com.hatoo.domain.user;
 
 import com.hatoo.common.BaseEntity;
-import com.hatoo.domain.groups.Group;
+import com.hatoo.domain.groupMember.GroupMember;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -62,13 +62,8 @@ public class User extends BaseEntity {
     @Column
     private Boolean isMarketingNotiAllowed = false;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "user_groups",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "group_id")
-    )
-    private List<Group> groups = new ArrayList<>();
+    @OneToMany(mappedBy = "user")
+    private List<GroupMember> groupMembers = new ArrayList<>();
 
     @Builder
     public User(String email, String nickname, String loginId, String password) {
@@ -99,20 +94,6 @@ public class User extends BaseEntity {
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
-    }
-
-    /**
-     * 유저를 특정 그룹에 소속시킵니다.
-     *
-     * @return
-     */
-    public boolean assignGroup(Group group) {
-        this.groups.add(group);
-        return true;
-    }
-
-    public void leaveGroup(Group group) {
-        this.groups.remove(group);
     }
 
     public void withdraw() {

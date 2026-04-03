@@ -63,9 +63,10 @@ public enum ErrorMessage {
     EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "10초 후에 다시 시도해주세요."),
     EMAIL_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "이메일 전송 횟수를 초과했습니다. 5분 후에 다시 시도해주세요."),
     ALREADY_IN_ANOTHER_GROUP(HttpStatus.CONFLICT, "이미 다른 그룹에 속해있습니다."),
-    ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 가입된 그룹입니다."),
-    NO_PERMISSION(HttpStatus.CONFLICT, "권한이 없습니다."),
-    TASK_NOT_FOUND(HttpStatus.CONFLICT,"할 일 이 없습니다.");
+    ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 해당 그룹에 가입되어 있습니다."),
+    COLOR_ALREADY_TAKEN(HttpStatus.CONFLICT, "이미 선택된 색상입니다. 다른 색상을 선택해주세요."),
+    GROUP_FULL(HttpStatus.CONFLICT, "그룹 인원이 가득 찼습니다. (최대 5명)"),
+    TASK_NOT_FOUND(HttpStatus.CONFLICT, "존재하지 않는 할일입니다." );
 
     private final HttpStatus status;
     private final String message;

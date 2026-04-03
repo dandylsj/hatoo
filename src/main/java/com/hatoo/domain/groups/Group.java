@@ -1,6 +1,7 @@
 package com.hatoo.domain.groups;
 
 import com.hatoo.common.BaseEntity;
+import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.task.Task;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -40,8 +41,8 @@ public class Group extends BaseEntity {
     @Column
     private LocalDateTime inviteCodeExpiryDate;
 
-    @ManyToMany(mappedBy = "groups")
-    private List<User> users = new ArrayList<>();
+    @OneToMany(mappedBy = "group")
+    private List<GroupMember> groupMembers = new ArrayList<>();
 
     @ManyToMany
     private List<Task> tasks = new ArrayList<>();
@@ -62,7 +63,11 @@ public class Group extends BaseEntity {
         this.inviteCodeExpiryDate = expiryDate;
     }
 
-    public Collection<User> getMembers() {
-        return users;
+    public Collection<GroupMember> getMembers() {
+        return groupMembers;
+    }
+
+    public Group getGroup() {
+        return this;
     }
 }

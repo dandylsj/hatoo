@@ -1,6 +1,7 @@
 package com.hatoo.domain.groups;
 
 import com.hatoo.common.model.response.GlobalResponse;
+import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.dto.*;
 import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,15 +48,16 @@ public class GroupController {
         return ResponseEntity.ok(GlobalResponse.success(members));
     }
 
-    @Operation(summary = "그룹참여", description = "그룹에 참여합니다.")
+    @Operation(summary = "그룹참여", description = "그룹에 참여합니다. profileImg: RED, BLUE, GREEN, YELLOW, PURPLE 중 선택")
     @PostMapping("/add-user/{groupId}/{token}")
     public ResponseEntity<GlobalResponse<Boolean>> joinGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @PathVariable UUID groupId, @PathVariable String token) {
+            @PathVariable UUID groupId,
+            @PathVariable String token,
+            @RequestParam ProfileImg profileImg) {
         String userToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.joinGroupApi(userToken, groupId, token);
-        if (!result) return ResponseEntity.ok(GlobalResponse.exception());
-        return ResponseEntity.ok(GlobalResponse.success(true));
+        boolean result = groupService.joinGroupApi(userToken, groupId, token, profileImg);
+        return ResponseEntity.ok(GlobalResponse.success(result));
     }
 
     @Operation(summary = "그룹 초대코드 생성", description = "그룹 초대코드를 생성합니다.")

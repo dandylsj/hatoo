@@ -6,6 +6,9 @@ import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.auth.dto.LoginRequest;
 import com.hatoo.domain.auth.dto.SignRequest;
 import com.hatoo.domain.auth.dto.UserInfoResposne;
+import com.hatoo.domain.groupMember.GroupMember;
+import com.hatoo.domain.groupMember.GroupMemberRepository;
+import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.token.RefreshToken;
@@ -29,6 +32,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final RefreshTokenRepository refreshTokenRepository;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
 
     //회원가입
     @Transactional
@@ -57,7 +61,10 @@ public class AuthService {
                 user.getId()
         );
         groupRepository.save(defaultGroup);
-        userRepository.save(user);
+
+        // 기본 그룹에 방장(본인)을 GroupMember로 등록
+        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup,null);
+        groupMemberRepository.save(defaultGroupMember);
 
         String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());

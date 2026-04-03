@@ -60,6 +60,10 @@ public class GroupService {
         );
         groupRepository.save(group);
 
+        // 그룹 생성자를 GroupMember로 등록
+        GroupMember groupMember = new GroupMember(user, group, null);
+        groupMemberRepository.save(groupMember);
+
         return new GroupCreateResponse(
                 group.getId(),
                 group.getName(),
@@ -118,10 +122,10 @@ public class GroupService {
             throw new CustomException(ErrorMessage.GROUP_FULL);
         }
 
-        // 6. 선택한 색상이 이미 사용 중인지 확인
-        if (groupMemberRepository.existsByGroupIdAndProfileImg(groupId, profileImg)) {
-            throw new CustomException(ErrorMessage.COLOR_ALREADY_TAKEN);
-        }
+//        // 6. 선택한 색상이 이미 사용 중인지 확인
+//        if (groupMemberRepository.existsByGroupIdAndProfileImg(groupId, profileImg)) {
+//            throw new CustomException(ErrorMessage.COLOR_ALREADY_TAKEN);
+//        }
 
         // 7. GroupMember 생성 및 저장
         GroupMember groupMember = new GroupMember(user, group, profileImg);

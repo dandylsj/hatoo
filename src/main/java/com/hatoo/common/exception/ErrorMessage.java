@@ -66,7 +66,10 @@ public enum ErrorMessage {
     ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 해당 그룹에 가입되어 있습니다."),
     COLOR_ALREADY_TAKEN(HttpStatus.CONFLICT, "이미 선택된 색상입니다. 다른 색상을 선택해주세요."),
     GROUP_FULL(HttpStatus.CONFLICT, "그룹 인원이 가득 찼습니다. (최대 5명)"),
-    TASK_NOT_FOUND(HttpStatus.CONFLICT, "존재하지 않는 할일입니다." );
+    TASK_NOT_FOUND(HttpStatus.CONFLICT, "존재하지 않는 할일입니다."),
+
+    /* --- 502 Bad Gateway --- */
+    KAKAO_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "카카오 로그인에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;

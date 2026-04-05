@@ -62,6 +62,9 @@ public class User extends BaseEntity {
     @Column
     private Boolean isMarketingNotiAllowed = false;
 
+    @Column(unique = true)
+    private Long kakaoId;
+
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();
 
@@ -98,5 +101,9 @@ public class User extends BaseEntity {
 
     public void withdraw() {
         this.isDeleted = true;
+    }
+
+    public void setKakaoId(Long kakaoId) {
+        this.kakaoId = kakaoId;
     }
 }

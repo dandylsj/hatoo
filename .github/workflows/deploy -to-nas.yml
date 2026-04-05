@@ -80,7 +80,11 @@ jobs:
             echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true" >> .env
             echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true" >> .env
             
-            # 3. 기타 설정
+            # 3. 카카오 OAuth 설정
+            echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
+            echo "KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}" >> .env
+
+            # 4. 기타 설정
             echo "TZ=Asia/Seoul" >> .env
             echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
 

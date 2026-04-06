@@ -16,16 +16,16 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/oauth/kakao")
+@RequestMapping("/auth/kakao")
 public class KakaoController {
 
     private final KakaoService kakaoService;
 
-    @Value("${frontend.url}")
+    @Value("${KAKAO_APP_REDIRECT_URI}")
     private String frontendUrl;
 
     // 웹용: 카카오가 인증 후 보내주는 인가 코드를 받는 콜백 엔드포인트
-    @GetMapping("/callback")
+    @GetMapping("/login")
     public void kakaoCallback(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
 
         TokenResponse token = kakaoService.kakaoLogin(code);

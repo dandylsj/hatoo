@@ -83,6 +83,7 @@ jobs:
             # 3. 카카오 OAuth 설정
             echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
             echo "KAKAO_REDIRECT_URI=${{ secrets.KAKAO_REDIRECT_URI }}" >> .env
+            echo "KAKAO_APP_REDIRECT_URI=${{ secrets.KAKAO_APP_REDIRECT_URI }}" >> .env
 
             # 4. 기타 설정
             echo "TZ=Asia/Seoul" >> .env

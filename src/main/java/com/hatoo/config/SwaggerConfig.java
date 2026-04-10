@@ -27,7 +27,7 @@ public class SwaggerConfig {
 
         // 배포된 도메인 주소를 명시적으로 등록
         Server server = new Server();
-        server.setUrl("http://lsjyahoo.synology.me"); // HTTPS를 적용했다면 https:// 로 변경해야 합니다.
+        server.setUrl("https://lsjyahoo.synology.me"); // HTTPS를 적용했다면 https:// 로 변경해야 합니다.
         server.setDescription("Hatoo Production Server");
 
         return new OpenAPI()

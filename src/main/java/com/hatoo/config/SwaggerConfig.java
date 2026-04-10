@@ -15,19 +15,24 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         String jwtSchemeName = "jwtAuth";
-        // API 요청헤더에 인증정보 포함
+
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwtSchemeName);
 
-        // SecuritySchemes 등록
         Components components = new Components()
                 .addSecuritySchemes(jwtSchemeName, new SecurityScheme()
                         .name(jwtSchemeName)
-                        .type(SecurityScheme.Type.HTTP) // HTTP 방식
+                        .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
-                        .bearerFormat("JWT")); // 토큰 형식을 지정하는 임의의 문자(Optional)
+                        .bearerFormat("JWT"));
+
+        // 배포된 도메인 주소를 명시적으로 등록
+        Server server = new Server();
+        server.setUrl("http://lsjyahoo.synology.me"); // HTTPS를 적용했다면 https:// 로 변경해야 합니다.
+        server.setDescription("Hatoo Production Server");
 
         return new OpenAPI()
                 .info(apiInfo())
+                .addServersItem(server) // 서버 정보 추가
                 .addSecurityItem(securityRequirement)
                 .components(components);
     }

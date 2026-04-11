@@ -39,34 +39,15 @@ public class KakaoService {
     @Value("${kakao.client-id}")
     private String clientId;
 
-    @Value("${kakao.redirect-uri}")
-    private String redirectUri;
-
-    @Value("${kakao.app-redirect-uri}")
-    private String appRedirectUri;
-
-    // 웹용 로그인 (백엔드 콜백)
-    @Transactional
-    public TokenResponse kakaoLogin(String code) {
-        return kakaoLoginWithRedirectUri(code, redirectUri);
-    }
-
-    // 앱용 로그인 (앱 스킴 사용, 모바일 앱이 코드를 직접 전달)
+    // 앱용 로그인 (네이티브 SDK - redirect_uri 없이 토큰 교환)
     @Transactional
     public TokenResponse kakaoLoginFromApp(String code) {
-        return kakaoLoginWithRedirectUri(code, appRedirectUri);
-    }
-
-    // 실제 로그인 처리 (웹/앱 공통)
-    @Transactional
-    public TokenResponse kakaoLoginWithRedirectUri(String code, String usedRedirectUri) {
-
         try {
             // 1단계: 인가 코드 → 카카오 액세스 토큰 교환
-            String kakaoAccessToken = getKakaoAccessToken(code, usedRedirectUri);
+//            String kakaoAccessToken = getKakaoAccessToken(code);
 
             // 2단계: 카카오 액세스 토큰 → 유저 정보 조회
-            KakaoUserInfo kakaoUserInfo = getKakaoUserInfo(kakaoAccessToken);
+            KakaoUserInfo kakaoUserInfo = getKakaoUserInfo(code);
 
             // 3단계: 신규 가입 or 기존 로그인 처리
             User user = registerOrLogin(kakaoUserInfo);
@@ -90,33 +71,32 @@ public class KakaoService {
         }
     }
 
-    // 카카오에 인가 코드를 보내고 액세스 토큰을 받아오는 메서드
-    private String getKakaoAccessToken(String code, String usedRedirectUri) {
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
-
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "authorization_code");
-        body.add("client_id", clientId);
-        body.add("redirect_uri", usedRedirectUri);
-        body.add("code", code);
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-
-        ResponseEntity<KakaoTokenResponse> response = restTemplate.exchange(
-                "https://kauth.kakao.com/oauth/token",
-                HttpMethod.POST,
-                request,
-                KakaoTokenResponse.class
-        );
-
-        if (response.getBody() == null || response.getBody().getAccessToken() == null) {
-            throw new CustomException(ErrorMessage.INVALID_AUTH_INFO);
-        }
-
-        return response.getBody().getAccessToken();
-    }
+    // 카카오에 인가 코드를 보내고 액세스 토큰을 받아오는 메서드 (redirect_uri 없음)
+//    private String getKakaoAccessToken(String code) {
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+//
+//        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+//        body.add("grant_type", "authorization_code");
+//        body.add("client_id", clientId);
+//        body.add("code", code);
+//
+//        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+//
+//        ResponseEntity<KakaoTokenResponse> response = restTemplate.exchange(
+//                "https://kauth.kakao.com/oauth/token",
+//                HttpMethod.POST,
+//                request,
+//                KakaoTokenResponse.class
+//        );
+//
+//        if (response.getBody() == null || response.getBody().getAccessToken() == null) {
+//            throw new CustomException(ErrorMessage.INVALID_AUTH_INFO);
+//        }
+//
+//        return response.getBody().getAccessToken();
+//    }
 
     // 카카오 액세스 토큰으로 유저 정보를 조회하는 메서드
     private KakaoUserInfo getKakaoUserInfo(String accessToken) {
@@ -129,7 +109,7 @@ public class KakaoService {
 
         ResponseEntity<KakaoUserInfo> response = restTemplate.exchange(
                 "https://kapi.kakao.com/v2/user/me",
-                HttpMethod.POST,
+                HttpMethod.GET,
                 request,
                 KakaoUserInfo.class
         );
@@ -150,7 +130,6 @@ public class KakaoService {
         User user = userRepository.findByKakaoId(kakaoId).orElse(null);
 
         if (user == null) {
-            // 카카오 유저 전용 loginId / email 자동 생성
             String loginId = "kakao_" + kakaoId;
             String email = "kakao_" + kakaoId + "@hatoo.app";
             String password = UUID.randomUUID().toString();
@@ -166,7 +145,6 @@ public class KakaoService {
             userRepository.save(user);
         }
 
-        // 탈퇴한 유저 차단
         if (user.isDeleted()) {
             throw new CustomException(ErrorMessage.USER_WITHDRAWN);
         }

@@ -22,7 +22,7 @@ public class KakaoController {
     private String frontendUrl;
 
     // 웹용: 카카오가 인증 후 보내주는 인가 코드를 받는 콜백 엔드포인트
-    @PostMapping("/login")
+    @PostMapping("/web/login")
     public void kakaoCallback(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
 
         TokenResponse token = kakaoService.kakaoLogin(code);
@@ -42,7 +42,7 @@ public class KakaoController {
     }
 
     // 앱용: 모바일 앱이 카카오에서 받은 인가 코드를 백엔드로 직접 전달
-    @GetMapping("/app/token")
+    @PostMapping("/login")
     public ResponseEntity<TokenResponse> kakaoAppLogin(@RequestParam("code") String code) {
         TokenResponse token = kakaoService.kakaoLoginFromApp(code);
         return ResponseEntity.ok(token);

@@ -3,6 +3,11 @@ package com.hatoo.domain.kakao;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.groupMember.GroupMember;
+import com.hatoo.domain.groupMember.GroupMemberRepository;
+import com.hatoo.domain.groupMember.ProfileImg;
+import com.hatoo.domain.groups.Group;
+import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.token.RefreshToken;
 import com.hatoo.domain.token.RefreshTokenRepository;
 import com.hatoo.domain.token.TokenResponse;
@@ -32,6 +37,8 @@ public class KakaoService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final RestTemplate restTemplate = new RestTemplate();
@@ -59,6 +66,7 @@ public class KakaoService {
             // 5단계: RefreshToken DB 저장 (있으면 갱신, 없으면 새로 생성)
             RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
                     .orElse(new RefreshToken(user.getId(), refreshToken));
+            
 
             refreshTokenEntity.updateToken(refreshToken);
             refreshTokenRepository.save(refreshTokenEntity);
@@ -143,6 +151,13 @@ public class KakaoService {
             user.setKakaoId(kakaoId);
 
             userRepository.save(user);
+
+            // 기본 그룹 자동 생성
+            Group defaultGroup = new Group(nickname, "기본 그룹", user.getId());
+            groupRepository.save(defaultGroup);
+
+            GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, ProfileImg.RED);
+            groupMemberRepository.save(defaultGroupMember);
         }
 
         if (user.isDeleted()) {

@@ -5,10 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -25,7 +22,7 @@ public class KakaoController {
     private String frontendUrl;
 
     // 웹용: 카카오가 인증 후 보내주는 인가 코드를 받는 콜백 엔드포인트
-    @GetMapping("/login")
+    @PostMapping("/login")
     public void kakaoCallback(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
 
         TokenResponse token = kakaoService.kakaoLogin(code);

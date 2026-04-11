@@ -61,7 +61,7 @@ public class GroupService {
         groupRepository.save(group);
 
         // 그룹 생성자를 GroupMember로 등록
-        GroupMember groupMember = new GroupMember(user, group, null);
+        GroupMember groupMember = new GroupMember(user, group,null);
         groupMemberRepository.save(groupMember);
 
         return new GroupCreateResponse(

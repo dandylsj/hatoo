@@ -48,7 +48,8 @@ public class TaskService {
                 request.getDueFrom(),
                 request.getDueTo(),
                 request.getDeadLine(),
-                request.getStarter()
+                request.getStarter(),
+                request.getInterval()
         );
 
         // 5. 담당자와 그룹 연결

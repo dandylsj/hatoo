@@ -1,5 +1,6 @@
 package com.hatoo.domain.auth.dto;
 
+import com.hatoo.domain.groupMember.ProfileImg;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

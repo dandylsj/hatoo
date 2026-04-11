@@ -25,7 +25,7 @@ public class TaskService {
     private final GroupRepository groupRepository;
     private final JwtUtil jwtUtil;
 
-    // 할일 추가
+    // 할일 생성
     @Transactional
     public TaskListResponse taskAddTodoResponse(String accessToken, TaskAddTodoRequest request) {
 
@@ -98,6 +98,10 @@ public class TaskService {
                             task.getDueFrom(),
                             task.getDueTo(),
                             false,
+                            task.getFrequency(),
+                            task.getInterval(),
+                            task.getStarter(),
+                            task.getDeadLine(),
                             firstAssignee != null ? firstAssignee.getId().toString() : null,
                             task.getRecurringTaskId(),
                             firstAssignee != null
@@ -121,6 +125,10 @@ public class TaskService {
                             task.getDueFrom(),
                             task.getDueTo(),
                             true,
+                            task.getFrequency(),
+                            task.getInterval(),
+                            task.getStarter(),
+                            task.getDeadLine(),
                             firstAssignee != null ? firstAssignee.getId().toString() : null,
                             task.getRecurringTaskId()
                     );

@@ -1,5 +1,7 @@
 package com.hatoo.domain.task.dto;
 
+import com.hatoo.domain.task.DeadLine;
+import com.hatoo.domain.task.Frequency;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,6 +35,10 @@ public class TaskAllGroupListResponse {
         private String dueFrom;
         private String dueTo;
         private Boolean finished;
+        private Frequency frequency;
+        private Integer interval;
+        private Boolean starter;
+        private DeadLine deadLine;
         private String assigneeId;
         private String recurringTaskId;
         private AssigneeDto assignee;
@@ -56,6 +62,10 @@ public class TaskAllGroupListResponse {
         private String dueFrom;
         private String dueTo;
         private Boolean finished;
+        private Frequency frequency;
+        private Integer interval;
+        private Boolean starter;
+        private DeadLine deadLine;
         private String assigneeId;
         private String recurringTaskId;
     }

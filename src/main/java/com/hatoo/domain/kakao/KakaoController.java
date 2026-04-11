@@ -43,8 +43,8 @@ public class KakaoController {
 
     // 앱용: 모바일 앱이 카카오에서 받은 인가 코드를 백엔드로 직접 전달
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> kakaoAppLogin(@RequestParam("code") String code) {
-        TokenResponse token = kakaoService.kakaoLoginFromApp(code);
+    public ResponseEntity<TokenResponse> kakaoAppLogin(@RequestBody KakaoLoginRequest request) {
+        TokenResponse token = kakaoService.kakaoLoginFromApp(request.getCode());
         return ResponseEntity.ok(token);
     }
 }

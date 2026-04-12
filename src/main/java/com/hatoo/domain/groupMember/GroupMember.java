@@ -37,4 +37,8 @@ public class GroupMember extends BaseEntity {
         this.group = group;
         this.profileImg = profileImg;
     }
+    
+    public void updateProfileImg(ProfileImg profileImg) {
+        this.profileImg = profileImg;
+    }
 }

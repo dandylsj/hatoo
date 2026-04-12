@@ -249,4 +249,30 @@ public class GroupService {
         }
         return sb.toString();
     }
+
+    //그룹 가입시 멤버 프로필 이미지 선택
+    @Transactional
+    public Boolean profileImgSelectApi(String accessToken, GroupJoinProfileRequest request, UUID groupId) {
+
+
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        // 1. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 2. 그룹 조회
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), group.getId())
+                .orElse(new GroupMember(user, group, request.getProfileImg()));
+        
+        groupMember.updateProfileImg(request.getProfileImg());
+
+        groupMemberRepository.save(groupMember);
+
+        return true;
+    }
 }

@@ -18,7 +18,7 @@ public class RecurringTaskScheduler {
     private final TaskRepository taskRepository;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    // 매일 자정 실행
+    // 매일 자정에 반복생성
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void createRecurringTasks() {

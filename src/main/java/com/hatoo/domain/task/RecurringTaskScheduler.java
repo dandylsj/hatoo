@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -18,8 +19,7 @@ public class RecurringTaskScheduler {
     private final TaskRepository taskRepository;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    // 매일 자정에 반복생성
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void createRecurringTasks() {
 
@@ -27,7 +27,10 @@ public class RecurringTaskScheduler {
         log.info("[TaskScheduler] 반복 할일 생성 시작 - 기준일: {}", today);
 
         // dueTo 가 오늘이고 반복 설정된 Task 조회
-        taskRepository.findRecurringTasksDueOn(today).forEach(task -> {
+        List<Task> recurringTasks = taskRepository.findRecurringTasksDueOn(today);
+        log.info("[TaskScheduler] 반복 할일 조회 결과 - {}건 발견", recurringTasks.size());
+
+        recurringTasks.forEach(task -> {
             try {
                 LocalDate nextDueTo = calculateNextDate(task.getDueTo(), task.getFrequency(), task.getInterval());
                 LocalDate nextDueFrom = task.getDueFrom() != null
@@ -51,6 +54,12 @@ public class RecurringTaskScheduler {
                         : task.getId().toString();
                 newTask.setRecurringTaskId(recurringId);
 
+                // 중복 생성 방지: 동일한 recurringTaskId + nextDueTo 할일이 이미 있으면 건너뜀
+                if (taskRepository.existsByRecurringTaskIdAndDueTo(recurringId, nextDueTo.format(FORMATTER))) {
+                    log.info("[TaskScheduler] 이미 생성된 할일 - title: {}, 다음 마감일: {}", task.getTitle(), nextDueTo);
+                    return;
+                }
+
                 // 담당자 & 그룹 복사
                 task.getAssignees().forEach(newTask::addAssignee);
                 task.getGroups().forEach(newTask::addGroup);
@@ -65,7 +74,7 @@ public class RecurringTaskScheduler {
     }
 
     private LocalDate calculateNextDate(String dateStr, Frequency frequency, Integer interval) {
-        LocalDate date = LocalDate.parse(dateStr, FORMATTER);
+        LocalDate date = LocalDate.parse(normalizeDate(dateStr), FORMATTER);
         int amount = interval != null ? interval : 1;
 
         return switch (frequency) {
@@ -74,5 +83,13 @@ public class RecurringTaskScheduler {
             case MONTHLY -> date.plusMonths(amount);
             default -> date.plusDays(amount);
         };
+    }
+
+    // "2026-04-20T17:02:28.613Z" 같은 ISO 형식이 오면 날짜 부분만 추출
+    private String normalizeDate(String dateStr) {
+        if (dateStr != null && dateStr.contains("T")) {
+            return dateStr.substring(0, 10);
+        }
+        return dateStr;
     }
 }

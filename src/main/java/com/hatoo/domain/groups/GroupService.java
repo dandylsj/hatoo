@@ -238,7 +238,7 @@ public class GroupService {
                 .map(GroupTokenSameListDto::from)
                 .collect(Collectors.toList());
     }
-
+    //초대 코드 생성 로직
     private String generateInviteCode() {
         int length = 4;
         String characters = "0123456789";

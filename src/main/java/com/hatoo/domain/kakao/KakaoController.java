@@ -18,8 +18,8 @@ public class KakaoController {
 
     private final KakaoService kakaoService;
 
-    @Value("${KAKAO_APP_REDIRECT_URI}")
-    private String frontendUrl;
+//    @Value("${KAKAO_APP_REDIRECT_URI}")
+//    private String frontendUrl;
 
     // 웹용: 카카오가 인증 후 보내주는 인가 코드를 받는 콜백 엔드포인트
 //    @PostMapping("/web/login")

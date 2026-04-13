@@ -43,8 +43,8 @@ public class KakaoService {
     private final PasswordEncoder passwordEncoder;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${kakao.client-id}")
-    private String clientId;
+//    @Value("${kakao.client-id}")
+//    private String clientId;
 
     // 앱용 로그인 (네이티브 SDK - redirect_uri 없이 토큰 교환)
     @Transactional

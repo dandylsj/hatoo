@@ -25,14 +25,20 @@ public class SwaggerConfig {
                         .scheme("bearer")
                         .bearerFormat("JWT"));
 
-        // 배포된 도메인 주소를 명시적으로 등록
-        Server server = new Server();
-        server.setUrl("https://lsjyahoo.synology.me"); // HTTPS를 적용했다면 https:// 로 변경해야 합니다.
-        server.setDescription("Hatoo Production Server");
+        // 로컬 개발 서버
+        Server localServer = new Server();
+        localServer.setUrl("http://localhost:8080");
+        localServer.setDescription("Local Development Server");
+
+        // 배포된 도메인 주소
+        Server productionServer = new Server();
+        productionServer.setUrl("https://lsjyahoo.synology.me");
+        productionServer.setDescription("Hatoo Production Server");
 
         return new OpenAPI()
                 .info(apiInfo())
-                .addServersItem(server) // 서버 정보 추가
+                .addServersItem(localServer)      // 로컬이 첫 번째 (기본값)
+                .addServersItem(productionServer) // 운영 서버는 두 번째
                 .addSecurityItem(securityRequirement)
                 .components(components);
     }

@@ -13,7 +13,7 @@ import java.time.format.DateTimeParseException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TaskScheduler {
+public class RecurringTaskScheduler {
 
     private final TaskRepository taskRepository;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");

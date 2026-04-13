@@ -111,4 +111,8 @@ public class Task extends BaseEntity {
     public void setFinished(boolean finished) {
         this.finished = finished;
     }
+
+    public void setRecurringTaskId(String recurringTaskId) {
+        this.recurringTaskId = recurringTaskId;
+    }
 }

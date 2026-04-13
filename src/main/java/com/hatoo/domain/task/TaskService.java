@@ -57,6 +57,11 @@ public class TaskService {
         task.addGroup(group);
         taskRepository.save(task);
 
+        // 6. 반복 설정이 있으면 본인 id를 recurringTaskId로 저장
+        if (task.getFrequency() != null && task.getFrequency() != Frequency.NONE) {
+            task.setRecurringTaskId(task.getId().toString());
+        }
+
         return new TaskListResponse(
                 task.getId(),
                 task.getTitle(),

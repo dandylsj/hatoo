@@ -14,4 +14,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     List<Task> findAllByGroupsContainingAndFinishedTrue(Group group);
 
+    // 오늘 마감이고 반복 설정된 Task 조회 (NONE 제외)
+    @Query("SELECT t FROM Task t WHERE t.frequency != 'NONE' AND t.dueTo = :dueTo AND t.frequency IS NOT NULL")
+    List<Task> findRecurringTasksDueOn(@org.springframework.data.repository.query.Param("dueTo") String dueTo);
+
 }

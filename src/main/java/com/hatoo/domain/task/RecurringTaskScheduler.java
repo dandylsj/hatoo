@@ -19,7 +19,7 @@ public class RecurringTaskScheduler {
     private final TaskRepository taskRepository;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void createRecurringTasks() {
 

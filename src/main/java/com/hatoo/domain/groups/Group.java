@@ -63,6 +63,11 @@ public class Group extends BaseEntity {
         this.inviteCodeExpiryDate = expiryDate;
     }
 
+    // 방장 변경
+    public void changeAssigner(UUID newAssignerId) {
+        this.assignerId = newAssignerId;
+    }
+
     public Collection<GroupMember> getMembers() {
         return groupMembers;
     }

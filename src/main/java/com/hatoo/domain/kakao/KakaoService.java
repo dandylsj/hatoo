@@ -138,6 +138,7 @@ public class KakaoService {
         User user = userRepository.findByKakaoId(kakaoId).orElse(null);
 
         if (user == null) {
+            // 신규 카카오 유저 → 자동 회원가입
             String loginId = "kakao_" + kakaoId;
             String email = "kakao_" + kakaoId + "@hatoo.app";
             String password = UUID.randomUUID().toString();
@@ -149,19 +150,13 @@ public class KakaoService {
                     .password(passwordEncoder.encode(password))
                     .build();
             user.setKakaoId(kakaoId);
-
             userRepository.save(user);
 
             // 기본 그룹 자동 생성
             Group defaultGroup = new Group(nickname, "기본 그룹", user.getId());
             groupRepository.save(defaultGroup);
-
             GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, ProfileImg.RED);
             groupMemberRepository.save(defaultGroupMember);
-        }
-
-        if (user.isDeleted()) {
-            throw new CustomException(ErrorMessage.USER_WITHDRAWN);
         }
 
         return user;

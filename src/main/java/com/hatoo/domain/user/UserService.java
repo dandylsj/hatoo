@@ -145,12 +145,7 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 4. 이미 탈퇴한 유저인지 확인
-        if (user.isDeleted()) {
-            throw new CustomException(ErrorMessage.USER_DELETED_NOT_FOUND);
-        }
-
-        // 5. 유저가 속한 모든 그룹 처리
+        // 4. 유저가 속한 모든 그룹 처리
         List<GroupMember> myGroupMembers = groupMemberRepository.findByUserId(user.getId());
 
         for (GroupMember gm : myGroupMembers) {
@@ -187,7 +182,7 @@ public class UserService {
             }
         }
 
-        // 6. 그룹 처리 후 남아있는 내 담당 할일 삭제
+        // 5. 그룹 처리 후 남아있는 내 담당 할일 삭제
         List<Task> myTasks = taskRepository.findByAssigneesId(user.getId());
         for (Task task : myTasks) {
             task.getAssignees().clear();
@@ -195,8 +190,8 @@ public class UserService {
             taskRepository.delete(task);
         }
 
-        // 7. 소프트 딜리트 처리
-        user.withdraw();
+        // 6. 유저 하드 딜리트
+        userRepository.delete(user);
 
         return true;
     }

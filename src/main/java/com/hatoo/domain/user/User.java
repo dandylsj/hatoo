@@ -39,9 +39,6 @@ public class User extends BaseEntity {
     private String nickname;
 
     @Column
-    private Boolean isDeleted = false;
-
-    @Column
     private String profileImg;
 
     @Column
@@ -76,10 +73,6 @@ public class User extends BaseEntity {
         this.password = password;
     }
 
-    public boolean isDeleted() {
-        return Boolean.TRUE.equals(this.isDeleted);
-    }
-
     public void updateInfo(String nickname, String password, String profileImg, String fcmToken) {
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname;
@@ -97,10 +90,6 @@ public class User extends BaseEntity {
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
-    }
-
-    public void withdraw() {
-        this.isDeleted = true;
     }
 
     public void setKakaoId(Long kakaoId) {

@@ -1,6 +1,5 @@
 package com.hatoo.domain.auth.dto;
 
-import com.hatoo.domain.groupMember.ProfileImg;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -22,5 +21,7 @@ public class SignRequest {
 
     @NotBlank(message = "이름은 필수입니다.")
     private String nickname;
+
+    private String profileImg;
 
 }

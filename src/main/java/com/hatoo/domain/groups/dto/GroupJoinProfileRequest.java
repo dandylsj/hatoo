@@ -1,6 +1,5 @@
 package com.hatoo.domain.groups.dto;
 
-import com.hatoo.domain.groupMember.ProfileImg;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,6 +7,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class GroupJoinProfileRequest {
 
-    private ProfileImg profileImg;
+    private String profileImg;
 
 }

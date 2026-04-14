@@ -39,8 +39,8 @@ public class User extends BaseEntity {
     @Column
     private String nickname;
 
-    @Enumerated(EnumType.STRING)
-    private ProfileImg profileImg;
+    @Column
+    private String profileImg;
 
     @Column
     private String fcmToken;
@@ -74,7 +74,7 @@ public class User extends BaseEntity {
         this.password = password;
     }
 
-    public void updateInfo(String nickname, String password, ProfileImg profileImg, String fcmToken) {
+    public void updateInfo(String nickname, String password, String profileImg, String fcmToken) {
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname;
         }

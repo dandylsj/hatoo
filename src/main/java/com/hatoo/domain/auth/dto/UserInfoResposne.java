@@ -1,6 +1,5 @@
 package com.hatoo.domain.auth.dto;
 
-import com.hatoo.domain.groupMember.ProfileImg;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -14,12 +13,11 @@ public class UserInfoResposne {
     private final String loginId;
     private final String email;
     private final String nickname;
-    private final ProfileImg profileImg;
+    private final String profileImg;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
-    private String fcmToken;
 
-    public UserInfoResposne(UUID id, String status, String loginId, String email, String nickname, ProfileImg profileImg, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public UserInfoResposne(UUID id, String status, String loginId, String email, String nickname, String profileImg, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.status = status;
         this.loginId = loginId;
@@ -29,6 +27,4 @@ public class UserInfoResposne {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
-
-
 }

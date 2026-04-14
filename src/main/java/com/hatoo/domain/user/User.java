@@ -2,6 +2,7 @@ package com.hatoo.domain.user;
 
 import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.groupMember.GroupMember;
+import com.hatoo.domain.groupMember.ProfileImg;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -38,8 +39,8 @@ public class User extends BaseEntity {
     @Column
     private String nickname;
 
-    @Column
-    private String profileImg;
+    @Enumerated(EnumType.STRING)
+    private ProfileImg profileImg;
 
     @Column
     private String fcmToken;
@@ -73,7 +74,7 @@ public class User extends BaseEntity {
         this.password = password;
     }
 
-    public void updateInfo(String nickname, String password, String profileImg, String fcmToken) {
+    public void updateInfo(String nickname, String password, ProfileImg profileImg, String fcmToken) {
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname;
         }

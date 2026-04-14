@@ -5,7 +5,6 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
-import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.dto.*;
 
 import com.hatoo.domain.user.User;
@@ -52,7 +51,7 @@ public class GroupService {
 
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
-
+        //1. Group 에 저장
         Group group = new Group(
                 request.getName(),
                 request.getDescription(),
@@ -61,7 +60,7 @@ public class GroupService {
         groupRepository.save(group);
 
         // 그룹 생성자를 GroupMember로 등록
-        GroupMember groupMember = new GroupMember(user, group,null);
+        GroupMember groupMember = new GroupMember(user, group,user.getProfileImg());
         groupMemberRepository.save(groupMember);
 
         return new GroupCreateResponse(
@@ -128,7 +127,7 @@ public class GroupService {
 //        }
 
         // 7. GroupMember 생성 및 저장
-        GroupMember groupMember = new GroupMember(user, group, null);
+        GroupMember groupMember = new GroupMember(user, group, user.getProfileImg());
         groupMemberRepository.save(groupMember);
 
         return true;
@@ -253,7 +252,6 @@ public class GroupService {
     //그룹 가입시 멤버 프로필 이미지 선택
     @Transactional
     public Boolean profileImgSelectApi(String accessToken, GroupJoinProfileRequest request, UUID groupId) {
-
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);

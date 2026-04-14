@@ -1,5 +1,6 @@
 package com.hatoo.domain.user.dto;
 
+import com.hatoo.domain.groupMember.ProfileImg;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,5 +14,5 @@ public class UserInfoModifyResponse {
 
     private String nickname;
 
-    private String profileImg;
+    private ProfileImg profileImg;
 }

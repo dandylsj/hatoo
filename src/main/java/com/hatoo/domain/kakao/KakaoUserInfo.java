@@ -14,9 +14,18 @@ public class KakaoUserInfo {
     @JsonProperty("properties")
     private KakaoProperties properties;
 
+    @JsonProperty("kakao_account")
+    private KakaoAccount kakaoAccount;
+
     @Getter
     @NoArgsConstructor
     public static class KakaoProperties {
         private String nickname;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class KakaoAccount {
+        private String email;
     }
 }

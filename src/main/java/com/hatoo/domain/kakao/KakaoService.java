@@ -5,7 +5,6 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
-import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.token.RefreshToken;
@@ -134,13 +133,20 @@ public class KakaoService {
 
         Long kakaoId = kakaoUserInfo.getId();
         String nickname = kakaoUserInfo.getProperties().getNickname();
+        
+        // 카카오 계정의 이메일 가져오기
+        String kakaoEmail = null;
+        if (kakaoUserInfo.getKakaoAccount() != null) {
+            kakaoEmail = kakaoUserInfo.getKakaoAccount().getEmail();
+        }
 
         User user = userRepository.findByKakaoId(kakaoId).orElse(null);
 
         if (user == null) {
             // 신규 카카오 유저 → 자동 회원가입
             String loginId = "kakao_" + kakaoId;
-            String email = "kakao_" + kakaoId + "@hatoo.app";
+            // 실제 이메일이 제공되지 않으면 임시 이메일 사용
+            String email = (kakaoEmail != null && !kakaoEmail.isEmpty()) ? kakaoEmail : "kakao_" + kakaoId + "@hatoo.app";
             String password = UUID.randomUUID().toString();
 
             user = User.builder()
@@ -155,7 +161,7 @@ public class KakaoService {
             // 기본 그룹 자동 생성
             Group defaultGroup = new Group(nickname, "기본 그룹", user.getId());
             groupRepository.save(defaultGroup);
-            GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, ProfileImg.RED);
+            GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg());
             groupMemberRepository.save(defaultGroupMember);
         }
 

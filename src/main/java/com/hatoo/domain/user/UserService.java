@@ -81,11 +81,12 @@ public class UserService {
             if (request.getProfileImg() != null) {
                 List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
                 for (GroupMember gm : groupMembers) {
-                    if (gm.getProfileImg() == null) {
-                        gm.updateProfileImg(request.getProfileImg());
-                    }
+                    gm.updateProfileImg(request.getProfileImg());
                 }
             }
+
+
+
 
             // 7. 응답 DTO 생성 반환
             return new UserInfoModifyResponse(user.getId(), user.getNickname(), user.getProfileImg());

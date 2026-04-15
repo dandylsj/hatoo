@@ -58,7 +58,7 @@ public class AuthService {
         );
         groupRepository.save(defaultGroup);
 
-        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, null);
+        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg());
         groupMemberRepository.save(defaultGroupMember);
 
         String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());

@@ -1,6 +1,8 @@
 package com.hatoo.domain.kakao;
 
 import com.hatoo.domain.token.TokenResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth/kakao")
+@Tag(name = "Auth", description = "인증(회원가입, 로그인 등) 관련 API")
 public class KakaoController {
 
     private final KakaoService kakaoService;
@@ -42,6 +45,7 @@ public class KakaoController {
 //    }
 
     // 앱용: 모바일 앱이 카카오에서 받은 인가 코드를 백엔드로 직접 전달
+    @Operation(summary = "카카오 로그인", description = "카카오 앱을 통해 로그인")
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> kakaoAppLogin(@RequestBody KakaoLoginRequest request) {
         TokenResponse token = kakaoService.kakaoLoginFromApp(request.getCode());

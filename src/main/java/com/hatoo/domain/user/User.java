@@ -1,8 +1,8 @@
 package com.hatoo.domain.user;
 
 import com.hatoo.common.BaseEntity;
+import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.groupMember.GroupMember;
-import com.hatoo.domain.groupMember.ProfileImg;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -46,19 +46,13 @@ public class User extends BaseEntity {
     private String fcmToken;
 
     @Column
-    private Boolean isTermsAgreed = false;
+    private Boolean isTermsAgreed;
 
     @Column
-    private Boolean isPrivacyAgreed = false;
+    private Boolean isPrivacyAgreed;
 
     @Column
-    private Boolean isOverFourteen = false;
-
-    @Column
-    private Boolean isChoreNotiAllowed = false;
-
-    @Column
-    private Boolean isMarketingNotiAllowed = false;
+    private Boolean isOverFourteen;
 
     @Column(unique = true)
     private Long kakaoId;
@@ -66,12 +60,18 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AlarmUserAgree> alarmConsents = new ArrayList<>();
+
     @Builder
-    public User(String email, String nickname, String loginId, String password) {
+    public User(String email, String nickname, String loginId, String password, Boolean isTermsAgreed, Boolean isPrivacyAgreed, Boolean isOverFourteen) {
         this.email = email;
         this.nickname = nickname;
         this.loginId = loginId;
         this.password = password;
+        this.isTermsAgreed = isTermsAgreed;
+        this.isPrivacyAgreed = isPrivacyAgreed;
+        this.isOverFourteen = isOverFourteen;
     }
 
     public void updateInfo(String nickname, String password, String profileImg, String fcmToken) {

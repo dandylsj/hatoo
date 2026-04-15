@@ -37,7 +37,9 @@ public class GroupService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        return user.getGroupMembers().stream()
+        List<GroupMember> groupMembers = groupMemberRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+
+        return groupMembers.stream()
                 .map(gm -> MyGroupResponse.from(gm.getGroup()))
                 .collect(Collectors.toList());
     }

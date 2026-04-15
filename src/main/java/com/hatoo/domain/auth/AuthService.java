@@ -3,12 +3,12 @@ package com.hatoo.domain.auth;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.auth.dto.LoginRequest;
 import com.hatoo.domain.auth.dto.SignRequest;
 import com.hatoo.domain.auth.dto.UserInfoResposne;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
-import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.token.RefreshToken;
@@ -46,9 +46,20 @@ public class AuthService {
                 request.getEmail(),
                 request.getNickname(),
                 request.getLoginId(),
-                passwordEncoder.encode(request.getPassword())
+                passwordEncoder.encode(request.getPassword()),
+                request.getIsPrivacyAgreed(),
+                request.getIsTermsAgreed(),
+                request.getIsOverFourteen()
         );
         userRepository.save(user);
+
+        // 유저의 알람동의 테이블 생성
+        AlarmUserAgree alarm = new AlarmUserAgree(
+                request.getIsChoreNotiAllowed(),
+                request.getIsMarketingNotiAllowed(),
+                user
+        );
+        user.getAlarmConsents().add(alarm);
 
         // 기본 그룹 생성 및 GroupMember 등록
         Group defaultGroup = new Group(

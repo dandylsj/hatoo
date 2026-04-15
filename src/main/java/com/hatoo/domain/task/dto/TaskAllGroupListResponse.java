@@ -68,5 +68,12 @@ public class TaskAllGroupListResponse {
         private DeadLine deadLine;
         private String assigneeId;
         private String recurringTaskId;
+        private TaskList.AssigneeDto assignee;
+
+        @Getter
+        @AllArgsConstructor
+        public static class AssigneeDto {
+            private String nickname;
+        }
     }
 }

@@ -85,9 +85,6 @@ public class UserService {
                 }
             }
 
-
-
-
             // 7. 응답 DTO 생성 반환
             return new UserInfoModifyResponse(user.getId(), user.getNickname(), user.getProfileImg());
     }

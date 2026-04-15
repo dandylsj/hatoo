@@ -136,7 +136,10 @@ public class TaskService {
                             task.getStarter(),
                             task.getDeadLine(),
                             firstAssignee != null ? firstAssignee.getId().toString() : null,
-                            task.getRecurringTaskId()
+                            task.getRecurringTaskId(),
+                            firstAssignee != null
+                                    ? new TaskAllGroupListResponse.TaskList.AssigneeDto(firstAssignee.getNickname())
+                                    : null
                     );
                 })
                 .collect(Collectors.toList());

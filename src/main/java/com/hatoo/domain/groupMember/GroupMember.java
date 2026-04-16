@@ -32,10 +32,21 @@ public class GroupMember extends BaseEntity {
     @Column
     private String profileImg;
 
+    @Column(nullable = false)
+    private boolean isPersonal = false;
+
     public GroupMember(User user, Group group, String profileImg) {
         this.user = user;
         this.group = group;
         this.profileImg = profileImg;
+        this.isPersonal = false;
+    }
+
+    public GroupMember(User user, Group group, String profileImg, boolean isPersonal) {
+        this.user = user;
+        this.group = group;
+        this.profileImg = profileImg;
+        this.isPersonal = isPersonal;
     }
 
     public void updateProfileImg(String profileImg) {

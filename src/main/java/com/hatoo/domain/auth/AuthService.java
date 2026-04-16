@@ -65,11 +65,12 @@ public class AuthService {
         Group defaultGroup = new Group(
                 request.getNickname(),
                 "기본 그룹",
-                user.getId()
+                user.getId(),
+                true
         );
         groupRepository.save(defaultGroup);
 
-        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg());
+        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
         groupMemberRepository.save(defaultGroupMember);
 
         String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());

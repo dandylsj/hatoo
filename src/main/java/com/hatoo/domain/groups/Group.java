@@ -41,6 +41,9 @@ public class Group extends BaseEntity {
     @Column
     private LocalDateTime inviteCodeExpiryDate;
 
+    @Column(nullable = false)
+    private boolean isPersonal = false;
+
     @OneToMany(mappedBy = "group")
     private List<GroupMember> groupMembers = new ArrayList<>();
 
@@ -56,6 +59,14 @@ public class Group extends BaseEntity {
         this.name = name;
         this.description = description;
         this.assignerId = assignerId;
+        this.isPersonal = false;
+    }
+
+    public Group(String name, String description, UUID assignerId, boolean isPersonal) {
+        this.name = name;
+        this.description = description;
+        this.assignerId = assignerId;
+        this.isPersonal = isPersonal;
     }
 
     public void updateInviteCode(String inviteCode, LocalDateTime expiryDate) {

@@ -65,7 +65,7 @@ public class GroupService {
         groupRepository.save(group);
 
         // 그룹 생성자를 GroupMember로 등록
-        GroupMember groupMember = new GroupMember(user, group,user.getProfileImg());
+        GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
 
         return new GroupCreateResponse(
@@ -132,7 +132,7 @@ public class GroupService {
 //        }
 
         // 7. GroupMember 생성 및 저장
-        GroupMember groupMember = new GroupMember(user, group, user.getProfileImg());
+        GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
 
         return true;
@@ -278,7 +278,7 @@ public class GroupService {
 
         GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), group.getId())
                 .orElse(new GroupMember(user, group, request.getProfileImg()));
-        
+
         groupMember.updateProfileImg(request.getProfileImg());
 
         groupMemberRepository.save(groupMember);

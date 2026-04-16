@@ -159,9 +159,9 @@ public class KakaoService {
             userRepository.save(user);
 
             // 기본 그룹 자동 생성
-            Group defaultGroup = new Group(nickname, "기본 그룹", user.getId());
+            Group defaultGroup = new Group(nickname, "기본 그룹", user.getId(), true);
             groupRepository.save(defaultGroup);
-            GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg());
+            GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
             groupMemberRepository.save(defaultGroupMember);
         }
 

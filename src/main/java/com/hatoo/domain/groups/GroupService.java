@@ -5,9 +5,10 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
-import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.dto.*;
 
+import com.hatoo.domain.task.Task;
+import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
 import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
@@ -27,6 +28,7 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
 
     // 내가 속한 그룹 조회
     @Transactional(readOnly = true)
@@ -38,7 +40,9 @@ public class GroupService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        return user.getGroupMembers().stream()
+        List<GroupMember> groupMembers = groupMemberRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+
+        return groupMembers.stream()
                 .map(gm -> MyGroupResponse.from(gm.getGroup()))
                 .collect(Collectors.toList());
     }
@@ -52,7 +56,7 @@ public class GroupService {
 
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
-
+        //1. Group 에 저장
         Group group = new Group(
                 request.getName(),
                 request.getDescription(),
@@ -61,7 +65,7 @@ public class GroupService {
         groupRepository.save(group);
 
         // 그룹 생성자를 GroupMember로 등록
-        GroupMember groupMember = new GroupMember(user, group, null);
+        GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
 
         return new GroupCreateResponse(
@@ -128,7 +132,7 @@ public class GroupService {
 //        }
 
         // 7. GroupMember 생성 및 저장
-        GroupMember groupMember = new GroupMember(user, group, null);
+        GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
 
         return true;
@@ -188,12 +192,19 @@ public class GroupService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        groupRepository.findById(groupId)
+        Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
 
+        // 그룹내의 할 일 모두 삭제
+        List<Task> myTasksInGroup = taskRepository.findByAssigneesIdAndGroupsId(user.getId(), group.getId());
+        for (Task task : myTasksInGroup) {
+            task.getAssignees().clear();
+            task.getGroups().clear();
+            taskRepository.delete(task);
+        }
         groupMemberRepository.delete(groupMember);
 
         return true;
@@ -238,7 +249,7 @@ public class GroupService {
                 .map(GroupTokenSameListDto::from)
                 .collect(Collectors.toList());
     }
-
+    //초대 코드 생성 로직
     private String generateInviteCode() {
         int length = 4;
         String characters = "0123456789";
@@ -248,5 +259,30 @@ public class GroupService {
             sb.append(characters.charAt(random.nextInt(characters.length())));
         }
         return sb.toString();
+    }
+
+    //그룹 가입시 멤버 프로필 이미지 선택
+    @Transactional
+    public Boolean profileImgSelectApi(String accessToken, GroupJoinProfileRequest request, UUID groupId) {
+
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        // 1. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 2. 그룹 조회
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), group.getId())
+                .orElse(new GroupMember(user, group, request.getProfileImg()));
+
+        groupMember.updateProfileImg(request.getProfileImg());
+
+        groupMemberRepository.save(groupMember);
+
+        return true;
     }
 }

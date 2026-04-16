@@ -3,6 +3,8 @@ package com.hatoo.domain.task;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.groupMember.GroupMember;
+import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.dto.*;
@@ -12,7 +14,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,9 +28,10 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
 
-    // 할일 추가
+    // 할일 생성
     @Transactional
     public TaskListResponse taskAddTodoResponse(String accessToken, TaskAddTodoRequest request) {
 
@@ -48,13 +54,19 @@ public class TaskService {
                 request.getDueFrom(),
                 request.getDueTo(),
                 request.getDeadLine(),
-                request.getStarter()
+                request.getStarter(),
+                request.getInterval()
         );
 
         // 5. 담당자와 그룹 연결
         task.addAssignee(assignee);
         task.addGroup(group);
         taskRepository.save(task);
+
+        // 6. 반복 설정이 있으면 본인 id를 recurringTaskId로 저장
+        if (task.getFrequency() != null && task.getFrequency() != Frequency.NONE) {
+            task.setRecurringTaskId(task.getId().toString());
+        }
 
         return new TaskListResponse(
                 task.getId(),
@@ -98,6 +110,10 @@ public class TaskService {
                             task.getDueFrom(),
                             task.getDueTo(),
                             false,
+                            task.getFrequency(),
+                            task.getInterval(),
+                            task.getStarter(),
+                            task.getDeadLine(),
                             firstAssignee != null ? firstAssignee.getId().toString() : null,
                             task.getRecurringTaskId(),
                             firstAssignee != null
@@ -121,8 +137,15 @@ public class TaskService {
                             task.getDueFrom(),
                             task.getDueTo(),
                             true,
+                            task.getFrequency(),
+                            task.getInterval(),
+                            task.getStarter(),
+                            task.getDeadLine(),
                             firstAssignee != null ? firstAssignee.getId().toString() : null,
-                            task.getRecurringTaskId()
+                            task.getRecurringTaskId(),
+                            firstAssignee != null
+                                    ? new TaskAllGroupListResponse.TaskList.AssigneeDto(firstAssignee.getNickname())
+                                    : null
                     );
                 })
                 .collect(Collectors.toList());
@@ -206,7 +229,46 @@ public class TaskService {
         List<Task> finishedTasks = taskRepository.findAllByGroupsContainingAndFinishedTrue(group);
 
         taskRepository.deleteAll(finishedTasks);
+    }
 
+    // 그룹 내 완료 할일 순위 조회 (완료율 기준)
+    @Transactional(readOnly = true)
+    public List<TaskRankingResponse> getGroupRankingApi(String accessToken, UUID groupId) {
+
+        jwtUtil.validateToken(accessToken);
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        // 1. 할일이 있는 멤버의 완료율 집계
+        List<Object[]> results = taskRepository.countFinishedTasksByGroupId(groupId);
+
+        // 2. userId -> percent 맵 생성
+        Map<UUID, Integer> percentMap = new HashMap<>();
+        long groupTotal = 0L;
+        for (Object[] row : results) {
+            UUID userId = (UUID) row[0];
+            long myFinished = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+            groupTotal = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+
+            int percent = groupTotal > 0 ? (int) (myFinished * 100 / groupTotal) : 0;
+            percentMap.put(userId, percent);
+        }
+
+        // 3. 그룹 전체 멤버 조회 → 할일 없는 멤버는 0%로 포함
+        List<GroupMember> allMembers = groupMemberRepository.findByGroupId(groupId);
+
+        List<TaskRankingResponse> rankings = allMembers.stream()
+                .map(gm -> new TaskRankingResponse(
+                        gm.getUser().getId(),
+                        gm.getUser().getNickname(),
+                        percentMap.getOrDefault(gm.getUser().getId(), 0),
+                        gm.getProfileImg()
+                ))
+                .sorted((a, b) -> b.getPercent() - a.getPercent())
+                .collect(Collectors.toList());
+
+        return rankings;
     }
 
 }

@@ -30,7 +30,6 @@ public enum ErrorMessage {
     /* --- 403 Forbidden --- */
     NO_MODIFY_PERMISSION(HttpStatus.FORBIDDEN, "수정 권한이 없습니다."),
     NO_DELETE_PERMISSION(HttpStatus.FORBIDDEN, "삭제 권한이 없습니다."),
-    USER_WITHDRAWN(HttpStatus.FORBIDDEN, "탈퇴한 회원입니다."),
     REJECT_PAYMENT(HttpStatus.FORBIDDEN, "결제 승인이 거절되었습니다."),
     INVALID_TOKEN(HttpStatus.BAD_REQUEST, "토큰값이 일치하지 않습니다."),
     EXPIRED_TOKEN(HttpStatus.BAD_REQUEST, "토큰이 만료되었습니다."),
@@ -47,7 +46,6 @@ public enum ErrorMessage {
     SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "입영 일정이 존재하지 않습니다."),
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
     DEFERMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "연기 일정을 찾을 수 없습니다"),
-    USER_DELETED_NOT_FOUND(HttpStatus.NOT_FOUND, "이미 탈퇴한 사용자입니다."),
     NOT_FOUND_PAYMENT(HttpStatus.NOT_FOUND, "존재하지 않는 결제 정보 입니다."),
     CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
     CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 메세지입니다."),

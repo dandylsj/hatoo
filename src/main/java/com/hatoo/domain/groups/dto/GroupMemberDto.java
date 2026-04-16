@@ -1,6 +1,7 @@
 package com.hatoo.domain.groups.dto;
 
 import com.hatoo.domain.groupMember.GroupMember;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,6 +14,7 @@ public class GroupMemberDto {
     private UUID id;
     private String email;
     private String nickname;
+    @Schema(example = "PINK")
     private String profileImg; // GroupMember에서 가져오는 그룹별 색상
 
     // GroupMember 엔티티를 DTO로 변환하는 팩토리 메서드
@@ -21,7 +23,7 @@ public class GroupMemberDto {
                 groupMember.getUser().getId(),
                 groupMember.getUser().getEmail(),
                 groupMember.getUser().getNickname(),
-                groupMember.getProfileImg() != null ? groupMember.getProfileImg().name() : null
+                groupMember.getProfileImg()
         );
     }
 }

@@ -10,8 +10,14 @@ import java.util.UUID;
 @Repository
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
 
-    // 특정 그룹의 모든 멤버 조회 (가입 순서 내림차순)
+    // 특정 그룹의 모든 멤버 조회 (가입 순서 오름차순)
     List<GroupMember> findByGroupIdOrderByCreatedAtAsc(UUID groupId);
+
+    // 특정 유저가 속한 모든 그룹멤버 조회 (가입 순서 내림차순)
+    List<GroupMember> findByUserIdOrderByCreatedAtDesc(UUID userId);
+
+    // 특정 유저가 속한 모든 그룹멤버 조회
+    List<GroupMember> findByUserId(UUID userId);
 
     // 특정 그룹에서 특정 유저 조회
     Optional<GroupMember> findByUserIdAndGroupId(UUID userId, UUID groupId);

@@ -8,15 +8,14 @@ import java.util.UUID;
 @Getter
 public class UserInfoResposne {
 
-    private UUID id;
-    private String status;
-    private String loginId;
-    private String email;
-    private String nickname;
-    private String profileImg;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private String fcmToken;
+    private final UUID id;
+    private final String status;
+    private final String loginId;
+    private final String email;
+    private final String nickname;
+    private final String profileImg;
+    private final LocalDateTime createdAt;
+    private final LocalDateTime updatedAt;
 
     public UserInfoResposne(UUID id, String status, String loginId, String email, String nickname, String profileImg, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
@@ -28,6 +27,4 @@ public class UserInfoResposne {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
-
-
 }

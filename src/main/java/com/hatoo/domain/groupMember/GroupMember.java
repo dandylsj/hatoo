@@ -29,12 +29,27 @@ public class GroupMember extends BaseEntity {
     @JoinColumn(name = "group_id")
     private Group group;
 
-    @Enumerated(EnumType.STRING)
-    private ProfileImg profileImg;
+    @Column
+    private String profileImg;
 
-    public GroupMember(User user, Group group, ProfileImg profileImg) {
+    @Column(nullable = false)
+    private boolean isPersonal = false;
+
+    public GroupMember(User user, Group group, String profileImg) {
         this.user = user;
         this.group = group;
+        this.profileImg = profileImg;
+        this.isPersonal = false;
+    }
+
+    public GroupMember(User user, Group group, String profileImg, boolean isPersonal) {
+        this.user = user;
+        this.group = group;
+        this.profileImg = profileImg;
+        this.isPersonal = isPersonal;
+    }
+
+    public void updateProfileImg(String profileImg) {
         this.profileImg = profileImg;
     }
 }

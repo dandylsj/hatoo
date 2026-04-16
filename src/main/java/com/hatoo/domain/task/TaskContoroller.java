@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Task", description = "Task 관련 API")
@@ -91,6 +92,19 @@ public class TaskContoroller {
         taskService.taskBatchDeleteApi(token, groupId);
 
         return ResponseEntity.ok(GlobalResponse.success(true));
+    }
+
+    @Operation(summary = "그룹 완료 할일 순위 조회", description = "그룹 내 완료한 할일 수를 기준으로 멤버 순위를 조회합니다.")
+    @GetMapping("/group/{groupId}/ranking")
+    public ResponseEntity<GlobalResponse<List<TaskRankingResponse>>> getGroupRanking(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId) {
+
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+        List<TaskRankingResponse> response = taskService.getGroupRankingApi(token, groupId);
+
+        return ResponseEntity.ok(GlobalResponse.success(response));
     }
 
 }

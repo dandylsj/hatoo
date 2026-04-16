@@ -3,12 +3,12 @@ package com.hatoo.domain.auth;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.auth.dto.LoginRequest;
 import com.hatoo.domain.auth.dto.SignRequest;
 import com.hatoo.domain.auth.dto.UserInfoResposne;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
-import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.token.RefreshToken;
@@ -20,8 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -38,32 +36,41 @@ public class AuthService {
     @Transactional
     public TokenResponse signup(SignRequest request) {
 
-        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
-        if (existingUser.isPresent()) {
-            User user = existingUser.get();
-            if (!user.isDeleted()) {
-                throw new CustomException(ErrorMessage.DUPLICATE_EMAIL);
-            }
+        // 이메일 중복 확인
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new CustomException(ErrorMessage.DUPLICATE_EMAIL);
         }
 
+        // 새 유저 생성
         User user = new User(
                 request.getEmail(),
                 request.getNickname(),
                 request.getLoginId(),
-                passwordEncoder.encode(request.getPassword())
+                passwordEncoder.encode(request.getPassword()),
+                request.getIsPrivacyAgreed(),
+                request.getIsTermsAgreed(),
+                request.getIsOverFourteen()
         );
         userRepository.save(user);
 
-        // 회원가입 시 본인이 방장인 기본 그룹 자동 생성
+        // 유저의 알람동의 테이블 생성
+        AlarmUserAgree alarm = new AlarmUserAgree(
+                request.getIsChoreNotiAllowed(),
+                request.getIsMarketingNotiAllowed(),
+                user
+        );
+        user.getAlarmConsents().add(alarm);
+
+        // 기본 그룹 생성 및 GroupMember 등록
         Group defaultGroup = new Group(
                 request.getNickname(),
                 "기본 그룹",
-                user.getId()
+                user.getId(),
+                true
         );
         groupRepository.save(defaultGroup);
 
-        // 기본 그룹에 방장(본인)을 GroupMember로 등록
-        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup,null);
+        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
         groupMemberRepository.save(defaultGroupMember);
 
         String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
@@ -83,10 +90,6 @@ public class AuthService {
 
         User user = userRepository.findByLoginId(request.getLoginId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
-
-        if (user.isDeleted()) {
-            throw new CustomException(ErrorMessage.USER_WITHDRAWN);
-        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException(ErrorMessage.INVALID_PASSWORD);

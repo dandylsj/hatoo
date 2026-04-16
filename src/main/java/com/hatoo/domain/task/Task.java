@@ -70,7 +70,7 @@ public class Task extends BaseEntity {
     )
     private List<Group> groups = new ArrayList<>();
 
-    public Task(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
+    public Task(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter, Integer interval) {
         this.title = title;
         this.description = description;
         this.frequency = frequency;
@@ -78,6 +78,7 @@ public class Task extends BaseEntity {
         this.dueTo = dueTo;
         this.deadLine = deadLine;
         this.starter = starter;
+        this.interval = interval;
     }
 
     public void addAssignee(User user) {
@@ -109,5 +110,9 @@ public class Task extends BaseEntity {
 
     public void setFinished(boolean finished) {
         this.finished = finished;
+    }
+
+    public void setRecurringTaskId(String recurringTaskId) {
+        this.recurringTaskId = recurringTaskId;
     }
 }

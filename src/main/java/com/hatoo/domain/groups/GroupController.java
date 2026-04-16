@@ -107,4 +107,17 @@ public class GroupController {
         List<GroupTokenSameListDto> result = groupService.tokenGroupListApi(authToken, token);
         return ResponseEntity.ok(GlobalResponse.success(result));
     }
+
+    @Operation(summary = "그룹에 참여하는 팀원 프로필 이미지 선택", description = "그룹 참여시 팀원이 프로필 이미지를 선택하는 로직")
+    @PatchMapping("/{groupId}/{memberId}")
+    public ResponseEntity<GlobalResponse<Boolean>> profileImgSelect(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @RequestBody GroupJoinProfileRequest request, @PathVariable UUID groupId) {
+
+        String authToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+        Boolean result = groupService.profileImgSelectApi(authToken, request, groupId);
+
+        return ResponseEntity.ok(GlobalResponse.success(result));
+    }
 }

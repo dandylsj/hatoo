@@ -3,6 +3,12 @@ package com.hatoo.domain.user;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.groupMember.GroupMember;
+import com.hatoo.domain.groupMember.GroupMemberRepository;
+import com.hatoo.domain.groups.Group;
+import com.hatoo.domain.groups.GroupRepository;
+import com.hatoo.domain.task.Task;
+import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.user.dto.UserInfoModifyRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyResponse;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -19,6 +26,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final GroupMemberRepository groupMemberRepository;
+    private final GroupRepository groupRepository;
+    private final TaskRepository taskRepository;
 
     //아이디 중복 확인
     @Transactional(readOnly = true)
@@ -67,7 +77,15 @@ public class UserService {
                     request.getFcmToken()
             );
 
-            // 6. 응답 DTO 생성 반환
+            // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에도 반영
+            if (request.getProfileImg() != null) {
+                List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
+                for (GroupMember gm : groupMembers) {
+                    gm.updateProfileImg(request.getProfileImg());
+                }
+            }
+
+            // 7. 응답 DTO 생성 반환
             return new UserInfoModifyResponse(user.getId(), user.getNickname(), user.getProfileImg());
     }
 
@@ -135,15 +153,59 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 4. 이미 탈퇴한 유저인지 확인
-        if (user.isDeleted()) {
-            throw new CustomException(ErrorMessage.USER_DELETED_NOT_FOUND);
+        // 4. 유저가 속한 모든 그룹 처리
+        List<GroupMember> myGroupMembers = groupMemberRepository.findByUserId(user.getId());
+
+        for (GroupMember gm : myGroupMembers) {
+            Group group = gm.getGroup();
+
+            // 해당 그룹에서 나를 제외한 다른 멤버 목록 (가입 순서 오름차순)
+            List<GroupMember> otherMembers = groupMemberRepository.findByGroupIdOrderByCreatedAtAsc(group.getId())
+                    .stream()
+                    .filter(m -> !m.getUser().getId().equals(user.getId()))
+                    .toList();
+
+            boolean isAssigner = group.getAssignerId().equals(user.getId());
+
+            if (isAssigner && otherMembers.isEmpty()) {
+                // 내가 방장이고 혼자인 그룹 → 그룹의 모든 할일 삭제 후 그룹 삭제
+                List<Task> groupTasks = taskRepository.findByGroupsId(group.getId());
+                for (Task task : groupTasks) {
+                    task.getAssignees().clear();
+                    task.getGroups().clear();
+                }
+                taskRepository.deleteAll(groupTasks);
+                groupMemberRepository.delete(gm);
+                groupRepository.delete(group);
+
+            } else if (isAssigner) {
+                // 내가 방장이고 다른 멤버가 있음 → 내 담당 할일 삭제 후 방장 이전
+                deleteMyTasksInGroup(user.getId(), group.getId());
+                GroupMember newAssigner = otherMembers.get(0); // 가입 순서 첫 번째
+                group.changeAssigner(newAssigner.getUser().getId());
+                groupMemberRepository.delete(gm);
+
+            } else {
+                // 일반 그룹원 → 해당 그룹에서 내 담당 할일 삭제 후 탈퇴
+                deleteMyTasksInGroup(user.getId(), group.getId());
+                groupMemberRepository.delete(gm);
+            }
         }
 
-        // 5. 소프트 딜리트 처리
-        user.withdraw();
+        // 6. 유저 하드 딜리트
+        userRepository.delete(user);
 
         return true;
+    }
+
+    // 특정 그룹에서 유저가 담당인 할일 삭제
+    private void deleteMyTasksInGroup(UUID userId, UUID groupId) {
+        List<Task> myTasksInGroup = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
+        for (Task task : myTasksInGroup) {
+            task.getAssignees().clear();
+            task.getGroups().clear();
+            taskRepository.delete(task);
+        }
     }
 
 }

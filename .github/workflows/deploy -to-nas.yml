@@ -88,6 +88,9 @@ jobs:
             # 4. 기타 설정
             echo "TZ=Asia/Seoul" >> .env
             echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+          
+            #5. 파이어베이스 키 파일 생성
+            echo "FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}" >> .env
 
       # 2. 생성된 .env 파일을 참조하여 컨테이너를 실행합니다.
       - name: NAS에 자동 배포

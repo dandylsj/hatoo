@@ -10,8 +10,6 @@ import java.util.UUID;
 public class UserInfoModifyResponse {
 
     private UUID id;
-
     private String nickname;
-
     private String profileImg;
 }

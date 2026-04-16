@@ -228,7 +228,7 @@ public class TaskService {
 
     // 그룹 내 완료 할일 순위 조회 (완료율 기준)
     @Transactional(readOnly = true)
-    public TaskRankingResponse getGroupRankingApi(String accessToken, UUID groupId) {
+    public List<TaskRankingResponse> getGroupRankingApi(String accessToken, UUID groupId) {
 
         jwtUtil.validateToken(accessToken);
 
@@ -237,7 +237,7 @@ public class TaskService {
 
         List<Object[]> results = taskRepository.countFinishedTasksByGroupId(groupId);
 
-        List<TaskRankingResponse.RankingItem> rankings = new ArrayList<>();
+        List<TaskRankingResponse> rankings = new ArrayList<>();
         for (Object[] row : results) {
             UUID userId = (UUID) row[0];
             String nickname = (String) row[1];
@@ -247,7 +247,7 @@ public class TaskService {
 
             int percent = total > 0 ? (int) (finished * 100 / total) : 0;
 
-            rankings.add(new TaskRankingResponse.RankingItem(
+            rankings.add(new TaskRankingResponse(
                     userId,
                     nickname,
                     percent,
@@ -255,7 +255,7 @@ public class TaskService {
             ));
         }
 
-        return new TaskRankingResponse(rankings);
+        return rankings;
     }
 
 }

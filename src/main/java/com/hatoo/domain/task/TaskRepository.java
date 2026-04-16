@@ -3,6 +3,7 @@ package com.hatoo.domain.task;
 import com.hatoo.domain.groups.Group;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -24,5 +25,18 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     // 중복 생성 방지: 같은 반복그룹에 동일한 dueTo를 가진 할일이 이미 있는지 확인
     boolean existsByRecurringTaskIdAndDueTo(String recurringTaskId, String dueTo);
+
+    // 그룹 내 담당자별 전체 할일 수 + 완료 할일 수 집계 (완료율 계산용)
+    // [userId, nickname, profileImg, totalCount, finishedCount] 순서로 반환
+    @Query("SELECT u.id, u.nickname, gm.profileImg, COUNT(t), " +
+           "SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END) " +
+           "FROM Task t " +
+           "JOIN t.assignees u " +
+           "JOIN t.groups g " +
+           "JOIN GroupMember gm ON gm.user.id = u.id AND gm.group.id = g.id " +
+           "WHERE g.id = :groupId " +
+           "GROUP BY u.id, u.nickname, gm.profileImg " +
+           "ORDER BY SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END) DESC")
+    List<Object[]> countFinishedTasksByGroupId(@Param("groupId") UUID groupId);
 
 }

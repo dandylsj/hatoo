@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -223,7 +224,38 @@ public class TaskService {
         List<Task> finishedTasks = taskRepository.findAllByGroupsContainingAndFinishedTrue(group);
 
         taskRepository.deleteAll(finishedTasks);
+    }
 
+    // 그룹 내 완료 할일 순위 조회 (완료율 기준)
+    @Transactional(readOnly = true)
+    public TaskRankingResponse getGroupRankingApi(String accessToken, UUID groupId) {
+
+        jwtUtil.validateToken(accessToken);
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        List<Object[]> results = taskRepository.countFinishedTasksByGroupId(groupId);
+
+        List<TaskRankingResponse.RankingItem> rankings = new ArrayList<>();
+        for (Object[] row : results) {
+            UUID userId = (UUID) row[0];
+            String nickname = (String) row[1];
+            String profileImg = (String) row[2];
+            long total = ((Number) row[3]).longValue();
+            long finished = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+
+            int percent = total > 0 ? (int) (finished * 100 / total) : 0;
+
+            rankings.add(new TaskRankingResponse.RankingItem(
+                    userId,
+                    nickname,
+                    percent,
+                    profileImg
+            ));
+        }
+
+        return new TaskRankingResponse(rankings);
     }
 
 }

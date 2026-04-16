@@ -242,10 +242,11 @@ public class TaskService {
             UUID userId = (UUID) row[0];
             String nickname = (String) row[1];
             String profileImg = (String) row[2];
-            long total = ((Number) row[3]).longValue();
-            long finished = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+            long myFinished = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+            long groupTotal = row[4] != null ? ((Number) row[4]).longValue() : 0L;
 
-            int percent = total > 0 ? (int) (finished * 100 / total) : 0;
+            // 완료율 = 내가 완료한 할일 수 / 그룹 전체 할일 수 * 100
+            int percent = groupTotal > 0 ? (int) (myFinished * 100 / groupTotal) : 0;
 
             rankings.add(new TaskRankingResponse(
                     userId,

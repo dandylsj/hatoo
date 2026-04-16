@@ -29,10 +29,12 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 중복 생성 방지: 같은 반복그룹에 동일한 dueTo를 가진 할일이 이미 있는지 확인
     boolean existsByRecurringTaskIdAndDueTo(String recurringTaskId, String dueTo);
 
-    // 그룹 내 담당자별 전체 할일 수 + 완료 할일 수 집계 (완료율 계산용)
-    // [userId, nickname, profileImg, totalCount, finishedCount] 순서로 반환
-    @Query("SELECT u.id, u.nickname, gm.profileImg, COUNT(t), " +
-           "SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END) " +
+    // 그룹 내 담당자별 완료 할일 수 + 그룹 전체 할일 수 집계 (완료율 계산용)
+    // [userId, nickname, profileImg, userFinishedCount, groupTotalCount] 순서로 반환
+    // 완료율 = 내가 완료한 수 / 그룹 전체 할일 수 * 100
+    @Query("SELECT u.id, u.nickname, gm.profileImg, " +
+           "SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END), " +
+           "(SELECT COUNT(t2) FROM Task t2 JOIN t2.groups g2 WHERE g2.id = :groupId) " +
            "FROM Task t " +
            "JOIN t.assignees u " +
            "JOIN t.groups g " +

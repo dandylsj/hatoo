@@ -179,29 +179,33 @@ public class UserService {
                 groupRepository.delete(group);
 
             } else if (isAssigner) {
-                // 내가 방장이고 다른 멤버가 있음 → 두 번째로 가입한 멤버에게 방장 이전
+                // 내가 방장이고 다른 멤버가 있음 → 내 담당 할일 삭제 후 방장 이전
+                deleteMyTasksInGroup(user.getId(), group.getId());
                 GroupMember newAssigner = otherMembers.get(0); // 가입 순서 첫 번째
                 group.changeAssigner(newAssigner.getUser().getId());
                 groupMemberRepository.delete(gm);
 
             } else {
-                // 방장이 아님 → 그냥 그룹에서 탈퇴
+                // 일반 그룹원 → 해당 그룹에서 내 담당 할일 삭제 후 탈퇴
+                deleteMyTasksInGroup(user.getId(), group.getId());
                 groupMemberRepository.delete(gm);
             }
-        }
-
-        // 5. 그룹 처리 후 남아있는 내 담당 할일 삭제
-        List<Task> myTasks = taskRepository.findByAssigneesId(user.getId());
-        for (Task task : myTasks) {
-            task.getAssignees().clear();
-            task.getGroups().clear();
-            taskRepository.delete(task);
         }
 
         // 6. 유저 하드 딜리트
         userRepository.delete(user);
 
         return true;
+    }
+
+    // 특정 그룹에서 유저가 담당인 할일 삭제
+    private void deleteMyTasksInGroup(UUID userId, UUID groupId) {
+        List<Task> myTasksInGroup = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
+        for (Task task : myTasksInGroup) {
+            task.getAssignees().clear();
+            task.getGroups().clear();
+            taskRepository.delete(task);
+        }
     }
 
 }

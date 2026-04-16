@@ -15,6 +15,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 특정 유저가 담당자로 있는 할일 조회
     List<Task> findByAssigneesId(UUID userId);
 
+    // 특정 그룹에서 특정 유저가 담당인 할일 조회
+    List<Task> findByAssigneesIdAndGroupsId(UUID userId, UUID groupId);
+
     List<Task> findAllByGroupsContainingAndFinishedTrue(Group group);
 
     // dueFrom ~ dueTo 범위 안에 오늘이 포함되는 반복 할일 조회 (NONE 제외)

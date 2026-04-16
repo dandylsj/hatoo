@@ -7,6 +7,8 @@ import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.dto.*;
 
+import com.hatoo.domain.task.Task;
+import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
 import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
@@ -26,6 +28,7 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
 
     // 내가 속한 그룹 조회
     @Transactional(readOnly = true)
@@ -189,12 +192,19 @@ public class GroupService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        groupRepository.findById(groupId)
+        Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
 
+        // 그룹내의 할 일 모두 삭제
+        List<Task> myTasksInGroup = taskRepository.findByAssigneesIdAndGroupsId(user.getId(), group.getId());
+        for (Task task : myTasksInGroup) {
+            task.getAssignees().clear();
+            task.getGroups().clear();
+            taskRepository.delete(task);
+        }
         groupMemberRepository.delete(groupMember);
 
         return true;

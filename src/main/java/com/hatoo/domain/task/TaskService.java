@@ -3,6 +3,8 @@ package com.hatoo.domain.task;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.groupMember.GroupMember;
+import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.dto.*;
@@ -13,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -24,6 +28,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
 
     // 할일 생성
@@ -235,26 +240,33 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
+        // 1. 할일이 있는 멤버의 완료율 집계
         List<Object[]> results = taskRepository.countFinishedTasksByGroupId(groupId);
 
-        List<TaskRankingResponse> rankings = new ArrayList<>();
+        // 2. userId -> percent 맵 생성
+        Map<UUID, Integer> percentMap = new HashMap<>();
+        long groupTotal = 0L;
         for (Object[] row : results) {
             UUID userId = (UUID) row[0];
-            String nickname = (String) row[1];
-            String profileImg = (String) row[2];
             long myFinished = row[3] != null ? ((Number) row[3]).longValue() : 0L;
-            long groupTotal = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+            groupTotal = row[4] != null ? ((Number) row[4]).longValue() : 0L;
 
-            // 완료율 = 내가 완료한 할일 수 / 그룹 전체 할일 수 * 100
             int percent = groupTotal > 0 ? (int) (myFinished * 100 / groupTotal) : 0;
-
-            rankings.add(new TaskRankingResponse(
-                    userId,
-                    nickname,
-                    percent,
-                    profileImg
-            ));
+            percentMap.put(userId, percent);
         }
+
+        // 3. 그룹 전체 멤버 조회 → 할일 없는 멤버는 0%로 포함
+        List<GroupMember> allMembers = groupMemberRepository.findByGroupId(groupId);
+
+        List<TaskRankingResponse> rankings = allMembers.stream()
+                .map(gm -> new TaskRankingResponse(
+                        gm.getUser().getId(),
+                        gm.getUser().getNickname(),
+                        percentMap.getOrDefault(gm.getUser().getId(), 0),
+                        gm.getProfileImg()
+                ))
+                .sorted((a, b) -> b.getPercent() - a.getPercent())
+                .collect(Collectors.toList());
 
         return rankings;
     }

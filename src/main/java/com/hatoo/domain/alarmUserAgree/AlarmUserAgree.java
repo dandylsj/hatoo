@@ -1,5 +1,6 @@
 package com.hatoo.domain.alarmUserAgree;
 
+import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,7 +12,7 @@ import java.util.UUID;
 @Table(name = "AlarmUserAgree")
 @Getter
 @NoArgsConstructor
-public class AlarmUserAgree {
+public class AlarmUserAgree extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

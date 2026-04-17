@@ -55,6 +55,10 @@ public class User extends BaseEntity {
     @Column(unique = true)
     private Long kakaoId;
 
+    @Setter
+    @Column(unique = true)
+    private Long naverId;
+
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();
 
@@ -91,7 +95,4 @@ public class User extends BaseEntity {
         this.password = encodedPassword;
     }
 
-    public void setNaverId(Long naverId) {
-        this.kakaoId = naverId;
-    }
 }

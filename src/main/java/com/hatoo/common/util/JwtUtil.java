@@ -20,8 +20,8 @@ import java.util.UUID;
 public class JwtUtil {
 
     public static final String BEARER_PREFIX = "Bearer ";
-    public static final long ACCESS_TOKEN_TIME = 24 * 60 * 60 * 1000L;
-    public static final long REFRESH_TOKEN_TIME = 14 * 24 * 60 * 60 * 1000L;
+    public static final long ACCESS_TOKEN_TIME = 30 * 1000L; // 30초
+    public static final long REFRESH_TOKEN_TIME = 60 * 1000L; // 1분
 
     @Value("${JWT_SECRET_KEY}")
     private String secretKeyString;
@@ -83,6 +83,8 @@ public class JwtUtil {
         }
     }
 
+
+
     private Claims extractAllClaims(String token) {
         return parser.parseSignedClaims(token).getPayload();
     }
@@ -103,4 +105,16 @@ public class JwtUtil {
         return extractAllClaims(token).get("name", String.class);
     }
 
+    // 리프레시 토큰 전용 검증 (만료/위변조 → CustomException으로 변환)
+    public void validateRefreshToken(String token) {
+        try {
+            parser.parseSignedClaims(token);
+        } catch (ExpiredJwtException e) {
+            log.error("[JWT] 리프레시 토큰 만료 - 만료시각: {}", e.getClaims().getExpiration());
+            throw new CustomException(ErrorMessage.EXPIRED_TOKEN);
+        } catch (Exception e) {
+            log.error("[JWT] 리프레시 토큰 검증 실패 - {}", e.getMessage());
+            throw new CustomException(ErrorMessage.INVALID_REFRESH_TOKEN);
+        }
+    }
 }

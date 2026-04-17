@@ -43,4 +43,13 @@ public class AuthController {
         UserInfoResposne user = authService.getUserInfoApi(token);
         return ResponseEntity.ok(GlobalResponse.success(user));
     }
+
+    @Operation(summary = "토큰 재발급", description = "리프레시 토큰으로 새 액세스 토큰과 리프레시 토큰을 재발급합니다.")
+    @PostMapping("/reissue")
+    public ResponseEntity<GlobalResponse<TokenResponse>> reissue(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String refreshToken) {
+        String token = refreshToken.startsWith("Bearer ") ? refreshToken.substring(7) : refreshToken;
+        TokenResponse tokenResponse = authService.reissueToken(token);
+        return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
+    }
 }

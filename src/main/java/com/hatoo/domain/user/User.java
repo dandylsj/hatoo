@@ -57,7 +57,7 @@ public class User extends BaseEntity {
 
     @Setter
     @Column(unique = true)
-    private Long naverId;
+    private String naverId;
 
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();

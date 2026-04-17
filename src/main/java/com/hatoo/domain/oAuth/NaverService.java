@@ -42,76 +42,80 @@ public class NaverService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Transactional
-    public TokenResponse naverLoginFromApp(String code) {
+    public TokenResponse naverLoginFromApp(String accessToken) {
 
-        try{
-            //프론트 앱에서 보내주는 토큰을 받아 옴.
-            NaverUserInfo naverUserInfo = getNaverUserInfo(code);
+        try {
+            // 앱에서 받은 네이버 액세스 토큰으로 유저 정보 조회
+            NaverUserInfo naverUserInfo = getNaverUserInfo(accessToken);
 
-            //신규 가입, 로그인 처리
+            // 신규 가입 또는 로그인 처리
             User user = registerOrLogin(naverUserInfo);
 
             // 우리 서비스 JWT 발급
-            String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+            String ourAccessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+            String ourRefreshToken = jwtUtil.generateRefreshToken(user.getId());
 
             // RefreshToken DB 저장 (있으면 갱신, 없으면 새로 생성)
             RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
-                    .orElse(new RefreshToken(user.getId(), refreshToken));
+                    .orElse(new RefreshToken(user.getId(), ourRefreshToken));
 
-            refreshTokenEntity.updateToken(refreshToken);
+            refreshTokenEntity.updateToken(ourRefreshToken);
             refreshTokenRepository.save(refreshTokenEntity);
 
-            return new TokenResponse(accessToken, refreshToken);
+            return new TokenResponse(ourAccessToken, ourRefreshToken);
 
+        } catch (CustomException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("네이버 API 호출 실패: {}", e.getMessage());
+            log.error("네이버 API 호출 실패: {}", e.getMessage(), e);
             throw new CustomException(ErrorMessage.NAVER_LOGIN_FAILED);
         }
     }
 
-    // 프론트에서 보내준 토큰을 네이버 서버에 요청하여 유저 정보를 받아오는 메서드
+    // 앱에서 보내준 네이버 액세스 토큰으로 유저 정보를 조회하는 메서드
     private NaverUserInfo getNaverUserInfo(String accessToken) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
-        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(headers);
 
         ResponseEntity<NaverUserInfo> response = restTemplate.exchange(
-                "https://nid.naver.com/oauth2.0/authorize",
+                "https://openapi.naver.com/v1/nid/me",
                 HttpMethod.GET,
                 request,
                 NaverUserInfo.class
         );
 
-        if (response.getBody() == null) {
-            throw new CustomException(ErrorMessage.USER_NOT_FOUND);
+        NaverUserInfo naverUserInfo = response.getBody();
+
+        if (naverUserInfo == null || naverUserInfo.getResponse() == null) {
+            throw new CustomException(ErrorMessage.NAVER_LOGIN_FAILED);
         }
 
-        return response.getBody();
+        log.info("네이버 유저 정보 조회 성공: resultcode={}", naverUserInfo.getResultcode());
+        return naverUserInfo;
     }
 
-    // 기존 유저는 로그인 , 새로운 회원은 회원가입
+    // 기존 유저는 로그인, 새로운 유저는 자동 회원가입
     private User registerOrLogin(NaverUserInfo naverUserInfo) {
 
-        Long naverId = naverUserInfo.getId();
-        String nickname = naverUserInfo.getProperties().getNickname();
+        NaverUserInfo.NaverResponse naverResponse = naverUserInfo.getResponse();
 
-        // 네이버 계정의 이메일 가져오기
-        String naverEmail = null;
-        if(naverUserInfo.getNaverAccount() != null) {
-            naverEmail = naverUserInfo.getNaverAccount().getEmail();
-        }
+        String naverId = naverResponse.getId();
+        String nickname = naverResponse.getNickname() != null
+                ? naverResponse.getNickname()
+                : (naverResponse.getName() != null ? naverResponse.getName() : "네이버유저");
+        String naverEmail = naverResponse.getEmail();
 
         User user = userRepository.findByNaverId(naverId).orElse(null);
 
-        if(user == null) {
+        if (user == null) {
             // 신규 네이버 유저 → 자동 회원가입
             String loginId = "naver_" + naverId;
-            // 실제 이메일이 제공되지 않으면 임시 이메일 사용
-            String email = (naverEmail != null && !naverEmail.isEmpty()) ? naverEmail : "naver_" + naverId + "@hatoo.app";
+            String email = (naverEmail != null && !naverEmail.isEmpty())
+                    ? naverEmail
+                    : "naver_" + naverId + "@hatoo.app";
             String password = UUID.randomUUID().toString();
 
             user = User.builder()
@@ -128,7 +132,6 @@ public class NaverService {
             groupRepository.save(defaultGroup);
             GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
             groupMemberRepository.save(defaultGroupMember);
-
         }
 
         return user;

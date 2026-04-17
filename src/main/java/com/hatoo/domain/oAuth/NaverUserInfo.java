@@ -8,24 +8,29 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class NaverUserInfo {
 
-    @JsonProperty("id")
-    private Long id;
+    @JsonProperty("resultcode")
+    private String resultcode;
 
-    @JsonProperty("properties")
-    private NaverProperties properties;
+    @JsonProperty("message")
+    private String message;
 
-    @JsonProperty("naver_account")
-    private NaverAccount naverAccount;
+    @JsonProperty("response")
+    private NaverResponse response;
 
     @Getter
     @NoArgsConstructor
-    public static class NaverProperties {
+    public static class NaverResponse {
+
+        @JsonProperty("id")
+        private String id;
+
+        @JsonProperty("nickname")
         private String nickname;
-    }
 
-    @Getter
-    @NoArgsConstructor
-    public static class NaverAccount {
+        @JsonProperty("email")
         private String email;
+
+        @JsonProperty("name")
+        private String name;
     }
 }

@@ -5,6 +5,7 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.auth.dto.LoginRequest;
+import com.hatoo.domain.auth.dto.RefreshTokenReissuanceRequest;
 import com.hatoo.domain.auth.dto.SignRequest;
 import com.hatoo.domain.auth.dto.UserInfoResposne;
 import com.hatoo.domain.groupMember.GroupMember;
@@ -110,20 +111,20 @@ public class AuthService {
 
     // 토큰 재발급
     @Transactional
-    public TokenResponse reissueToken(String refreshToken) {
+    public TokenResponse reissueToken(RefreshTokenReissuanceRequest request) {
 
         // 1. 리프레시 토큰 서명/만료 검증
-        jwtUtil.validateRefreshToken(refreshToken);
+        jwtUtil.validateRefreshToken(request.getRefreshToken());
 
         // 2. 토큰에서 userId 추출
-        UUID userId = jwtUtil.extractUserId(refreshToken);
+        UUID userId = jwtUtil.extractUserId(request.getRefreshToken());
 
         // 3. DB에서 리프레시 토큰 조회
         RefreshToken savedToken = refreshTokenRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.INVALID_REFRESH_TOKEN));
 
         // 4. DB 토큰과 요청 토큰 일치 여부 확인 (탈취 방지)
-        if (!savedToken.getToken().equals(refreshToken)) {
+        if (!savedToken.getToken().equals(request.getRefreshToken())) {
             throw new CustomException(ErrorMessage.INVALID_REFRESH_TOKEN);
         }
 

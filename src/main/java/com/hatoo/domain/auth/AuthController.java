@@ -2,6 +2,7 @@ package com.hatoo.domain.auth;
 
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.auth.dto.LoginRequest;
+import com.hatoo.domain.auth.dto.RefreshTokenReissuanceRequest;
 import com.hatoo.domain.auth.dto.SignRequest;
 import com.hatoo.domain.auth.dto.UserInfoResposne;
 import com.hatoo.domain.token.TokenResponse;
@@ -23,16 +24,16 @@ public class AuthController {
 
     @Operation(summary = "회원가입", description = "새로운 유저를 등록합니다.")
     @PostMapping("/sign")
-    public ResponseEntity<GlobalResponse<TokenResponse>> sign(@Valid @RequestBody SignRequest request) {
+    public ResponseEntity<TokenResponse> sign(@Valid @RequestBody SignRequest request) {
         TokenResponse tokenResponse = authService.signup(request);
-        return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
+        return ResponseEntity.ok(tokenResponse);
     }
 
     @Operation(summary = "로그인", description = "아이디와 비밀번호로 로그인하여 토큰을 발급받습니다.")
     @PostMapping("/login")
-    public ResponseEntity<GlobalResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         TokenResponse tokenResponse = authService.login(request);
-        return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
+        return ResponseEntity.ok(tokenResponse);
     }
 
     @Operation(summary = "유저 프로필 조회", description = "로그인 아이디를 기반으로 유저의 프로필 정보를 조회합니다.")
@@ -46,10 +47,8 @@ public class AuthController {
 
     @Operation(summary = "토큰 재발급", description = "리프레시 토큰으로 새 액세스 토큰과 리프레시 토큰을 재발급합니다.")
     @PostMapping("/reissue")
-    public ResponseEntity<GlobalResponse<TokenResponse>> reissue(
-            @Parameter(hidden = true) @RequestHeader("Authorization") String refreshToken) {
-        String token = refreshToken.startsWith("Bearer ") ? refreshToken.substring(7) : refreshToken;
-        TokenResponse tokenResponse = authService.reissueToken(token);
-        return ResponseEntity.ok(GlobalResponse.success(tokenResponse));
+    public ResponseEntity<TokenResponse> reissue(@RequestBody RefreshTokenReissuanceRequest request) {
+        TokenResponse tokenResponse = authService.reissueToken(request);
+        return ResponseEntity.ok(tokenResponse);
     }
 }

@@ -4,10 +4,7 @@ import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.groupMember.GroupMember;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +51,7 @@ public class User extends BaseEntity {
     @Column
     private Boolean isOverFourteen;
 
+    @Setter
     @Column(unique = true)
     private Long kakaoId;
 
@@ -93,7 +91,7 @@ public class User extends BaseEntity {
         this.password = encodedPassword;
     }
 
-    public void setKakaoId(Long kakaoId) {
-        this.kakaoId = kakaoId;
+    public void setNaverId(Long naverId) {
+        this.kakaoId = naverId;
     }
 }

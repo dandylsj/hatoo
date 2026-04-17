@@ -1,4 +1,4 @@
-package com.hatoo.domain.kakao;
+package com.hatoo.domain.oAuth;
 
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
@@ -14,7 +14,6 @@ import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;

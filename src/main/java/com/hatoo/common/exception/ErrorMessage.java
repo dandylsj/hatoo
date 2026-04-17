@@ -67,7 +67,8 @@ public enum ErrorMessage {
     TASK_NOT_FOUND(HttpStatus.CONFLICT, "존재하지 않는 할일입니다."),
 
     /* --- 502 Bad Gateway --- */
-    KAKAO_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "카카오 로그인에 실패했습니다.");
+    KAKAO_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "카카오 로그인에 실패했습니다."),
+    NAVER_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "네이버 로그인에 실패했습니다." );
 
     private final HttpStatus status;
     private final String message;

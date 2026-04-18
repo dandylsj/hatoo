@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,18 +42,14 @@ public class TaskService {
     @Transactional
     public TaskListResponse taskAddTodoResponse(String accessToken, TaskAddTodoRequest request) {
 
-        // 1. 토큰 검증
         jwtUtil.validateToken(accessToken);
 
-        // 2. 그룹 조회
         Group group = groupRepository.findById(request.getGroupId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 3. 담당자 조회
         User assignee = userRepository.findById(request.getAssigneeId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 4. 할일 생성
         Task task = new Task(
                 request.getTitle(),
                 request.getDescription(),
@@ -62,12 +61,10 @@ public class TaskService {
                 request.getInterval()
         );
 
-        // 5. 담당자와 그룹 연결
         task.addAssignee(assignee);
         task.addGroup(group);
         taskRepository.save(task);
 
-        // 6. 반복 설정이 있으면 본인 id를 recurringTaskId로 저장
         if (task.getFrequency() != null && task.getFrequency() != Frequency.NONE) {
             task.setRecurringTaskId(task.getId().toString());
         }
@@ -89,19 +86,15 @@ public class TaskService {
     @Transactional(readOnly = true)
     public TaskAllGroupListResponse getTasksByGroupListApi(String accessToken, UUID groupId) {
 
-        // 1. 토큰 검증
         jwtUtil.validateToken(accessToken);
 
-        // 2. 그룹 존재 확인
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 3. 그룹에 속한 할일 중 finished가 false 인 할일 조회
         List<Task> tasks = taskRepository.findByGroupsId(groupId);
 
-        // 4. 응답 변환
         List<TaskAllGroupListResponse.TaskList> taskItems = tasks.stream()
-                .filter(task -> task.getFinished() == false)
+                .filter(task -> !Boolean.TRUE.equals(task.getFinished()))
                 .map(task -> {
                     User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
                     return new TaskAllGroupListResponse.TaskList(
@@ -128,7 +121,7 @@ public class TaskService {
                 .collect(Collectors.toList());
 
         List<TaskAllGroupListResponse.FinishedTaskList> finishedTaskItems = tasks.stream()
-                .filter(task -> task.getFinished() == true)
+                .filter(task -> Boolean.TRUE.equals(task.getFinished()))
                 .map(task -> {
                     User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
                     return new TaskAllGroupListResponse.FinishedTaskList(
@@ -157,7 +150,7 @@ public class TaskService {
         return new TaskAllGroupListResponse(taskItems, finishedTaskItems, tasks.size(), finishedTaskItems.size());
     }
 
-    //할 일 삭제
+    // 할일 삭제
     @Transactional
     public Boolean deleteTaskApi(String accessToken, UUID taskId) {
 
@@ -167,11 +160,10 @@ public class TaskService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
 
         taskRepository.delete(task);
-
         return true;
     }
 
-    //할 일 수정
+    // 할일 수정
     @Transactional
     public TaskListResponse taskModificationApi(String accessToken, UUID taskId, TaskAddTodoRequest request) {
 
@@ -203,7 +195,7 @@ public class TaskService {
         );
     }
 
-    //할 일 완료 처리
+    // 할일 완료 처리
     @Transactional
     public TaskStatusUpdateResponse taskFinishApi(String accessToken, UUID taskId, TaskStatusUpdateRequest request) {
 
@@ -212,16 +204,12 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
 
-        if(!request.getTaskStatus()) {
-            task.setFinished(true);
-        }else {
-            task.setFinished(false);
-        }
+        task.setFinished(!request.getTaskStatus());
 
         return new TaskStatusUpdateResponse(task.getFinished());
     }
 
-    //완료된 할 일 일괄 삭제
+    // 완료된 할일 일괄 삭제
     @Transactional
     public void taskBatchDeleteApi(String accessToken, UUID groupId) {
 
@@ -231,11 +219,11 @@ public class TaskService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         List<Task> finishedTasks = taskRepository.findAllByGroupsContainingAndFinishedTrue(group);
-
         taskRepository.deleteAll(finishedTasks);
     }
 
-    // 그룹 내 완료 할일 순위 조회 (완료율 기준)
+    // 그룹 내 이번 주 기여도 순위 실시간 조회
+    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
     @Transactional(readOnly = true)
     public List<TaskRankingResponse> getGroupRankingApi(String accessToken, UUID groupId) {
 
@@ -244,37 +232,39 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 1. 할일이 있는 멤버의 완료율 집계
-        List<Object[]> results = taskRepository.countFinishedTasksByGroupId(groupId);
+        // 이번 주 월요일 ~ 일요일
+        LocalDate today = LocalDate.now();
+        String weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString();
+        String weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).toString();
 
-        // 2. userId -> percent 맵 생성
-        Map<UUID, Integer> percentMap = new HashMap<>();
-        long groupTotal = 0L;
+        // row[3] = 내가 완료한 수, row[4] = 그룹 전체 완료된 수
+        List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(groupId, weekStart, weekEnd);
+
+        Map<UUID, Integer> myFinishedMap = new HashMap<>();
+        int groupTotalFinished = 0;
+
         for (Object[] row : results) {
             UUID userId = (UUID) row[0];
-            long myFinished = row[3] != null ? ((Number) row[3]).longValue() : 0L;
-            groupTotal = row[4] != null ? ((Number) row[4]).longValue() : 0L;
-
-            int percent = groupTotal > 0 ? (int) (myFinished * 100 / groupTotal) : 0;
-            percentMap.put(userId, percent);
+            int myFinished = row[3] != null ? ((Number) row[3]).intValue() : 0;
+            groupTotalFinished = row[4] != null ? ((Number) row[4]).intValue() : 0;
+            myFinishedMap.put(userId, myFinished);
         }
 
-        // 3. 그룹 전체 멤버 조회 → 할일 없는 멤버는 0%로 포함
+        final int finalGroupTotal = groupTotalFinished;
         List<GroupMember> allMembers = groupMemberRepository.findByGroupId(groupId);
 
-        List<TaskRankingResponse> rankings = allMembers.stream()
-                .map(gm -> new TaskRankingResponse(
-                        gm.getUser().getId(),
-                        gm.getUser().getNickname(),
-                        percentMap.getOrDefault(gm.getUser().getId(), 0),
-                        gm.getProfileImg()
-                ))
+        AtomicInteger rankCounter = new AtomicInteger(1);
+        return allMembers.stream()
+                .map(gm -> {
+                    int myFinished = myFinishedMap.getOrDefault(gm.getUser().getId(), 0);
+                    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
+                    int percent = finalGroupTotal > 0 ? (int) Math.round(myFinished * 100.0 / finalGroupTotal) : 0;
+                    return new TaskRankingResponse(0, gm.getUser().getId(), gm.getUser().getNickname(), gm.getProfileImg(), finalGroupTotal, myFinished, percent);
+                })
                 .sorted((a, b) -> b.getPercent() - a.getPercent())
+                .map(r -> new TaskRankingResponse(rankCounter.getAndIncrement(), r.getUserId(), r.getNickname(), r.getProfileImg(), r.getTotalCount(), r.getFinishedCount(), r.getPercent()))
                 .collect(Collectors.toList());
-
-        return rankings;
     }
-
 
     // 저장된 주차 통계 조회 (weekStart 없으면 가장 최근 주차 반환)
     @Transactional(readOnly = true)

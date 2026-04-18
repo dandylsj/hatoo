@@ -28,12 +28,15 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 중복 생성 방지
     boolean existsByRecurringTaskIdAndDueTo(String recurringTaskId, String dueTo);
 
-    // 이번 주(weekStart~weekEnd) 그룹 내 담당자별 완료율 집계
-    // [userId, nickname, profileImg, finishedCount, totalCount] 순서로 반환
-    // 완료율 = 내가 완료한 수 / 내게 할당된 총 할일 수 * 100
+    // 이번 주(weekStart~weekEnd) 그룹 내 담당자별 기여도 집계
+    // [userId, nickname, profileImg, myFinishedCount, groupTotalFinishedCount] 순서로 반환
+    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
     @Query("SELECT u.id, u.nickname, gm.profileImg, " +
            "SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END), " +
-           "COUNT(t) " +
+           "(SELECT COUNT(t2) FROM Task t2 JOIN t2.groups g2 WHERE g2.id = :groupId " +
+           " AND t2.finished = true " +
+           " AND SUBSTRING(t2.dueFrom, 1, 10) >= :weekStart " +
+           " AND SUBSTRING(t2.dueFrom, 1, 10) <= :weekEnd) " +
            "FROM Task t " +
            "JOIN t.assignees u " +
            "JOIN t.groups g " +
@@ -46,15 +49,4 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             @Param("groupId") UUID groupId,
             @Param("weekStart") String weekStart,
             @Param("weekEnd") String weekEnd);
-
-    @Query("SELECT u.id, u.nickname, gm.profileImg, " +
-            "SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END), " +
-            "COUNT(t) " +
-            "FROM Task t " +
-            "JOIN t.assignees u " +
-            "JOIN t.groups g " +
-            "JOIN GroupMember gm ON gm.user.id = u.id AND gm.group.id = g.id " +
-            "WHERE g.id = :groupId " +
-            "GROUP BY u.id, u.nickname, gm.profileImg")
-    List<Object[]> countFinishedTasksByGroupId(@Param("groupId") UUID groupId);
 }

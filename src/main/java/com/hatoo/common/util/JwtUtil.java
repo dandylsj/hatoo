@@ -19,8 +19,8 @@ import java.util.UUID;
 public class JwtUtil {
 
     public static final String BEARER_PREFIX = "Bearer ";
-    public static final long ACCESS_TOKEN_TIME =  30 * 1000L;             // 30초
-    public static final long REFRESH_TOKEN_TIME = 3 * 60 * 1000L; // 2분
+    public static final long ACCESS_TOKEN_TIME = 7 * 24 * 60 * 60 * 1000L; // 7일
+    public static final long REFRESH_TOKEN_TIME = 3 * 30 * 60 * 60 * 1000L; // 3달
 
     @Value("${JWT_SECRET_KEY}")
     private String secretKeyString;

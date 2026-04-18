@@ -24,7 +24,7 @@ public class UserController {
     @GetMapping("/check-login-id")
     public ResponseEntity<GlobalResponse<Boolean>> checkLoginId(@RequestParam String loginId) {
         boolean checked = userService.checkLoginIdApi(loginId);
-        if (!checked) return ResponseEntity.ok(GlobalResponse.exception());
+        if (!checked) return ResponseEntity.ok(GlobalResponse.fail());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
@@ -32,7 +32,7 @@ public class UserController {
     @GetMapping("/check-nickname")
     public ResponseEntity<GlobalResponse<Boolean>> checkNickname(@RequestParam String nickname) {
         boolean checkNickName = userService.checkNicknameApi(nickname);
-        if (!checkNickName) return ResponseEntity.ok(GlobalResponse.exception());
+        if (!checkNickName) return ResponseEntity.ok(GlobalResponse.fail());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
@@ -53,7 +53,7 @@ public class UserController {
             @Valid @RequestBody PasswordCheckRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
-        if (!isMatch) return ResponseEntity.ok(GlobalResponse.exception());
+        if (!isMatch) return ResponseEntity.ok(GlobalResponse.fail());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
@@ -64,7 +64,7 @@ public class UserController {
             @Valid @RequestBody PasswordCheckRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         boolean isChange = userService.changePassword(token, request.getPassword());
-        if (!isChange) return ResponseEntity.ok(GlobalResponse.exception());
+        if (!isChange) return ResponseEntity.ok(GlobalResponse.fail());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 

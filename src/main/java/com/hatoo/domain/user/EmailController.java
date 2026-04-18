@@ -26,7 +26,7 @@ public class EmailController {
     public ResponseEntity<GlobalResponse<Boolean>> checkEmail(@RequestParam @Email String email) {
         boolean isSent = emailService.checkEmailSend(email);
         if (isSent) return ResponseEntity.ok(GlobalResponse.success(true));
-        return ResponseEntity.ok(GlobalResponse.exception());
+        return ResponseEntity.ok(GlobalResponse.fail());
     }
 
     @Operation(summary = "이메일 코드 인증", description = "이메일로 발송된 인증코드를 확인하여 이메일을 인증합니다.")
@@ -34,6 +34,6 @@ public class EmailController {
     public ResponseEntity<GlobalResponse<Boolean>> enterTheVerificationCode(@RequestBody EmailVerifiRequest request) {
         boolean verify = emailService.enterTheVerifcationCodeApi(request);
         if (verify) return ResponseEntity.ok(GlobalResponse.success(true));
-        return ResponseEntity.ok(GlobalResponse.exception());
+        return ResponseEntity.ok(GlobalResponse.fail());
     }
 }

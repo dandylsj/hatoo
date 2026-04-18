@@ -262,7 +262,7 @@ public class TaskService {
         // 3. 그룹 전체 멤버 조회 → 할일 없는 멤버는 0%로 포함
         List<GroupMember> allMembers = groupMemberRepository.findByGroupId(groupId);
 
-        return allMembers.stream()
+        List<TaskRankingResponse> rankings = allMembers.stream()
                 .map(gm -> new TaskRankingResponse(
                         gm.getUser().getId(),
                         gm.getUser().getNickname(),
@@ -271,6 +271,8 @@ public class TaskService {
                 ))
                 .sorted((a, b) -> b.getPercent() - a.getPercent())
                 .collect(Collectors.toList());
+
+        return rankings;
     }
 
 

@@ -10,15 +10,18 @@ import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.dto.*;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
+import com.hatoo.domain.weeklyStats.WeeklyStats;
+import com.hatoo.domain.weeklyStats.WeeklyStatsRepository;
+import com.hatoo.domain.weeklyStats.WeeklyStatsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +32,7 @@ public class TaskService {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final WeeklyStatsRepository weeklyStatsRepository;
     private final JwtUtil jwtUtil;
 
     // 할일 생성
@@ -258,7 +262,7 @@ public class TaskService {
         // 3. 그룹 전체 멤버 조회 → 할일 없는 멤버는 0%로 포함
         List<GroupMember> allMembers = groupMemberRepository.findByGroupId(groupId);
 
-        List<TaskRankingResponse> rankings = allMembers.stream()
+        return allMembers.stream()
                 .map(gm -> new TaskRankingResponse(
                         gm.getUser().getId(),
                         gm.getUser().getNickname(),
@@ -267,8 +271,32 @@ public class TaskService {
                 ))
                 .sorted((a, b) -> b.getPercent() - a.getPercent())
                 .collect(Collectors.toList());
-
-        return rankings;
     }
 
+
+    // 저장된 주차 통계 조회 (weekStart 없으면 가장 최근 주차 반환)
+    @Transactional(readOnly = true)
+    public List<WeeklyStatsResponse> getWeeklyStatsApi(String accessToken, UUID groupId, String weekStart) {
+
+        jwtUtil.validateToken(accessToken);
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        String targetWeek = weekStart;
+        if (targetWeek == null || targetWeek.isBlank()) {
+            List<WeeklyStats> latest = weeklyStatsRepository
+                    .findDistinctWeekStartByGroupIdOrderByWeekStartDesc(groupId);
+            if (latest.isEmpty()) return List.of();
+            targetWeek = latest.get(0).getWeekStart();
+        }
+
+        List<WeeklyStats> statsList = weeklyStatsRepository
+                .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);
+
+        AtomicInteger rankCounter = new AtomicInteger(1);
+        return statsList.stream()
+                .map(s -> WeeklyStatsResponse.from(s, rankCounter.getAndIncrement()))
+                .collect(Collectors.toList());
+    }
 }

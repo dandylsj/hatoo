@@ -2,6 +2,7 @@ package com.hatoo.domain.task;
 
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.task.dto.*;
+import com.hatoo.domain.weeklyStats.WeeklyStatsResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -94,7 +95,7 @@ public class TaskContoroller {
         return ResponseEntity.ok(GlobalResponse.success(true));
     }
 
-    @Operation(summary = "그룹 완료 할일 순위 조회", description = "그룹 내 완료한 할일 수를 기준으로 멤버 순위를 조회합니다.")
+    @Operation(summary = "그룹 완료 할일 순위 조회 (실시간)", description = "이번 주 기준 그룹 내 멤버별 완료율을 실시간으로 조회합니다.")
     @GetMapping("/group/{groupId}/ranking")
     public ResponseEntity<GlobalResponse<List<TaskRankingResponse>>> getGroupRanking(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
@@ -103,6 +104,20 @@ public class TaskContoroller {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
         List<TaskRankingResponse> response = taskService.getGroupRankingApi(token, groupId);
+
+        return ResponseEntity.ok(GlobalResponse.success(response));
+    }
+
+    @Operation(summary = "주차별 통계 조회 (스냅샷)", description = "매주 일요일 23:59:59에 저장된 주차별 완료율 결과를 조회합니다. weekStart 미입력시 가장 최근 주차를 반환합니다.")
+    @GetMapping("/group/{groupId}/weekly-stats")
+    public ResponseEntity<GlobalResponse<List<WeeklyStatsResponse>>> getWeeklyStats(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId,
+            @RequestParam(required = false) String weekStart) {
+
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+        List<WeeklyStatsResponse> response = taskService.getWeeklyStatsApi(token, groupId, weekStart);
 
         return ResponseEntity.ok(GlobalResponse.success(response));
     }

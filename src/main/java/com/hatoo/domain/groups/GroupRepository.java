@@ -19,6 +19,6 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
 
     // 최근 30일간 할일 변경이 없는 비활성 그룹 조회
     @Query("SELECT g FROM Group g WHERE g.id NOT IN " +
-           "(SELECT DISTINCT t.groups FROM Task t JOIN t.groups grp WHERE t.updatedAt >= :since)")
+           "(SELECT DISTINCT grp.id FROM Task t JOIN t.groups grp WHERE t.updatedAt >= :since)")
     List<Group> findInactiveGroups(@Param("since") LocalDateTime since);
 }

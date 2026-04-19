@@ -10,6 +10,7 @@ import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.dto.*;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
+import com.hatoo.domain.alarm.FcmService;
 import com.hatoo.domain.weeklyStats.WeeklyStats;
 import com.hatoo.domain.weeklyStats.WeeklyStatsRepository;
 import com.hatoo.domain.weeklyStats.WeeklyStatsResponse;
@@ -36,6 +37,7 @@ public class TaskService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final WeeklyStatsRepository weeklyStatsRepository;
+    private final FcmService fcmService;
     private final JwtUtil jwtUtil;
 
     // 할일 생성
@@ -67,6 +69,19 @@ public class TaskService {
 
         if (task.getFrequency() != null && task.getFrequency() != Frequency.NONE) {
             task.setRecurringTaskId(task.getId().toString());
+        }
+
+        // 할일 생성자 조회 (토큰에서 추출)
+        String creatorLoginId = jwtUtil.extractLoginId(accessToken);
+        User creator = userRepository.findByLoginId(creatorLoginId).orElse(null);
+        String creatorNickname = creator != null ? creator.getNickname() : "누군가";
+
+        // 6. 새 집안일 등록 알림 (그룹 전체에게)
+        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle());
+
+        // 7. 집안일 배정 알림 (담당자가 나 자신이 아닌 경우에만)
+        if (creator == null || !creator.getId().equals(assignee.getId())) {
+            fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname());
         }
 
         return new TaskListResponse(
@@ -277,10 +292,10 @@ public class TaskService {
 
         String targetWeek = weekStart;
         if (targetWeek == null || targetWeek.isBlank()) {
-            List<WeeklyStats> latest = weeklyStatsRepository
-                    .findDistinctWeekStartByGroupIdOrderByWeekStartDesc(groupId);
-            if (latest.isEmpty()) return List.of();
-            targetWeek = latest.get(0).getWeekStart();
+            List<String> weekStarts = weeklyStatsRepository
+                    .findDistinctWeekStartsByGroupId(groupId);
+            if (weekStarts.isEmpty()) return List.of();
+            targetWeek = weekStarts.get(0); // 가장 최근 주차
         }
 
         List<WeeklyStats> statsList = weeklyStatsRepository

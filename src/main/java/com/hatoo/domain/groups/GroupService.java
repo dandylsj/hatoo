@@ -11,6 +11,7 @@ import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
+import com.hatoo.domain.alarm.FcmService;
 import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final FcmService fcmService;
     private final TaskRepository taskRepository;
 
     // 내가 속한 그룹 조회
@@ -134,6 +136,9 @@ public class GroupService {
         // 7. GroupMember 생성 및 저장
         GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
+
+        // 8. 새 멤버 참여 알림 전송 (그룹 전체에게)
+        fcmService.sendNewMember(groupId, group.getName(), user.getNickname());
 
         return true;
     }

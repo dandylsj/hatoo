@@ -54,6 +54,19 @@ public class Task extends BaseEntity {
     @Column(name = "frequency")
     private Frequency frequency;
 
+    // ──────────────────────────────────────────
+    // 알림 발송 여부 플래그 (중복 알림 방지)
+    // ──────────────────────────────────────────
+
+    @Column(name = "start_alarm_sent")
+    private Boolean startAlarmSent = false;
+
+    @Column(name = "deadline_alarm_sent")
+    private Boolean deadlineAlarmSent = false;
+
+    @Column(name = "overdue_alarm_sent")
+    private Boolean overdueAlarmSent = false;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "task_assignees",
@@ -97,7 +110,6 @@ public class Task extends BaseEntity {
         return this.assignees.get(0).getId();
     }
 
-
     public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
         this.title = title;
         this.description = description;
@@ -114,5 +126,17 @@ public class Task extends BaseEntity {
 
     public void setRecurringTaskId(String recurringTaskId) {
         this.recurringTaskId = recurringTaskId;
+    }
+
+    public void markStartAlarmSent() {
+        this.startAlarmSent = true;
+    }
+
+    public void markDeadlineAlarmSent() {
+        this.deadlineAlarmSent = true;
+    }
+
+    public void markOverdueAlarmSent() {
+        this.overdueAlarmSent = true;
     }
 }

@@ -28,6 +28,29 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 중복 생성 방지
     boolean existsByRecurringTaskIdAndDueTo(String recurringTaskId, String dueTo);
 
+    // 알림 스케줄러용 - dueFrom이 특정 날짜로 시작하는 할일 조회
+    List<Task> findByDueFromStartingWith(String date);
+
+    // 알림 스케줄러용 - dueTo가 특정 날짜로 시작하는 할일 조회
+    List<Task> findByDueToStartingWith(String date);
+
+    // ──────────────────────────────────────────
+    // 알림 스케줄러용 (개선된 버전)
+    // ──────────────────────────────────────────
+
+    // 1. 시작 알림: dueTo 날짜 = 오늘, 미완료, 시작 알림 미발송
+    List<Task> findByDueToStartingWithAndFinishedFalseAndStartAlarmSentFalse(String date);
+
+    // 2. 마감 임박 알림: deadLine이 설정됐고, 미완료, 마감임박 알림 미발송
+    @Query("SELECT t FROM Task t WHERE t.deadLine IS NOT NULL " +
+           "AND t.deadLine != com.hatoo.domain.task.DeadLine.NONE " +
+           "AND t.finished = false " +
+           "AND t.deadlineAlarmSent = false")
+    List<Task> findTasksForDeadlineAlarm();
+
+    // 3. 마감 초과 알림: 미완료, 마감초과 알림 미발송
+    List<Task> findByFinishedFalseAndOverdueAlarmSentFalse();
+
     // 이번 주(weekStart~weekEnd) 그룹 내 담당자별 기여도 집계
     // [userId, nickname, profileImg, myFinishedCount, groupTotalFinishedCount] 순서로 반환
     // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100

@@ -1,5 +1,6 @@
 package com.hatoo.domain.groups.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hatoo.domain.groups.Group;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +20,7 @@ public class MyGroupResponse {
 
     private UUID assignerId;
 
+    @JsonProperty("isPersonal")
     private boolean isPersonal;
 
     private LocalDateTime createdAt;

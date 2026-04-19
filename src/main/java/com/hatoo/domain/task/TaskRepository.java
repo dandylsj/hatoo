@@ -38,8 +38,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 알림 스케줄러용 (개선된 버전)
     // ──────────────────────────────────────────
 
-    // 1. 시작 알림: dueTo 날짜 = 오늘, 미완료, 시작 알림 미발송
-    List<Task> findByDueToStartingWithAndFinishedFalseAndStartAlarmSentFalse(String date);
+    // 1. 시작 알림: 미완료 + 시작 알림 미발송 전체 조회 (dueTo 시각 비교는 코드에서 처리)
+    List<Task> findByFinishedFalseAndStartAlarmSentFalse();
 
     // 2. 마감 임박 알림: deadLine이 설정됐고, 미완료, 마감임박 알림 미발송
     @Query("SELECT t FROM Task t WHERE t.deadLine IS NOT NULL " +

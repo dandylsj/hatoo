@@ -1,6 +1,7 @@
 package com.hatoo.domain.user;
 
 import com.hatoo.common.model.response.GlobalResponse;
+import com.hatoo.domain.user.dto.AlarmAgreeRequest;
 import com.hatoo.domain.user.dto.UserAgreeRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyResponse;
@@ -21,13 +22,22 @@ public class UserController {
 
     private final UserService userService;
 
-    @Operation(summary = "동의 항목 저장", description = "소셜 로그인(네이버/카카오) 회원가입 후 필수 동의 3개 + 알림 동의 2개를 저장합니다.")
+    @Operation(summary = "필수 동의 저장", description = "소셜 로그인(네이버/카카오) 회원가입 직후 필수 동의 3개를 저장합니다.")
     @PostMapping("/agree")
     public ResponseEntity<GlobalResponse<Boolean>> saveUserAgree(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody UserAgreeRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         return ResponseEntity.ok(GlobalResponse.success(userService.saveUserAgree(token, request)));
+    }
+
+    @Operation(summary = "알림 동의 저장/수정", description = "집안일 알림 및 마케팅 알림 수신 동의를 저장하거나 변경합니다. 설정 화면에서도 호출 가능합니다.")
+    @PatchMapping("/alarm-agree")
+    public ResponseEntity<GlobalResponse<Boolean>> saveAlarmAgree(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @RequestBody AlarmAgreeRequest request) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(GlobalResponse.success(userService.saveAlarmAgree(token, request)));
     }
 
     @Operation(summary = "아이디 중복 확인", description = "회원가입 시 로그인 아이디의 중복 여부를 확인합니다.")

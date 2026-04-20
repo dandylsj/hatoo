@@ -11,6 +11,7 @@ import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
+import com.hatoo.domain.user.dto.AlarmAgreeRequest;
 import com.hatoo.domain.user.dto.UserAgreeRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyResponse;
@@ -34,7 +35,7 @@ public class UserService {
     private final TaskRepository taskRepository;
     private final AlarmUserAgreeRepository alarmUserAgreeRepository;
 
-    // 동의 항목 저장 (소셜 로그인 후 호출)
+    // 필수 동의 저장 (소셜 로그인 후 1회 호출)
     @Transactional
     public Boolean saveUserAgree(String accessToken, UserAgreeRequest request) {
         jwtUtil.validateToken(accessToken);
@@ -43,10 +44,22 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 1. 필수 동의 3개 → User 엔티티 업데이트
+        // 필수 동의 3개 → User 엔티티 업데이트
         user.updateAgree(request.getIsTermsAgreed(), request.getIsPrivacyAgreed(), request.getIsOverFourteen());
 
-        // 2. 알림 동의 2개 → AlarmUserAgree 생성 또는 업데이트
+        return true;
+    }
+
+    // 알림 동의 저장/수정 (설정에서 언제든 변경 가능)
+    @Transactional
+    public Boolean saveAlarmAgree(String accessToken, AlarmAgreeRequest request) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // AlarmUserAgree 없으면 새로 생성, 있으면 업데이트
         AlarmUserAgree alarmAgree = alarmUserAgreeRepository.findByUserId(user.getId())
                 .orElse(null);
 

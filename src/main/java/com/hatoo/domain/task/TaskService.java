@@ -122,6 +122,7 @@ public class TaskService {
                             task.getDueFrom(),
                             task.getDueTo(),
                             false,
+                            task.getFinishedAt(),
                             task.getFrequency(),
                             task.getInterval(),
                             task.getStarter(),
@@ -149,6 +150,7 @@ public class TaskService {
                             task.getDueFrom(),
                             task.getDueTo(),
                             true,
+                            task.getFinishedAt(),
                             task.getFrequency(),
                             task.getInterval(),
                             task.getStarter(),
@@ -221,7 +223,8 @@ public class TaskService {
 
         task.setFinished(!request.getTaskStatus());
 
-        return new TaskStatusUpdateResponse(task.getFinished());
+
+        return new TaskStatusUpdateResponse(task.getFinished(), task.getFinishedAt());
     }
 
     // 완료된 할일 일괄 삭제

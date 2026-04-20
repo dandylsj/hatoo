@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +39,10 @@ public class Task extends BaseEntity {
 
     @Column
     private Boolean finished = false;
+
+    // 완료 처리 시각 (KST), 완료 취소 시 null
+    @Column
+    private LocalDateTime finishedAt;
 
     @Enumerated(EnumType.STRING)
     private DeadLine deadLine;
@@ -122,6 +128,8 @@ public class Task extends BaseEntity {
 
     public void setFinished(boolean finished) {
         this.finished = finished;
+        // 완료 처리 시 현재 KST 시각 기록, 완료 취소 시 null로 초기화
+        this.finishedAt = finished ? LocalDateTime.now(ZoneId.of("Asia/Seoul")) : null;
     }
 
     public void setRecurringTaskId(String recurringTaskId) {

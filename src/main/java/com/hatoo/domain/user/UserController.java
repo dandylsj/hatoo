@@ -83,7 +83,7 @@ public class UserController {
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean isChange = userService.changePassword(token, request.getPassword());
+        boolean isChange = userService.changePassword(token, request);
         if (!isChange) return ResponseEntity.ok(GlobalResponse.fail());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }

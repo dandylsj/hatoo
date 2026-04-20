@@ -35,4 +35,9 @@ public class AlarmUserAgree extends BaseEntity {
         this.isMarketingNotiAllowed = isMarketingNotiAllowed;
         this.user = user;
     }
+
+    public void update(Boolean isChoreNotiAllowed, Boolean isMarketingNotiAllowed) {
+        if (isChoreNotiAllowed != null) this.isChoreNotiAllowed = isChoreNotiAllowed;
+        if (isMarketingNotiAllowed != null) this.isMarketingNotiAllowed = isMarketingNotiAllowed;
+    }
 }

@@ -3,12 +3,15 @@ package com.hatoo.domain.user;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
+import com.hatoo.domain.alarmUserAgree.AlarmUserAgreeRepository;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
+import com.hatoo.domain.user.dto.UserAgreeRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,37 @@ public class UserService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
     private final TaskRepository taskRepository;
+    private final AlarmUserAgreeRepository alarmUserAgreeRepository;
+
+    // 동의 항목 저장 (소셜 로그인 후 호출)
+    @Transactional
+    public Boolean saveUserAgree(String accessToken, UserAgreeRequest request) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 1. 필수 동의 3개 → User 엔티티 업데이트
+        user.updateAgree(request.getIsTermsAgreed(), request.getIsPrivacyAgreed(), request.getIsOverFourteen());
+
+        // 2. 알림 동의 2개 → AlarmUserAgree 생성 또는 업데이트
+        AlarmUserAgree alarmAgree = alarmUserAgreeRepository.findByUserId(user.getId())
+                .orElse(null);
+
+        if (alarmAgree == null) {
+            alarmAgree = new AlarmUserAgree(
+                    request.getIsChoreNotiAllowed() != null ? request.getIsChoreNotiAllowed() : false,
+                    request.getIsMarketingNotiAllowed() != null ? request.getIsMarketingNotiAllowed() : false,
+                    user
+            );
+            alarmUserAgreeRepository.save(alarmAgree);
+        } else {
+            alarmAgree.update(request.getIsChoreNotiAllowed(), request.getIsMarketingNotiAllowed());
+        }
+
+        return true;
+    }
 
     //아이디 중복 확인
     @Transactional(readOnly = true)

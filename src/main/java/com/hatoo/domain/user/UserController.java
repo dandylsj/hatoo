@@ -1,6 +1,7 @@
 package com.hatoo.domain.user;
 
 import com.hatoo.common.model.response.GlobalResponse;
+import com.hatoo.domain.user.dto.UserAgreeRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyRequest;
 import com.hatoo.domain.user.dto.UserInfoModifyResponse;
 import com.hatoo.domain.user.dto.PasswordCheckRequest;
@@ -19,6 +20,15 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+
+    @Operation(summary = "동의 항목 저장", description = "소셜 로그인(네이버/카카오) 회원가입 후 필수 동의 3개 + 알림 동의 2개를 저장합니다.")
+    @PostMapping("/agree")
+    public ResponseEntity<GlobalResponse<Boolean>> saveUserAgree(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @RequestBody UserAgreeRequest request) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(GlobalResponse.success(userService.saveUserAgree(token, request)));
+    }
 
     @Operation(summary = "아이디 중복 확인", description = "회원가입 시 로그인 아이디의 중복 여부를 확인합니다.")
     @GetMapping("/check-login-id")

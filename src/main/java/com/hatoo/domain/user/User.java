@@ -95,4 +95,10 @@ public class User extends BaseEntity {
         this.password = encodedPassword;
     }
 
+    public void updateAgree(Boolean isTermsAgreed, Boolean isPrivacyAgreed, Boolean isOverFourteen) {
+        if (isTermsAgreed != null) this.isTermsAgreed = isTermsAgreed;
+        if (isPrivacyAgreed != null) this.isPrivacyAgreed = isPrivacyAgreed;
+        if (isOverFourteen != null) this.isOverFourteen = isOverFourteen;
+    }
+
 }

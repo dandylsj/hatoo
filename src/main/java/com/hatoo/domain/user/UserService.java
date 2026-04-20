@@ -11,10 +11,7 @@ import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
-import com.hatoo.domain.user.dto.AlarmAgreeRequest;
-import com.hatoo.domain.user.dto.UserAgreeRequest;
-import com.hatoo.domain.user.dto.UserInfoModifyRequest;
-import com.hatoo.domain.user.dto.UserInfoModifyResponse;
+import com.hatoo.domain.user.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -159,7 +156,7 @@ public class UserService {
 
     //비밀번호 변경
     @Transactional
-    public boolean changePassword(String accessToken, String password) {
+    public boolean changePassword(String accessToken, PasswordCheckRequest request) {
         try {
             //1.토큰 검증
             jwtUtil.validateToken(accessToken);
@@ -172,11 +169,11 @@ public class UserService {
                     .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
             //4. 이전 비밀번호와 같을경우 예외
-            if(passwordEncoder.matches(password, user.getPassword())) {
+            if(passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 return false;
             }
             //5. 비밀번호 암호화
-            String encodedPassword = passwordEncoder.encode(password);
+            String encodedPassword = passwordEncoder.encode(request.getPassword());
 
             //6. 변경된 비밀번호 저장
             user.changePassword(encodedPassword);

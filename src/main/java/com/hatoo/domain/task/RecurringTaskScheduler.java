@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
@@ -32,6 +33,7 @@ public class RecurringTaskScheduler {
     private final GroupMemberRepository groupMemberRepository;
     private final WeeklyStatsRepository weeklyStatsRepository;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
@@ -87,12 +89,13 @@ public class RecurringTaskScheduler {
         });
     }
 
-    // 매주 일요일 23:59:59 - 이번 주 할일 완료율 스냅샷 저장
-    @Scheduled(cron = "59 59 23 * * SUN")
+    // 주차 통계 스냅샷 저장
+    // TODO: 테스트 완료 후 "0 */10 * * * *" → "59 59 23 * * SUN" 으로 변경
+    @Scheduled(cron = "0 */10 * * * *")
     @Transactional
     public void saveWeeklyStats() {
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KST);
         String weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).format(FORMATTER);
         String weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).format(FORMATTER);
 
@@ -102,31 +105,29 @@ public class RecurringTaskScheduler {
 
         for (Group group : allGroups) {
 
-            // 이미 이번 주 데이터가 저장되어 있으면 건너뜀
-            if (weeklyStatsRepository.existsByGroupIdAndWeekStart(group.getId(), weekStart)) {
-                log.info("[WeeklyStats] 이미 저장된 주차 - groupId: {}", group.getId());
-                continue;
-            }
+            // 이번 주 기존 데이터 삭제 후 재저장 (10분마다 최신 상태로 갱신)
+            weeklyStatsRepository.deleteByGroupIdAndWeekStart(group.getId(), weekStart);
 
-            // 이번 주 할일 완료율 집계
+            // 이번 주 할일 집계 (월요일 00:00 ~ 일요일 23:59:59 기준)
             List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(group.getId(), weekStart, weekEnd);
 
-            // userId -> [finished, total] 맵
+            // userId → [myFinished, groupTotal] 맵
             Map<UUID, int[]> statsMap = new HashMap<>();
             for (Object[] row : results) {
                 UUID userId = (UUID) row[0];
-                int finished = row[3] != null ? ((Number) row[3]).intValue() : 0;
-                int total = row[4] != null ? ((Number) row[4]).intValue() : 0;
-                statsMap.put(userId, new int[]{finished, total});
+                int myFinished = row[3] != null ? ((Number) row[3]).intValue() : 0;
+                int groupTotal = row[4] != null ? ((Number) row[4]).intValue() : 0;
+                statsMap.put(userId, new int[]{myFinished, groupTotal});
             }
 
             // 그룹 전체 멤버 저장 (할일 없는 멤버는 0%로)
             List<GroupMember> members = groupMemberRepository.findByGroupId(group.getId());
             for (GroupMember gm : members) {
                 int[] stats = statsMap.getOrDefault(gm.getUser().getId(), new int[]{0, 0});
-                int finished = stats[0];
-                int total = stats[1];
-                int percent = total > 0 ? (int) Math.round(finished * 100.0 / total) : 0;
+                int myFinished = stats[0];
+                int groupTotal = stats[1];
+                // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
+                int percent = groupTotal > 0 ? (int) Math.round(myFinished * 100.0 / groupTotal) : 0;
 
                 WeeklyStats weeklyStats = new WeeklyStats(
                         group.getId(),
@@ -135,8 +136,8 @@ public class RecurringTaskScheduler {
                         gm.getProfileImg(),
                         weekStart,
                         weekEnd,
-                        total,
-                        finished,
+                        groupTotal,
+                        myFinished,
                         percent
                 );
                 weeklyStatsRepository.save(weeklyStats);

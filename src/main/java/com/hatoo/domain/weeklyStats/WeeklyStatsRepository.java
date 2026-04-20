@@ -1,6 +1,7 @@
 package com.hatoo.domain.weeklyStats;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,4 +21,9 @@ public interface WeeklyStatsRepository extends JpaRepository<WeeklyStats, UUID> 
 
     // 중복 저장 방지: 이미 해당 주차에 저장된 데이터가 있는지 확인
     boolean existsByGroupIdAndWeekStart(UUID groupId, String weekStart);
+
+    // 특정 그룹의 특정 주차 데이터 전체 삭제 (재저장 전 초기화용)
+    @Modifying
+    @Query("DELETE FROM WeeklyStats w WHERE w.groupId = :groupId AND w.weekStart = :weekStart")
+    void deleteByGroupIdAndWeekStart(@Param("groupId") UUID groupId, @Param("weekStart") String weekStart);
 }

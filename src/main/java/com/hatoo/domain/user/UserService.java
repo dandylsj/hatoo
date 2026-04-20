@@ -135,7 +135,7 @@ public class UserService {
 
     //이전 비밀번호 확인
     @Transactional(readOnly = true)
-    public boolean prePasswordVerification(String accessToken, String password) {
+    public boolean prePasswordVerification(String accessToken, PasswordCheckRequest request) {
         try {
             // 1. 토큰 검증
             jwtUtil.validateToken(accessToken);
@@ -148,7 +148,7 @@ public class UserService {
                     .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
             // 4. 비밀번호 일치 여부 확인.
-            return passwordEncoder.matches(password, user.getPassword());
+            return passwordEncoder.matches(request.getPassword(), user.getPassword());
         } catch (Exception e) {
             return false;
         }

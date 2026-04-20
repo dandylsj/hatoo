@@ -33,8 +33,7 @@ public class AlarmScheduler {
 
     // ──────────────────────────────────────────
     // 1. 할일 시작 알림 - 매 5분마다 실행
-    //    dueFrom 에 설정된 시각이 되면 담당자에게 전송
-    //    예) dueFrom = "2026-04-19T13:00:00.000Z" (UTC) → KST 22:00에 알림 발송
+    //    dueFrom(시작 시각)이 되면 담당자에게 전송
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
@@ -43,16 +42,16 @@ public class AlarmScheduler {
         LocalDateTime now = LocalDateTime.now(KST);
 
         tasks.forEach(task -> {
-            LocalDateTime dueToDateTime = parseDueDateTime(task.getDueFrom());
-            if (dueToDateTime == null) return;
+            LocalDateTime dueFromDateTime = parseDueDateTime(task.getDueFrom());
+            if (dueFromDateTime == null) return;
 
-            // dueTo 시각이 지났고, 최대 10분 이내인 경우 발송
-            if (!now.isBefore(dueToDateTime) && now.isBefore(dueToDateTime.plusMinutes(10))) {
+            // dueFrom 시각이 됐고, 최대 10분 이내인 경우 발송
+            if (!now.isBefore(dueFromDateTime) && now.isBefore(dueFromDateTime.plusMinutes(10))) {
                 if (!task.getAssignees().isEmpty()) {
                     UUID userId = task.getAssignees().get(0).getId();
                     fcmService.sendTaskStart(userId, task.getTitle());
                     task.markStartAlarmSent();
-                    log.info("[AlarmScheduler] 할일 시작 알림 발송 - taskId: {}, dueTo: {}", task.getId(), task.getDueFrom());
+                    log.info("[AlarmScheduler] 할일 시작 알림 발송 - taskId: {}, dueFrom: {}", task.getId(), task.getDueFrom());
                 }
             }
         });
@@ -60,9 +59,9 @@ public class AlarmScheduler {
 
     // ──────────────────────────────────────────
     // 2. 마감 임박 알림 - 매 5분마다 실행
-    //    dueTO 기준, deadLine 컬럼에 설정된 시간만큼 앞서서 알림
-    //    예) deadLine=DAY_1 이면 dueTo 하루 전에 전송
-    //        deadLine=MIN_30 이면 dueTo 30분 전에 전송
+    //    dueTo(마감 시각) 기준, deadLine 컬럼에 설정된 시간만큼 앞서서 알림
+    //    예) deadLine=DAY_1  → dueTo 하루 전에 전송
+    //        deadLine=MIN_30 → dueTo 30분 전에 전송
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
@@ -71,22 +70,22 @@ public class AlarmScheduler {
         LocalDateTime now = LocalDateTime.now(KST);
 
         tasks.forEach(task -> {
-            LocalDateTime dueFromDateTime = parseDueDateTime(task.getDueTo());
-            if (dueFromDateTime == null) return;
+            LocalDateTime dueToDateTime = parseDueDateTime(task.getDueTo());
+            if (dueToDateTime == null) return;
 
             Duration duration = getDeadLineDuration(task.getDeadLine());
             if (duration == null) return;
 
-            // 알림 발송 시각 = dueFrom - deadLine 기간
-            LocalDateTime notifyAt = dueFromDateTime.minus(duration);
+            // 알림 발송 시각 = dueTo - deadLine 기간
+            LocalDateTime notifyAt = dueToDateTime.minus(duration);
 
-            // notifyAt이 이미 지났고 최대 10분 이내인 경우 발송
+            // notifyAt이 됐고 최대 10분 이내인 경우 발송
             if (!now.isBefore(notifyAt) && now.isBefore(notifyAt.plusMinutes(10))) {
                 if (!task.getAssignees().isEmpty()) {
                     UUID userId = task.getAssignees().get(0).getId();
                     fcmService.sendTaskDeadline(userId, task.getTitle());
                     task.markDeadlineAlarmSent();
-                    log.info("[AlarmScheduler] 마감 임박 알림 발송 - taskId: {}, deadLine: {}", task.getId(), task.getDeadLine());
+                    log.info("[AlarmScheduler] 마감 임박 알림 발송 - taskId: {}, deadLine: {}, dueTo: {}", task.getId(), task.getDeadLine(), task.getDueTo());
                 }
             }
         });
@@ -94,7 +93,7 @@ public class AlarmScheduler {
 
     // ──────────────────────────────────────────
     // 3. 마감 초과 알림 - 매 10분마다 실행
-    //    dueTo 으로부터 2시간이 지났는데도 미완료인 할일 담당자에게 전송
+    //    dueTo(마감 시각)로부터 2시간이 지났는데도 미완료인 할일 담당자에게 전송
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 */10 * * * *")
     @Transactional
@@ -103,19 +102,19 @@ public class AlarmScheduler {
         LocalDateTime now = LocalDateTime.now(KST);
 
         tasks.forEach(task -> {
-            LocalDateTime dueFromDateTime = parseDueDateTime(task.getDueTo());
-            if (dueFromDateTime == null) return;
+            LocalDateTime dueToDateTime = parseDueDateTime(task.getDueTo());
+            if (dueToDateTime == null) return;
 
-            // 마감 초과 기준 시각 = dueFrom + 2시간
-            LocalDateTime overdueAt = dueFromDateTime.plusHours(2);
+            // 마감 초과 기준 시각 = dueTo + 2시간
+            LocalDateTime overdueAt = dueToDateTime.plusHours(2);
 
-            // overdueAt이 이미 지났고 최대 15분 이내인 경우 발송
+            // overdueAt이 됐고 최대 15분 이내인 경우 발송
             if (!now.isBefore(overdueAt) && now.isBefore(overdueAt.plusMinutes(15))) {
                 if (!task.getAssignees().isEmpty()) {
                     UUID userId = task.getAssignees().get(0).getId();
                     fcmService.sendTaskOverdue(userId, task.getTitle());
                     task.markOverdueAlarmSent();
-                    log.info("[AlarmScheduler] 마감 초과 알림 발송 - taskId: {}", task.getId());
+                    log.info("[AlarmScheduler] 마감 초과 알림 발송 - taskId: {}, dueTo: {}", task.getId(), task.getDueTo());
                 }
             }
         });

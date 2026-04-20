@@ -67,7 +67,7 @@ public class UserController {
     }
 
     @Operation(summary = "이전 비밀번호 확인", description = "비밀번호 변경 전, 현재 비밀번호가 맞는지 확인합니다.")
-    @GetMapping("/check-password")
+    @PostMapping("/check-password")
     public ResponseEntity<GlobalResponse<Boolean>> prePasswordVerification(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {

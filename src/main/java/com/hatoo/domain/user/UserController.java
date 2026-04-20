@@ -31,8 +31,8 @@ public class UserController {
         return ResponseEntity.ok(GlobalResponse.success(userService.saveUserAgree(token, request)));
     }
 
-    @Operation(summary = "알림 동의 저장/수정", description = "집안일 알림 및 마케팅 알림 수신 동의를 저장하거나 변경합니다. 설정 화면에서도 호출 가능합니다.")
-    @PatchMapping("/alarm-agree")
+    @Operation(summary = "알림 설정 동의, 알람 옵션 on/off", description = "집안일 알림 및 마케팅 알림 수신 동의를 저장하거나 변경합니다. 설정 화면에서도 호출 가능합니다.")
+    @PatchMapping("/push-alarm")
     public ResponseEntity<GlobalResponse<Boolean>> saveAlarmAgree(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody AlarmAgreeRequest request) {

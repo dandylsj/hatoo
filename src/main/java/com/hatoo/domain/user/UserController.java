@@ -72,7 +72,7 @@ public class UserController {
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean isMatch = userService.prePasswordVerification(token, request.getPassword());
+        boolean isMatch = userService.prePasswordVerification(token, request);
         if (!isMatch) return ResponseEntity.ok(GlobalResponse.fail());
         return ResponseEntity.ok(GlobalResponse.success(true));
     }

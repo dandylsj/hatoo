@@ -96,8 +96,10 @@ public class RecurringTaskScheduler {
     public void saveWeeklyStats() {
 
         LocalDate today = LocalDate.now(KST);
-        String weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).format(FORMATTER);
-        String weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).format(FORMATTER);
+        LocalDate weekStartDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekEndDate = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        String weekStart = weekStartDate.format(FORMATTER);
+        String weekEnd = weekEndDate.format(FORMATTER);
 
         log.info("[WeeklyStats] 주차 통계 저장 시작 - {}~{}", weekStart, weekEnd);
 
@@ -109,7 +111,7 @@ public class RecurringTaskScheduler {
             weeklyStatsRepository.deleteByGroupIdAndWeekStart(group.getId(), weekStart);
 
             // 이번 주 할일 집계 (월요일 00:00 ~ 일요일 23:59:59 기준)
-            List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(group.getId(), weekStart, weekEnd);
+            List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(group.getId(), weekStartDate, weekEndDate);
 
             // userId → [myFinished, groupTotal] 맵
             Map<UUID, int[]> statsMap = new HashMap<>();

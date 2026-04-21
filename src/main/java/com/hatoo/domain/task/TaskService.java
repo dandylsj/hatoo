@@ -253,8 +253,8 @@ public class TaskService {
 
         // 이번 주 월요일 ~ 일요일 (KST 기준)
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        String weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString();
-        String weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).toString();
+        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         // row[3] = 내가 완료한 수, row[4] = 그룹 전체 완료된 수
         List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(groupId, weekStart, weekEnd);

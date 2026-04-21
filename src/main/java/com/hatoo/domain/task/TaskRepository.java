@@ -54,19 +54,20 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 이번 주(weekStart~weekEnd) 그룹 내 담당자별 기여도 집계
     // [userId, nickname, profileImg, myFinishedCount, groupTotalFinishedCount] 순서로 반환
     // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
+    // finishedAt 기준으로 이번 주에 완료된 할일을 집계
     @Query("SELECT u.id, u.nickname, gm.profileImg, " +
-           "SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN t.finished = true AND t.finishedAt IS NOT NULL " +
+           "    AND CAST(t.finishedAt AS date) >= :weekStart " +
+           "    AND CAST(t.finishedAt AS date) <= :weekEnd THEN 1 ELSE 0 END), " +
            "(SELECT COUNT(t2) FROM Task t2 JOIN t2.groups g2 WHERE g2.id = :groupId " +
-           " AND t2.finished = true " +
-           " AND SUBSTRING(t2.dueFrom, 1, 10) >= :weekStart " +
-           " AND SUBSTRING(t2.dueFrom, 1, 10) <= :weekEnd) " +
+           " AND t2.finished = true AND t2.finishedAt IS NOT NULL " +
+           " AND CAST(t2.finishedAt AS date) >= :weekStart " +
+           " AND CAST(t2.finishedAt AS date) <= :weekEnd) " +
            "FROM Task t " +
            "JOIN t.assignees u " +
            "JOIN t.groups g " +
            "JOIN GroupMember gm ON gm.user.id = u.id AND gm.group.id = g.id " +
            "WHERE g.id = :groupId " +
-           "AND SUBSTRING(t.dueFrom, 1, 10) >= :weekStart " +
-           "AND SUBSTRING(t.dueFrom, 1, 10) <= :weekEnd " +
            "GROUP BY u.id, u.nickname, gm.profileImg")
     List<Object[]> countFinishedTasksByGroupIdThisWeek(
             @Param("groupId") UUID groupId,

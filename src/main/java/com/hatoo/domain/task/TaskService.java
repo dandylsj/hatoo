@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
@@ -250,8 +251,8 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 이번 주 월요일 ~ 일요일
-        LocalDate today = LocalDate.now();
+        // 이번 주 월요일 ~ 일요일 (KST 기준)
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         String weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString();
         String weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).toString();
 

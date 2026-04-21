@@ -3,6 +3,8 @@ package com.hatoo.domain.groups;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSetting;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSettingRepository;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.dto.*;
@@ -27,6 +29,7 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final GroupAlarmSettingRepository groupAlarmSettingRepository;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final FcmService fcmService;
@@ -69,6 +72,10 @@ public class GroupService {
         // 그룹 생성자를 GroupMember로 등록
         GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
+
+        // 그룹 알람 설정 기본값 생성 (전부 ON)
+        GroupAlarmSetting alarmSetting = new GroupAlarmSetting(user.getId(), group.getId());
+        groupAlarmSettingRepository.save(alarmSetting);
 
         return new GroupCreateResponse(
                 group.getId(),
@@ -137,7 +144,11 @@ public class GroupService {
         GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
 
-        // 8. 새 멤버 참여 알림 전송 (그룹 전체에게)
+        // 8. 그룹 알람 설정 기본값 생성 (전부 ON)
+        GroupAlarmSetting alarmSetting = new GroupAlarmSetting(user.getId(), group.getId());
+        groupAlarmSettingRepository.save(alarmSetting);
+
+        // 9. 새 멤버 참여 알림 전송 (그룹 전체에게)
         fcmService.sendNewMember(groupId, group.getName(), user.getNickname());
 
         return true;
@@ -178,9 +189,10 @@ public class GroupService {
             throw new CustomException(ErrorMessage.NO_DELETE_PERMISSION);
         }
 
-        // group_members 전체 삭제 후 그룹 삭제
+        // group_members + group_alarm_settings 전체 삭제 후 그룹 삭제
         List<GroupMember> members = groupMemberRepository.findByGroupIdOrderByCreatedAtAsc(groupId);
         groupMemberRepository.deleteAll(members);
+        groupAlarmSettingRepository.deleteByGroupId(groupId);
 
         groupRepository.delete(group);
 
@@ -211,6 +223,7 @@ public class GroupService {
             taskRepository.delete(task);
         }
         groupMemberRepository.delete(groupMember);
+        groupAlarmSettingRepository.deleteByUserIdAndGroupId(user.getId(), groupId);
 
         return true;
     }
@@ -237,6 +250,7 @@ public class GroupService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
 
         groupMemberRepository.delete(groupMember);
+        groupAlarmSettingRepository.deleteByUserIdAndGroupId(memberId, groupId);
 
         return true;
     }
@@ -254,6 +268,54 @@ public class GroupService {
                 .map(GroupTokenSameListDto::from)
                 .collect(Collectors.toList());
     }
+    // 그룹 알람 설정 조회
+    @Transactional(readOnly = true)
+    public GroupAlarmSettingResponse getGroupAlarmSetting(String accessToken, UUID groupId) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        return groupAlarmSettingRepository
+                .findByUserIdAndGroupId(user.getId(), groupId)
+                .map(GroupAlarmSettingResponse::from)
+                .orElse(GroupAlarmSettingResponse.defaultEnabled(groupId));
+    }
+
+    // 그룹 알람 설정 수정
+    @Transactional
+    public GroupAlarmSettingResponse updateGroupAlarmSetting(String accessToken, UUID groupId,
+                                                              GroupAlarmSettingRequest request) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        GroupAlarmSetting setting = groupAlarmSettingRepository
+                .findByUserIdAndGroupId(user.getId(), groupId)
+                .orElseGet(() -> {
+                    GroupAlarmSetting newSetting = new GroupAlarmSetting(user.getId(), groupId);
+                    return groupAlarmSettingRepository.save(newSetting);
+                });
+
+        setting.update(
+                request.getIsGroupNotiEnabled(),
+                request.getIsNewTaskNotiEnabled(),
+                request.getIsNewMemberNotiEnabled(),
+                request.getIsTaskCompleteNotiEnabled()
+        );
+
+        return GroupAlarmSettingResponse.from(setting);
+    }
+
     //초대 코드 생성 로직
     private String generateInviteCode() {
         int length = 4;

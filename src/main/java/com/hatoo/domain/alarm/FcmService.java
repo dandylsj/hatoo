@@ -9,6 +9,8 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgreeRepository;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSetting;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSettingRepository;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.user.User;
@@ -29,6 +31,7 @@ public class FcmService {
     private final UserRepository userRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final AlarmUserAgreeRepository alarmUserAgreeRepository;
+    private final GroupAlarmSettingRepository groupAlarmSettingRepository;
     private final JwtUtil jwtUtil;
 
     // ──────────────────────────────────────────
@@ -107,7 +110,8 @@ public class FcmService {
         String body = String.format(AlarmType.NEW_MEMBER.getBodyTemplate(), groupName, newMemberNickname);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
-                sendToUserIfAllowed(gm.getUser().getId(), AlarmType.NEW_MEMBER.getTitle(), body)
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, "newMember",
+                        AlarmType.NEW_MEMBER.getTitle(), body)
         );
     }
 
@@ -119,12 +123,13 @@ public class FcmService {
         String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname, taskTitle);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
-                sendToUserIfAllowed(gm.getUser().getId(), AlarmType.TASK_CREATED.getTitle(), body)
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, "newTask",
+                        AlarmType.TASK_CREATED.getTitle(), body)
         );
     }
 
     // ──────────────────────────────────────────
-    // 7. 집안일 배정 알림 (TaskService에서 호출)
+    // 7. 집안일 배정 알림 (TaskService에서 호출) - 개인 알림, 그룹 설정 미적용
     // ──────────────────────────────────────────
 
     public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname) {
@@ -139,9 +144,22 @@ public class FcmService {
     public void sendInactiveGroup(UUID groupId) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
-                sendToUserIfAllowed(gm.getUser().getId(),
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, "general",
                         AlarmType.INACTIVE_GROUP.getTitle(),
                         AlarmType.INACTIVE_GROUP.getBodyTemplate())
+        );
+    }
+
+    // ──────────────────────────────────────────
+    // 9. 집안일 완료 알림 (TaskService에서 호출)
+    // ──────────────────────────────────────────
+
+    public void sendTaskComplete(UUID groupId, String finisherNickname, String taskTitle) {
+        String body = String.format("%s님이 [%s]을(를) 완료했어요!", finisherNickname, taskTitle);
+        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
+        members.forEach(gm ->
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, "taskComplete",
+                        "집안일 완료", body)
         );
     }
 
@@ -149,7 +167,7 @@ public class FcmService {
     // 내부 공통 메서드
     // ──────────────────────────────────────────
 
-    // 알림 수신 동의한 유저에게만 전송
+    // 개인 알림: 전역 동의만 확인 (task_start, task_deadline, task_overdue, task_assigned)
     private void sendToUserIfAllowed(UUID userId, String title, String body) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
@@ -161,6 +179,52 @@ public class FcmService {
         if (!isAllowed) {
             log.info("[FCM] 알림 수신 거부 유저 - userId: {}", userId);
             return;
+        }
+
+        if (user.getFcmToken() == null || user.getFcmToken().isBlank()) {
+            log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
+            return;
+        }
+
+        sendMessage(user.getFcmToken(), title, body);
+    }
+
+    // 그룹 알림: 전역 동의 + 그룹 마스터 토글 + 세부 설정 3단계 확인
+    // notiType: "newTask" | "newMember" | "taskComplete" | "general"
+    private void sendToGroupMemberIfAllowed(UUID userId, UUID groupId, String notiType,
+                                             String title, String body) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) return;
+
+        // 1단계: 전역 알람 동의 확인
+        boolean choreAllowed = alarmUserAgreeRepository.findByUserId(userId)
+                .map(AlarmUserAgree::getIsChoreNotiAllowed)
+                .orElse(false);
+        if (!choreAllowed) {
+            log.info("[FCM] 전역 알림 미동의 - userId: {}", userId);
+            return;
+        }
+
+        // 2단계: 그룹 마스터 토글 + 3단계: 세부 설정 확인
+        GroupAlarmSetting setting = groupAlarmSettingRepository
+                .findByUserIdAndGroupId(userId, groupId)
+                .orElse(null);
+
+        if (setting != null) {
+            if (!Boolean.TRUE.equals(setting.getIsGroupNotiEnabled())) {
+                log.info("[FCM] 그룹 알림 OFF - userId: {}, groupId: {}", userId, groupId);
+                return;
+            }
+            boolean detailAllowed = switch (notiType) {
+                case "newTask"      -> Boolean.TRUE.equals(setting.getIsNewTaskNotiEnabled());
+                case "newMember"    -> Boolean.TRUE.equals(setting.getIsNewMemberNotiEnabled());
+                case "taskComplete" -> Boolean.TRUE.equals(setting.getIsTaskCompleteNotiEnabled());
+                default             -> true;
+            };
+            if (!detailAllowed) {
+                log.info("[FCM] 세부 알림 OFF - userId: {}, type: {}", userId, notiType);
+                return;
+            }
         }
 
         if (user.getFcmToken() == null || user.getFcmToken().isBlank()) {

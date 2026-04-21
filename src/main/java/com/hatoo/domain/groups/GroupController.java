@@ -3,6 +3,7 @@ package com.hatoo.domain.groups;
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.dto.*;
+import jakarta.validation.Valid;
 import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -119,5 +120,26 @@ public class GroupController {
         Boolean result = groupService.profileImgSelectApi(authToken, request, groupId);
 
         return ResponseEntity.ok(GlobalResponse.success(result));
+    }
+
+    @Operation(summary = "그룹 알림 설정 조회", description = "특정 그룹에 대한 내 알림 설정을 조회합니다.")
+    @GetMapping("/{groupId}/alarm")
+    public ResponseEntity<GlobalResponse<GroupAlarmSettingResponse>> getGroupAlarmSetting(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        GroupAlarmSettingResponse response = groupService.getGroupAlarmSetting(token, groupId);
+        return ResponseEntity.ok(GlobalResponse.success(response));
+    }
+
+    @Operation(summary = "그룹 알림 설정 수정", description = "특정 그룹에 대한 내 알림 설정을 수정합니다. 마스터 토글 OFF 시 세부 설정도 모두 OFF됩니다.")
+    @PatchMapping("/{groupId}/alarm")
+    public ResponseEntity<GlobalResponse<GroupAlarmSettingResponse>> updateGroupAlarmSetting(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId,
+            @RequestBody GroupAlarmSettingRequest request) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        GroupAlarmSettingResponse response = groupService.updateGroupAlarmSetting(token, groupId, request);
+        return ResponseEntity.ok(GlobalResponse.success(response));
     }
 }

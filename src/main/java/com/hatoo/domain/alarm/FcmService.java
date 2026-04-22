@@ -101,7 +101,7 @@ public class FcmService {
     }
 
     // ──────────────────────────────────────────
-    // 7. 집안일 배정 알림 (TaskService에서 호출) - 개인 알림, 그룹 설정 미적용
+    // 7. 집안일 배정 알림 (TaskService에서 호출) - 개인 알림
     // ──────────────────────────────────────────
 
     public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname) {
@@ -139,7 +139,7 @@ public class FcmService {
     // 내부 공통 메서드
     // ──────────────────────────────────────────
 
-    // 개인 알림: 전체 알림 마스터 + 개인 알림 토글 확인
+    // 개인 알림: 전체 알림 마스터 → 개인 알림 토글 2단계 확인
     private void sendToUserIfAllowed(UUID userId, String title, String body) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
@@ -173,36 +173,50 @@ public class FcmService {
 
         AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(userId).orElse(null);
 
-        // 1단계: 전체 알림 마스터 (null이면 기본값 true로 처리)
+        // 1단계: 전체 알림 마스터
         if (agree != null && Boolean.FALSE.equals(agree.getIsAllNotiEnabled())) {
             log.info("[FCM] 전체 알림 OFF - userId: {}", userId);
             return;
         }
-        // 2단계: 그룹 알림 전체 마스터 (null이면 기본값 true로 처리)
+        // 2단계: 그룹 알림 전체 마스터
         if (agree != null && Boolean.FALSE.equals(agree.getIsGroupNotiAllGlobalEnabled())) {
             log.info("[FCM] 그룹 알림 전체 OFF - userId: {}", userId);
             return;
         }
 
-        // 3단계: 그룹별 마스터 + 4단계: 세부 설정
         GroupAlarmSetting setting = groupAlarmSettingRepository
-                .findByUserIdAndGroupId(userId, groupId)
-                .orElse(null);
+                .findByUserIdAndGroupId(userId, groupId).orElse(null);
 
+        // 3단계: 개별 그룹 알림 마스터
+        if (setting != null && Boolean.FALSE.equals(setting.getIsGroupNotiEnabled())) {
+            log.info("[FCM] 그룹별 알림 OFF - userId: {}, groupId: {}", userId, groupId);
+            return;
+        }
+
+        // 4단계: 세부 알림 타입별 설정
         if (setting != null) {
-            if (!Boolean.TRUE.equals(setting.getIsGroupNotiEnabled())) {
-                log.info("[FCM] 그룹 알림 OFF - userId: {}, groupId: {}", userId, groupId);
-                return;
-            }
-            boolean detailAllowed = switch (notiType) {
-                case "newTask"      -> Boolean.TRUE.equals(setting.getIsNewTaskNotiEnabled());
-                case "newMember"    -> Boolean.TRUE.equals(setting.getIsNewMemberNotiEnabled());
-                case "taskComplete" -> Boolean.TRUE.equals(setting.getIsTaskCompleteNotiEnabled());
-                default             -> true;
-            };
-            if (!detailAllowed) {
-                log.info("[FCM] 세부 알림 OFF - userId: {}, type: {}", userId, notiType);
-                return;
+            switch (notiType) {
+                case "newTask":
+                    if (Boolean.FALSE.equals(setting.getIsNewTaskNotiEnabled())) {
+                        log.info("[FCM] 새 집안일 알림 OFF - userId: {}", userId);
+                        return;
+                    }
+                    break;
+                case "newMember":
+                    if (Boolean.FALSE.equals(setting.getIsNewMemberNotiEnabled())) {
+                        log.info("[FCM] 새 멤버 알림 OFF - userId: {}", userId);
+                        return;
+                    }
+                    break;
+                case "taskComplete":
+                    if (Boolean.FALSE.equals(setting.getIsTaskCompleteNotiEnabled())) {
+                        log.info("[FCM] 집안일 완료 알림 OFF - userId: {}", userId);
+                        return;
+                    }
+                    break;
+                default:
+                    // "general" 등 기타 타입은 그룹 마스터 토글만 적용
+                    break;
             }
         }
 
@@ -214,22 +228,19 @@ public class FcmService {
         sendMessage(user.getFcmToken(), title, body);
     }
 
-    // FCM 메시지 실제 전송
     private void sendMessage(String fcmToken, String title, String body) {
         try {
             Message message = Message.builder()
-                    .setToken(fcmToken)
                     .setNotification(Notification.builder()
                             .setTitle(title)
                             .setBody(body)
                             .build())
+                    .setToken(fcmToken)
                     .build();
-
-            String response = FirebaseMessaging.getInstance().send(message);
-            log.info("[FCM] 전송 성공 - messageId: {}", response);
-
+            FirebaseMessaging.getInstance().send(message);
+            log.info("[FCM] 알림 전송 성공 - title: {}", title);
         } catch (FirebaseMessagingException e) {
-            log.error("[FCM] 전송 실패 - token: {}, error: {}", fcmToken, e.getMessage());
+            log.error("[FCM] 알림 전송 실패 - {}", e.getMessage());
         }
     }
 }

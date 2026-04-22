@@ -52,6 +52,7 @@ public class AlarmUserAgree extends BaseEntity {
         this.user = user;
     }
 
+    // null인 항목은 변경하지 않음 (기존 값 유지)
     public void update(Boolean isAllNotiEnabled, Boolean isMarketingNotiAllowed,
                        Boolean isPersonalNotiEnabled, Boolean isGroupNotiAllGlobalEnabled) {
         if (isAllNotiEnabled != null) this.isAllNotiEnabled = isAllNotiEnabled;

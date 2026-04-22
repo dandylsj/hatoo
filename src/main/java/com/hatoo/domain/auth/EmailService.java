@@ -1,8 +1,9 @@
-package com.hatoo.domain.user;
+package com.hatoo.domain.auth;
 
 import com.hatoo.common.email.SmtpEmailSender;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
+import com.hatoo.domain.user.UserRepository;
 import com.hatoo.domain.user.dto.EmailVerifiRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

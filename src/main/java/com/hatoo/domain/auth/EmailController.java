@@ -1,4 +1,4 @@
-package com.hatoo.domain.user;
+package com.hatoo.domain.auth;
 
 import com.hatoo.common.model.response.GlobalResponse;
 import com.hatoo.domain.user.dto.EmailVerifiRequest;
@@ -10,8 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-@Tag(name = "Email", description = "이메일 인증 관련 API")
+@Tag(name = "Auth", description = "인증(회원가입, 로그인 등) 관련 API")
 @Slf4j
 @Validated
 @RestController

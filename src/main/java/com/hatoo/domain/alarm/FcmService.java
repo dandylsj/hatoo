@@ -35,34 +35,6 @@ public class FcmService {
     private final JwtUtil jwtUtil;
 
     // ──────────────────────────────────────────
-    // FCM 토큰 저장
-    // ──────────────────────────────────────────
-
-    @Transactional
-    public void saveFcmToken(String accessToken, String fcmToken) {
-        jwtUtil.validateToken(accessToken);
-        String loginId = jwtUtil.extractLoginId(accessToken);
-        User user = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
-        user.updateInfo(null, null, null, fcmToken);
-    }
-
-    // ──────────────────────────────────────────
-    // 컨트롤러에서 직접 호출 (커스텀 메시지 전송)
-    // ──────────────────────────────────────────
-
-    // 특정 유저에게 커스텀 알림 전송
-    public void sendToUser(UUID targetUserId, String title, String body) {
-        sendToUserIfAllowed(targetUserId, title, body);
-    }
-
-    // 그룹 전체에 커스텀 알림 전송
-    public void sendToGroup(UUID groupId, String title, String body) {
-        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
-        members.forEach(gm -> sendToUserIfAllowed(gm.getUser().getId(), title, body));
-    }
-
-    // ──────────────────────────────────────────
     // 1. 할일 시작 알림 (스케줄러 호출)
     // ──────────────────────────────────────────
 
@@ -167,17 +139,21 @@ public class FcmService {
     // 내부 공통 메서드
     // ──────────────────────────────────────────
 
-    // 개인 알림: 전역 동의만 확인 (task_start, task_deadline, task_overdue, task_assigned)
+    // 개인 알림: 전체 알림 마스터 + 개인 알림 토글 확인
     private void sendToUserIfAllowed(UUID userId, String title, String body) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
 
-        boolean isAllowed = alarmUserAgreeRepository.findByUserId(userId)
-                .map(AlarmUserAgree::getIsChoreNotiAllowed)
-                .orElse(false);
+        AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(userId).orElse(null);
 
-        if (!isAllowed) {
-            log.info("[FCM] 알림 수신 거부 유저 - userId: {}", userId);
+        // 1단계: 전체 알림 마스터
+        if (agree != null && !Boolean.TRUE.equals(agree.getIsAllNotiEnabled())) {
+            log.info("[FCM] 전체 알림 OFF - userId: {}", userId);
+            return;
+        }
+        // 2단계: 개인 알림 토글
+        if (agree != null && !Boolean.TRUE.equals(agree.getIsPersonalNotiEnabled())) {
+            log.info("[FCM] 개인 알림 OFF - userId: {}", userId);
             return;
         }
 
@@ -189,23 +165,26 @@ public class FcmService {
         sendMessage(user.getFcmToken(), title, body);
     }
 
-    // 그룹 알림: 전역 동의 + 그룹 마스터 토글 + 세부 설정 3단계 확인
-    // notiType: "newTask" | "newMember" | "taskComplete" | "general"
+    // 그룹 알림: 전체 마스터 → 그룹 알림 전체 → 그룹별 마스터 → 세부 설정 4단계 확인
     private void sendToGroupMemberIfAllowed(UUID userId, UUID groupId, String notiType,
                                              String title, String body) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
 
-        // 1단계: 전역 알람 동의 확인
-        boolean choreAllowed = alarmUserAgreeRepository.findByUserId(userId)
-                .map(AlarmUserAgree::getIsChoreNotiAllowed)
-                .orElse(false);
-        if (!choreAllowed) {
-            log.info("[FCM] 전역 알림 미동의 - userId: {}", userId);
+        AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(userId).orElse(null);
+
+        // 1단계: 전체 알림 마스터
+        if (agree != null && !Boolean.TRUE.equals(agree.getIsAllNotiEnabled())) {
+            log.info("[FCM] 전체 알림 OFF - userId: {}", userId);
+            return;
+        }
+        // 2단계: 그룹 알림 전체 마스터
+        if (agree != null && !Boolean.TRUE.equals(agree.getIsGroupNotiAllGlobalEnabled())) {
+            log.info("[FCM] 그룹 알림 전체 OFF - userId: {}", userId);
             return;
         }
 
-        // 2단계: 그룹 마스터 토글 + 3단계: 세부 설정 확인
+        // 3단계: 그룹별 마스터 + 4단계: 세부 설정
         GroupAlarmSetting setting = groupAlarmSettingRepository
                 .findByUserIdAndGroupId(userId, groupId)
                 .orElse(null);

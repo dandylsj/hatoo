@@ -1,11 +1,7 @@
 package com.hatoo.domain.user;
 
 import com.hatoo.common.model.response.GlobalResponse;
-import com.hatoo.domain.user.dto.AlarmAgreeRequest;
-import com.hatoo.domain.user.dto.UserAgreeRequest;
-import com.hatoo.domain.user.dto.UserInfoModifyRequest;
-import com.hatoo.domain.user.dto.UserInfoModifyResponse;
-import com.hatoo.domain.user.dto.PasswordCheckRequest;
+import com.hatoo.domain.user.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,8 +27,16 @@ public class UserController {
         return ResponseEntity.ok(GlobalResponse.success(userService.saveUserAgree(token, request)));
     }
 
-    @Operation(summary = "알림 설정 동의, 알람 옵션 on/off", description = "집안일 알림 및 마케팅 알림 수신 동의를 저장하거나 변경합니다. 설정 화면에서도 호출 가능합니다.")
-    @PatchMapping("/push-alarm")
+    @Operation(summary = "전체 알림 설정 조회", description = "전체 알림/마케팅/개인/그룹 알림 설정과 그룹별 세부 설정을 한 번에 조회합니다.")
+    @GetMapping("/alarm")
+    public ResponseEntity<GlobalResponse<AlarmSettingResponse>> getAlarmSetting(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(GlobalResponse.success(userService.getAlarmSetting(token)));
+    }
+
+    @Operation(summary = "알림 설정 수정", description = "전체 알림/마케팅/개인/그룹 알림 설정을 수정합니다. null인 항목은 변경되지 않습니다.")
+    @PatchMapping("/alarm")
     public ResponseEntity<GlobalResponse<Boolean>> saveAlarmAgree(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody AlarmAgreeRequest request) {

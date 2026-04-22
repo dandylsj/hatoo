@@ -1,4 +1,4 @@
-package com.hatoo.domain.user;
+package com.hatoo.domain.auth;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

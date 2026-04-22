@@ -5,6 +5,8 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgreeRepository;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSetting;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSettingRepository;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
@@ -13,6 +15,7 @@ import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.user.dto.*;
 import lombok.RequiredArgsConstructor;
+import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,7 @@ public class UserService {
     private final GroupRepository groupRepository;
     private final TaskRepository taskRepository;
     private final AlarmUserAgreeRepository alarmUserAgreeRepository;
+    private final GroupAlarmSettingRepository groupAlarmSettingRepository;
 
     // 필수 동의 저장 (소셜 로그인 후 1회 호출)
     @Transactional
@@ -47,7 +51,51 @@ public class UserService {
         return true;
     }
 
-    // 알림 동의 저장/수정 (설정에서 언제든 변경 가능)
+    // 전체 알림 설정 조회
+    @Transactional(readOnly = true)
+    public AlarmSettingResponse getAlarmSetting(String accessToken) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(user.getId()).orElse(null);
+
+        Boolean isAllNotiEnabled          = agree != null ? agree.getIsAllNotiEnabled()           : true;
+        Boolean isMarketingNotiAllowed    = agree != null ? agree.getIsMarketingNotiAllowed()     : false;
+        Boolean isPersonalNotiEnabled     = agree != null ? agree.getIsPersonalNotiEnabled()      : true;
+        Boolean isGroupNotiAllGlobal      = agree != null ? agree.getIsGroupNotiAllGlobalEnabled(): true;
+
+//        // 내가 속한 그룹 목록 조회
+//        List<GroupMember> myGroups = groupMemberRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+//
+//        List<AlarmSettingResponse.GroupAlarmDto> groupSettings = myGroups.stream()
+//                .map(gm -> {
+//                    GroupAlarmSetting setting = groupAlarmSettingRepository
+//                            .findByUserIdAndGroupId(user.getId(), gm.getGroup().getId())
+//                            .orElse(null);
+//                    return new AlarmSettingResponse.GroupAlarmDto(
+//                            gm.getGroup().getId(),
+//                            gm.getGroup().getName(),
+//                            setting != null ? setting.getIsGroupNotiEnabled()        : true,
+//                            setting != null ? setting.getIsNewTaskNotiEnabled()      : true,
+//                            setting != null ? setting.getIsNewMemberNotiEnabled()    : true,
+//                            setting != null ? setting.getIsTaskCompleteNotiEnabled() : true
+//                    );
+//                })
+//                .collect(Collectors.toList());
+
+        return new AlarmSettingResponse(
+                isAllNotiEnabled,
+                isMarketingNotiAllowed,
+                isPersonalNotiEnabled,
+                isGroupNotiAllGlobal
+//                groupSettings
+        );
+    }
+
+    // 알림 설정 수정 (설정에서 언제든 변경 가능)
     @Transactional
     public Boolean saveAlarmAgree(String accessToken, AlarmAgreeRequest request) {
         jwtUtil.validateToken(accessToken);
@@ -56,20 +104,21 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // AlarmUserAgree 없으면 새로 생성, 있으면 업데이트
         AlarmUserAgree alarmAgree = alarmUserAgreeRepository.findByUserId(user.getId())
                 .orElse(null);
 
         if (alarmAgree == null) {
-            alarmAgree = new AlarmUserAgree(
-                    request.getIsChoreNotiAllowed() != null ? request.getIsChoreNotiAllowed() : false,
-                    request.getIsMarketingNotiAllowed() != null ? request.getIsMarketingNotiAllowed() : false,
-                    user
-            );
+            alarmAgree = new AlarmUserAgree(true, request.getIsMarketingNotiAllowed() != null
+                    ? request.getIsMarketingNotiAllowed() : false, user);
             alarmUserAgreeRepository.save(alarmAgree);
-        } else {
-            alarmAgree.update(request.getIsChoreNotiAllowed(), request.getIsMarketingNotiAllowed());
         }
+
+        alarmAgree.update(
+                request.getIsAllNotiEnabled(),
+                request.getIsMarketingNotiAllowed(),
+                request.getIsPersonalNotiEnabled(),
+                request.getIsGroupNotiAllGlobalEnabled()
+        );
 
         return true;
     }

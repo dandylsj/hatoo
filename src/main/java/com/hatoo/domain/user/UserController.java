@@ -29,77 +29,65 @@ public class UserController {
 
     @Operation(summary = "전체 알림 설정 조회", description = "전체 알림/마케팅/개인/그룹 알림 설정과 그룹별 세부 설정을 한 번에 조회합니다.")
     @GetMapping("/alarm")
-    public ResponseEntity<GlobalResponse<AlarmSettingResponse>> getAlarmSetting(
+    public ResponseEntity<AlarmSettingResponse> getAlarmSetting(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        return ResponseEntity.ok(GlobalResponse.success(userService.getAlarmSetting(token)));
+        return ResponseEntity.ok(userService.getAlarmSetting(token));
     }
 
-    @Operation(summary = "알림 설정 수정", description = "전체 알림/마케팅/개인/그룹 알림 설정을 수정합니다. null인 항목은 변경되지 않습니다.")
+    @Operation(summary = "알림 설정 수정", description = "전체 알림/마케팅/개인/그룹 알림 설정을 수정합니다. null인 항목은 변경되지 않습니다. 응답으로 변경된 실제 설정값을 반환합니다.")
     @PatchMapping("/alarm")
-    public ResponseEntity<GlobalResponse<Boolean>> saveAlarmAgree(
+    public ResponseEntity<AlarmSettingResponse> saveAlarmAgree(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody AlarmAgreeRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        return ResponseEntity.ok(GlobalResponse.success(userService.saveAlarmAgree(token, request)));
+        return ResponseEntity.ok(userService.saveAlarmAgree(token, request));
     }
 
     @Operation(summary = "아이디 중복 확인", description = "회원가입 시 로그인 아이디의 중복 여부를 확인합니다.")
     @GetMapping("/check-login-id")
-    public ResponseEntity<GlobalResponse<Boolean>> checkLoginId(@RequestParam String loginId) {
-        boolean checked = userService.checkLoginIdApi(loginId);
-        if (!checked) return ResponseEntity.ok(GlobalResponse.fail());
-        return ResponseEntity.ok(GlobalResponse.success(true));
+    public ResponseEntity<Boolean> checkLoginId(@RequestParam String loginId) {
+        return ResponseEntity.ok(userService.checkLoginIdApi(loginId));
     }
 
     @Operation(summary = "닉네임 중복 확인", description = "회원가입 시 닉네임의 중복 여부를 확인합니다.")
     @GetMapping("/check-nickname")
-    public ResponseEntity<GlobalResponse<Boolean>> checkNickname(@RequestParam String nickname) {
-        boolean checkNickName = userService.checkNicknameApi(nickname);
-        if (!checkNickName) return ResponseEntity.ok(GlobalResponse.fail());
-        return ResponseEntity.ok(GlobalResponse.success(true));
+    public ResponseEntity<Boolean> checkNickname(@RequestParam String nickname) {
+        return ResponseEntity.ok(userService.checkNicknameApi(nickname));
     }
 
     @Operation(summary = "유저 정보 수정", description = "로그인한 유저의 정보를 수정합니다.")
     @PatchMapping
-    public ResponseEntity<GlobalResponse<UserInfoModifyResponse>> modifyMemberInfo(
+    public ResponseEntity<UserInfoModifyResponse> modifyMemberInfo(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody UserInfoModifyRequest userInfoModify) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        UserInfoModifyResponse response = userService.userInfoModifyResponse(token, userInfoModify);
-        return ResponseEntity.ok(GlobalResponse.success(response));
+        return ResponseEntity.ok(userService.userInfoModifyResponse(token, userInfoModify));
     }
 
     @Operation(summary = "이전 비밀번호 확인", description = "비밀번호 변경 전, 현재 비밀번호가 맞는지 확인합니다.")
     @PostMapping("/check-password")
-    public ResponseEntity<GlobalResponse<Boolean>> prePasswordVerification(
+    public ResponseEntity<Boolean> prePasswordVerification(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean isMatch = userService.prePasswordVerification(token, request);
-        if (!isMatch) return ResponseEntity.ok(GlobalResponse.fail());
-        return ResponseEntity.ok(GlobalResponse.success(true));
+        return ResponseEntity.ok(userService.prePasswordVerification(token, request));
     }
 
     @Operation(summary = "비밀번호 변경", description = "유저의 비밀번호를 변경합니다.")
     @PatchMapping("/{loginId}/{email}")
-    public ResponseEntity<GlobalResponse<Boolean>> changePassword(
+    public ResponseEntity<Boolean> changePassword(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @Valid @RequestBody PasswordCheckRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean isChange = userService.changePassword(token, request);
-        if (!isChange) return ResponseEntity.ok(GlobalResponse.fail());
-        return ResponseEntity.ok(GlobalResponse.success(true));
+        return ResponseEntity.ok(userService.changePassword(token, request));
     }
 
     @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. isDeleted가 true로 변경됩니다.")
     @DeleteMapping
-    public ResponseEntity<GlobalResponse<Boolean>> withdrawUser(
+    public ResponseEntity<Boolean> withdrawUser(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        userService.withdrawUser(token);
-        return ResponseEntity.ok(GlobalResponse.success(true));
+        return ResponseEntity.ok(userService.withdrawUser(token));
     }
 }
-
- 

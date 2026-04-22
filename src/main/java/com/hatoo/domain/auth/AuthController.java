@@ -38,11 +38,10 @@ public class AuthController {
 
     @Operation(summary = "유저 프로필 조회", description = "로그인 아이디를 기반으로 유저의 프로필 정보를 조회합니다.")
     @GetMapping("/profile")
-    public ResponseEntity<GlobalResponse<UserInfoResposne>> userInfo(
+    public ResponseEntity<UserInfoResposne> userInfo(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        UserInfoResposne user = authService.getUserInfoApi(token);
-        return ResponseEntity.ok(GlobalResponse.success(user));
+        return ResponseEntity.ok(authService.getUserInfoApi(token));
     }
 
     @Operation(summary = "토큰 재발급", description = "리프레시 토큰으로 새 액세스 토큰과 리프레시 토큰을 재발급합니다.")

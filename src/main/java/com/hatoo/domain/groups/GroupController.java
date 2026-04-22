@@ -1,10 +1,6 @@
 package com.hatoo.domain.groups;
 
-import com.hatoo.common.model.response.GlobalResponse;
-import com.hatoo.domain.groupMember.ProfileImg;
 import com.hatoo.domain.groups.dto.*;
-import jakarta.validation.Valid;
-import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,121 +21,106 @@ public class GroupController {
 
     @Operation(summary = "내가 속한 그룹 조회", description = "로그인한 유저가 속한 그룹 정보를 조회합니다.")
     @GetMapping
-    public ResponseEntity<GlobalResponse<List<MyGroupResponse>>> myGroupInfoApi(
+    public ResponseEntity<List<MyGroupResponse>> myGroupInfoApi(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        List<MyGroupResponse> myGroups = groupService.myGroupInfoResponse(token);
-        return ResponseEntity.ok(GlobalResponse.success(myGroups));
+        return ResponseEntity.ok(groupService.myGroupInfoResponse(token));
     }
 
-    @Operation(summary = "그룹생성", description = "새로운 그룹을 생성합니다.")
+    @Operation(summary = "그룹 생성", description = "새로운 그룹을 생성합니다.")
     @PostMapping
-    public ResponseEntity<GlobalResponse<GroupCreateResponse>> createGroup(
+    public ResponseEntity<GroupCreateResponse> createGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody GroupCreateRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        GroupCreateResponse group = groupService.groupCreateResponse(token, request);
-        return ResponseEntity.ok(GlobalResponse.success(group));
+        return ResponseEntity.ok(groupService.groupCreateResponse(token, request));
     }
 
     @Operation(summary = "그룹의 모든 멤버 조회", description = "그룹 내의 모든 멤버를 조회합니다.")
     @GetMapping("/members/{groupId}")
-    public ResponseEntity<GlobalResponse<GroupMemberListResponse>> getGroupMembers(@PathVariable UUID groupId) {
-        GroupMemberListResponse members = groupService.groupMemberListResponse(groupId);
-        return ResponseEntity.ok(GlobalResponse.success(members));
+    public ResponseEntity<GroupMemberListResponse> getGroupMembers(@PathVariable UUID groupId) {
+        return ResponseEntity.ok(groupService.groupMemberListResponse(groupId));
     }
 
-    @Operation(summary = "그룹참여", description = "그룹에 참여합니다. profileImg: RED, BLUE, GREEN, YELLOW, PURPLE 중 선택")
+    @Operation(summary = "그룹 참여", description = "그룹에 참여합니다.")
     @PostMapping("/add-user/{groupId}/{token}")
-    public ResponseEntity<GlobalResponse<Boolean>> joinGroup(
+    public ResponseEntity<Boolean> joinGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId,
             @PathVariable String token) {
         String userToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.joinGroupApi(userToken, groupId, token);
-        return ResponseEntity.ok(GlobalResponse.success(result));
+        return ResponseEntity.ok(groupService.joinGroupApi(userToken, groupId, token));
     }
 
     @Operation(summary = "그룹 초대코드 생성", description = "그룹 초대코드를 생성합니다.")
     @PostMapping("/token")
-    public ResponseEntity<GlobalResponse<GroupInviteCodeResponse>> inviteCode(
+    public ResponseEntity<GroupInviteCodeResponse> inviteCode(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody GroupInviteCodeRequest request) {
-        GroupInviteCodeResponse response = groupService.inviteCodeAPi(accessToken, request);
-        return ResponseEntity.ok(GlobalResponse.success(response));
+        return ResponseEntity.ok(groupService.inviteCodeAPi(accessToken, request));
     }
 
     @Operation(summary = "그룹 삭제", description = "방장이 그룹을 삭제합니다.")
     @DeleteMapping("/{groupId}")
-    public ResponseEntity<GlobalResponse<Boolean>> deleteGroup(
+    public ResponseEntity<Boolean> deleteGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.deleteGroup(token, groupId);
-        return ResponseEntity.ok(GlobalResponse.success(result));
+        return ResponseEntity.ok(groupService.deleteGroup(token, groupId));
     }
 
     @Operation(summary = "그룹 탈퇴", description = "현재 그룹을 탈퇴합니다.")
     @DeleteMapping("/{groupId}/leave")
-    public ResponseEntity<GlobalResponse<Boolean>> leaveGroup(
+    public ResponseEntity<Boolean> leaveGroup(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.leaveGroup(token, groupId);
-        return ResponseEntity.ok(GlobalResponse.success(result));
+        return ResponseEntity.ok(groupService.leaveGroup(token, groupId));
     }
 
-    @Operation(summary = "그룹 맴버 내보내기", description = "그룹장이 멤버를 탈퇴 시킵니다.")
+    @Operation(summary = "그룹 멤버 내보내기", description = "그룹장이 멤버를 탈퇴 시킵니다.")
     @DeleteMapping("/{groupId}/{memberId}")
-    public ResponseEntity<GlobalResponse<Boolean>> forcedExpulsionOfMembers(
+    public ResponseEntity<Boolean> forcedExpulsionOfMembers(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId, @PathVariable UUID memberId) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        boolean result = groupService.forcedLeaveGroup(token, groupId, memberId);
-        return ResponseEntity.ok(GlobalResponse.success(result));
+        return ResponseEntity.ok(groupService.forcedLeaveGroup(token, groupId, memberId));
     }
 
-    @Operation(summary = "초대코드 생성 후 해당되는 그룹 전체 조회", description = "초대코드로 보이는 그룹 전체를 조회")
+    @Operation(summary = "초대코드로 그룹 조회", description = "초대코드로 보이는 그룹 전체를 조회합니다.")
     @GetMapping("/{token}")
-    public ResponseEntity<GlobalResponse<List<GroupTokenSameListDto>>> tokenGroupList(
+    public ResponseEntity<List<GroupTokenSameListDto>> tokenGroupList(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable String token) {
         String authToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        List<GroupTokenSameListDto> result = groupService.tokenGroupListApi(authToken, token);
-        return ResponseEntity.ok(GlobalResponse.success(result));
+        return ResponseEntity.ok(groupService.tokenGroupListApi(authToken, token));
     }
 
-    @Operation(summary = "그룹에 참여하는 팀원 프로필 이미지 선택", description = "그룹 참여시 팀원이 프로필 이미지를 선택하는 로직")
+    @Operation(summary = "그룹 참여 시 프로필 이미지 선택", description = "그룹 참여 시 팀원이 프로필 이미지를 선택합니다.")
     @PatchMapping("/{groupId}/{memberId}")
-    public ResponseEntity<GlobalResponse<Boolean>> profileImgSelect(
+    public ResponseEntity<Boolean> profileImgSelect(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody GroupJoinProfileRequest request, @PathVariable UUID groupId) {
-
         String authToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-
-        Boolean result = groupService.profileImgSelectApi(authToken, request, groupId);
-
-        return ResponseEntity.ok(GlobalResponse.success(result));
+        return ResponseEntity.ok(groupService.profileImgSelectApi(authToken, request, groupId));
     }
 
-    @Operation(summary = "그룹 알림 설정 조회", description = "특정 그룹에 대한 내 알림 설정을 조회합니다.")
+    @Operation(summary = "그룹별 알림 설정 조회", description = "특정 그룹의 알림 설정을 조회합니다.")
     @GetMapping("/{groupId}/alarm")
-    public ResponseEntity<GlobalResponse<GroupAlarmSettingResponse>> getGroupAlarmSetting(
+    public ResponseEntity<GroupAlarmSettingResponse> getGroupAlarmSetting(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        GroupAlarmSettingResponse response = groupService.getGroupAlarmSetting(token, groupId);
-        return ResponseEntity.ok(GlobalResponse.success(response));
+        return ResponseEntity.ok(groupService.getGroupAlarmSetting(token, groupId));
     }
 
-    @Operation(summary = "그룹 알림 설정 수정", description = "특정 그룹에 대한 내 알림 설정을 수정합니다. 마스터 토글 OFF 시 세부 설정도 모두 OFF됩니다.")
+    @Operation(summary = "그룹별 알림 설정 수정", description = "특정 그룹의 알림 설정을 수정합니다. null인 항목은 변경되지 않습니다. 응답으로 변경된 실제 설정값을 반환합니다.")
     @PatchMapping("/{groupId}/alarm")
-    public ResponseEntity<GlobalResponse<GroupAlarmSettingResponse>> updateGroupAlarmSetting(
+    public ResponseEntity<GroupAlarmSettingResponse> updateGroupAlarmSetting(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId,
             @RequestBody GroupAlarmSettingRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        GroupAlarmSettingResponse response = groupService.updateGroupAlarmSetting(token, groupId, request);
-        return ResponseEntity.ok(GlobalResponse.success(response));
+        return ResponseEntity.ok(groupService.updateGroupAlarmSetting(token, groupId, request));
     }
 }

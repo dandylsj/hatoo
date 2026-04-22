@@ -135,20 +135,15 @@ public class GroupService {
             throw new CustomException(ErrorMessage.GROUP_FULL);
         }
 
-//        // 6. 선택한 색상이 이미 사용 중인지 확인
-//        if (groupMemberRepository.existsByGroupIdAndProfileImg(groupId, profileImg)) {
-//            throw new CustomException(ErrorMessage.COLOR_ALREADY_TAKEN);
-//        }
-
-        // 7. GroupMember 생성 및 저장
+        // 6. GroupMember 생성 및 저장
         GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
 
-        // 8. 그룹 알람 설정 기본값 생성 (전부 ON)
+        // 7. 그룹 알람 설정 기본값 생성 (전부 ON)
         GroupAlarmSetting alarmSetting = new GroupAlarmSetting(user.getId(), group.getId());
         groupAlarmSettingRepository.save(alarmSetting);
 
-        // 9. 새 멤버 참여 알림 전송 (그룹 전체에게)
+        // 8. 새 멤버 참여 알림 전송 (그룹 전체에게)
         fcmService.sendNewMember(groupId, group.getName(), user.getNickname());
 
         return true;
@@ -268,9 +263,29 @@ public class GroupService {
                 .map(GroupTokenSameListDto::from)
                 .collect(Collectors.toList());
     }
+
+    // 프로필 이미지 선택 (그룹 참여 시)
+    @Transactional
+    public Boolean profileImgSelectApi(String accessToken, GroupJoinProfileRequest request, UUID groupId) {
+
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
+
+        groupMember.updateProfileImg(request.getProfileImg());
+
+        return true;
+    }
+
     // 그룹 알람 설정 조회
     @Transactional(readOnly = true)
     public GroupAlarmSettingResponse getGroupAlarmSetting(String accessToken, UUID groupId) {
+
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
 
@@ -280,16 +295,19 @@ public class GroupService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        return groupAlarmSettingRepository
+        GroupAlarmSetting setting = groupAlarmSettingRepository
                 .findByUserIdAndGroupId(user.getId(), groupId)
-                .map(GroupAlarmSettingResponse::from)
-                .orElse(GroupAlarmSettingResponse.defaultEnabled(groupId));
+                .orElse(null);
+
+        return setting != null
+                ? GroupAlarmSettingResponse.from(setting)
+                : GroupAlarmSettingResponse.defaultEnabled(groupId);
     }
 
     // 그룹 알람 설정 수정
     @Transactional
-    public GroupAlarmSettingResponse updateGroupAlarmSetting(String accessToken, UUID groupId,
-                                                              GroupAlarmSettingRequest request) {
+    public GroupAlarmSettingResponse updateGroupAlarmSetting(String accessToken, UUID groupId, GroupAlarmSettingRequest request) {
+
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
 
@@ -316,40 +334,8 @@ public class GroupService {
         return GroupAlarmSettingResponse.from(setting);
     }
 
-    //초대 코드 생성 로직
+    // 초대코드 생성 유틸
     private String generateInviteCode() {
-        int length = 4;
-        String characters = "0123456789";
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(characters.charAt(random.nextInt(characters.length())));
-        }
-        return sb.toString();
-    }
-
-    //그룹 가입시 멤버 프로필 이미지 선택
-    @Transactional
-    public Boolean profileImgSelectApi(String accessToken, GroupJoinProfileRequest request, UUID groupId) {
-
-        jwtUtil.validateToken(accessToken);
-        String loginId = jwtUtil.extractLoginId(accessToken);
-
-        // 1. 유저 조회
-        User user = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
-
-        // 2. 그룹 조회
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
-
-        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), group.getId())
-                .orElse(new GroupMember(user, group, request.getProfileImg()));
-
-        groupMember.updateProfileImg(request.getProfileImg());
-
-        groupMemberRepository.save(groupMember);
-
-        return true;
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
     }
 }

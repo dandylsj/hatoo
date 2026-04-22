@@ -98,7 +98,7 @@ public class UserService {
 
     // 알림 설정 수정 (설정에서 언제든 변경 가능)
     @Transactional
-    public Boolean saveAlarmAgree(String accessToken, AlarmAgreeRequest request) {
+    public AlarmSettingResponse saveAlarmAgree(String accessToken, AlarmAgreeRequest request) {
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
 
@@ -121,7 +121,7 @@ public class UserService {
                 request.getIsGroupNotiAllGlobalEnabled()
         );
 
-        return true;
+        return getAlarmSetting(accessToken);
     }
 
     //아이디 중복 확인

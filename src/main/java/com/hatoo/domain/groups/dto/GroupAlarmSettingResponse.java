@@ -24,7 +24,7 @@ public class GroupAlarmSettingResponse {
     @Schema(description = "새 멤버 추가 알림. 새로운 멤버가 그룹에 참여했을 때 알림을 받을지 여부입니다.", example = "true")
     private Boolean isNewMemberNotiEnabled;
 
-    @Schema(description = "집안일 완료 알림. 그룹 내 누군가가 할일을 완료했을 때 알림을 받을지 여부입니다.", example = "true")
+    @Schema(description = "집안일 완료 알림. 담당 집안일이 완료됐을 때 알림을 받을지 여부입니다.", example = "true")
     private Boolean isTaskCompleteNotiEnabled;
 
     public static GroupAlarmSettingResponse from(GroupAlarmSetting setting) {
@@ -37,7 +37,6 @@ public class GroupAlarmSettingResponse {
         );
     }
 
-    // 설정 레코드가 없는 경우 기본값(전부 true) 반환
     public static GroupAlarmSettingResponse defaultEnabled(UUID groupId) {
         return new GroupAlarmSettingResponse(groupId, true, true, true, true);
     }

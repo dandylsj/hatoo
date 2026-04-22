@@ -62,10 +62,11 @@ public class UserService {
 
         AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(user.getId()).orElse(null);
 
-        Boolean isAllNotiEnabled          = agree != null ? agree.getIsAllNotiEnabled()           : true;
-        Boolean isMarketingNotiAllowed    = agree != null ? agree.getIsMarketingNotiAllowed()     : false;
-        Boolean isPersonalNotiEnabled     = agree != null ? agree.getIsPersonalNotiEnabled()      : true;
-        Boolean isGroupNotiAllGlobal      = agree != null ? agree.getIsGroupNotiAllGlobalEnabled(): true;
+        // 신규 컬럼은 기존 레코드에 NULL이 있을 수 있으므로 null 안전 처리 (기본값 true)
+        Boolean isAllNotiEnabled       = getOrDefault(agree != null ? agree.getIsAllNotiEnabled() : null, true);
+        Boolean isMarketingNotiAllowed = getOrDefault(agree != null ? agree.getIsMarketingNotiAllowed() : null, false);
+        Boolean isPersonalNotiEnabled  = getOrDefault(agree != null ? agree.getIsPersonalNotiEnabled() : null, true);
+        Boolean isGroupNotiAllGlobal   = getOrDefault(agree != null ? agree.getIsGroupNotiAllGlobalEnabled() : null, true);
 
 //        // 내가 속한 그룹 목록 조회
 //        List<GroupMember> myGroups = groupMemberRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
@@ -289,6 +290,11 @@ public class UserService {
         userRepository.delete(user);
 
         return true;
+    }
+
+    // null이면 defaultValue 반환, 아니면 value 반환
+    private Boolean getOrDefault(Boolean value, Boolean defaultValue) {
+        return value != null ? value : defaultValue;
     }
 
     // 특정 그룹에서 유저가 담당인 할일 삭제

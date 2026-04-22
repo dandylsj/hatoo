@@ -68,7 +68,7 @@ public class FcmService {
     public void sendWeeklyChart(UUID groupId) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
-                sendToUserIfAllowed(gm.getUser().getId(),
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, "general",
                         AlarmType.WEEKLY_CHART.getTitle(),
                         AlarmType.WEEKLY_CHART.getBodyTemplate())
         );
@@ -146,13 +146,13 @@ public class FcmService {
 
         AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(userId).orElse(null);
 
-        // 1단계: 전체 알림 마스터
-        if (agree != null && !Boolean.TRUE.equals(agree.getIsAllNotiEnabled())) {
+        // 1단계: 전체 알림 마스터 (null이면 기본값 true로 처리)
+        if (agree != null && Boolean.FALSE.equals(agree.getIsAllNotiEnabled())) {
             log.info("[FCM] 전체 알림 OFF - userId: {}", userId);
             return;
         }
-        // 2단계: 개인 알림 토글
-        if (agree != null && !Boolean.TRUE.equals(agree.getIsPersonalNotiEnabled())) {
+        // 2단계: 개인 알림 토글 (null이면 기본값 true로 처리)
+        if (agree != null && Boolean.FALSE.equals(agree.getIsPersonalNotiEnabled())) {
             log.info("[FCM] 개인 알림 OFF - userId: {}", userId);
             return;
         }
@@ -173,13 +173,13 @@ public class FcmService {
 
         AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(userId).orElse(null);
 
-        // 1단계: 전체 알림 마스터
-        if (agree != null && !Boolean.TRUE.equals(agree.getIsAllNotiEnabled())) {
+        // 1단계: 전체 알림 마스터 (null이면 기본값 true로 처리)
+        if (agree != null && Boolean.FALSE.equals(agree.getIsAllNotiEnabled())) {
             log.info("[FCM] 전체 알림 OFF - userId: {}", userId);
             return;
         }
-        // 2단계: 그룹 알림 전체 마스터
-        if (agree != null && !Boolean.TRUE.equals(agree.getIsGroupNotiAllGlobalEnabled())) {
+        // 2단계: 그룹 알림 전체 마스터 (null이면 기본값 true로 처리)
+        if (agree != null && Boolean.FALSE.equals(agree.getIsGroupNotiAllGlobalEnabled())) {
             log.info("[FCM] 그룹 알림 전체 OFF - userId: {}", userId);
             return;
         }

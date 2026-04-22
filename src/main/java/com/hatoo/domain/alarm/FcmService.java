@@ -165,7 +165,9 @@ public class FcmService {
         sendMessage(user.getFcmToken(), title, body);
     }
 
-    // 그룹 알림: 전체 마스터 → 그룹 알림 전체 → 그룹별 마스터 → 세부 설정 4단계 확인
+    // 그룹 알림: 개인 그룹 여부에 따라 분기
+    // - 개인 그룹(isPersonal=true): 전체 알림 마스터 → 개인 알림 토글 확인
+    // - 일반 그룹(isPersonal=false): 전체 마스터 → 그룹 알림 전체 → 그룹별 마스터 → 세부 설정 4단계 확인
     private void sendToGroupMemberIfAllowed(UUID userId, UUID groupId, String notiType,
                                              String title, String body) {
         User user = userRepository.findById(userId).orElse(null);
@@ -173,50 +175,64 @@ public class FcmService {
 
         AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(userId).orElse(null);
 
-        // 1단계: 전체 알림 마스터
+        // 1단계: 전체 알림 마스터 (개인/일반 그룹 공통)
         if (agree != null && Boolean.FALSE.equals(agree.getIsAllNotiEnabled())) {
             log.info("[FCM] 전체 알림 OFF - userId: {}", userId);
             return;
         }
-        // 2단계: 그룹 알림 전체 마스터
-        if (agree != null && Boolean.FALSE.equals(agree.getIsGroupNotiAllGlobalEnabled())) {
-            log.info("[FCM] 그룹 알림 전체 OFF - userId: {}", userId);
-            return;
-        }
 
-        GroupAlarmSetting setting = groupAlarmSettingRepository
-                .findByUserIdAndGroupId(userId, groupId).orElse(null);
+        // 개인 그룹 여부 확인
+        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(userId, groupId).orElse(null);
+        boolean isPersonalGroup = groupMember != null && groupMember.isPersonal();
 
-        // 3단계: 개별 그룹 알림 마스터
-        if (setting != null && Boolean.FALSE.equals(setting.getIsGroupNotiEnabled())) {
-            log.info("[FCM] 그룹별 알림 OFF - userId: {}, groupId: {}", userId, groupId);
-            return;
-        }
+        if (isPersonalGroup) {
+            // 개인 그룹: 개인 알림 토글 확인
+            if (agree != null && Boolean.FALSE.equals(agree.getIsPersonalNotiEnabled())) {
+                log.info("[FCM] 개인 알림 OFF (개인 그룹) - userId: {}", userId);
+                return;
+            }
+        } else {
+            // 일반 그룹: 그룹 알림 전체 → 그룹별 마스터 → 세부 설정 확인
+            // 2단계: 그룹 알림 전체 마스터
+            if (agree != null && Boolean.FALSE.equals(agree.getIsGroupNotiAllGlobalEnabled())) {
+                log.info("[FCM] 그룹 알림 전체 OFF - userId: {}", userId);
+                return;
+            }
 
-        // 4단계: 세부 알림 타입별 설정
-        if (setting != null) {
-            switch (notiType) {
-                case "newTask":
-                    if (Boolean.FALSE.equals(setting.getIsNewTaskNotiEnabled())) {
-                        log.info("[FCM] 새 집안일 알림 OFF - userId: {}", userId);
-                        return;
-                    }
-                    break;
-                case "newMember":
-                    if (Boolean.FALSE.equals(setting.getIsNewMemberNotiEnabled())) {
-                        log.info("[FCM] 새 멤버 알림 OFF - userId: {}", userId);
-                        return;
-                    }
-                    break;
-                case "taskComplete":
-                    if (Boolean.FALSE.equals(setting.getIsTaskCompleteNotiEnabled())) {
-                        log.info("[FCM] 집안일 완료 알림 OFF - userId: {}", userId);
-                        return;
-                    }
-                    break;
-                default:
-                    // "general" 등 기타 타입은 그룹 마스터 토글만 적용
-                    break;
+            GroupAlarmSetting setting = groupAlarmSettingRepository
+                    .findByUserIdAndGroupId(userId, groupId).orElse(null);
+
+            // 3단계: 개별 그룹 알림 마스터
+            if (setting != null && Boolean.FALSE.equals(setting.getIsGroupNotiEnabled())) {
+                log.info("[FCM] 그룹별 알림 OFF - userId: {}, groupId: {}", userId, groupId);
+                return;
+            }
+
+            // 4단계: 세부 알림 타입별 설정
+            if (setting != null) {
+                switch (notiType) {
+                    case "newTask":
+                        if (Boolean.FALSE.equals(setting.getIsNewTaskNotiEnabled())) {
+                            log.info("[FCM] 새 집안일 알림 OFF - userId: {}", userId);
+                            return;
+                        }
+                        break;
+                    case "newMember":
+                        if (Boolean.FALSE.equals(setting.getIsNewMemberNotiEnabled())) {
+                            log.info("[FCM] 새 멤버 알림 OFF - userId: {}", userId);
+                            return;
+                        }
+                        break;
+                    case "taskComplete":
+                        if (Boolean.FALSE.equals(setting.getIsTaskCompleteNotiEnabled())) {
+                            log.info("[FCM] 집안일 완료 알림 OFF - userId: {}", userId);
+                            return;
+                        }
+                        break;
+                    default:
+                        // "general" 등 기타 타입은 그룹 마스터 토글만 적용
+                        break;
+                }
             }
         }
 

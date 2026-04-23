@@ -14,6 +14,7 @@ import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -21,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -40,15 +42,15 @@ public class KakaoService {
     private final PasswordEncoder passwordEncoder;
     private final RestTemplate restTemplate = new RestTemplate();
 
-//    @Value("${kakao.client-id}")
-//    private String clientId;
+    @Value("${kakao.client-id}")
+    private String clientId;
 
     // 앱용 로그인 (네이티브 SDK - redirect_uri 없이 토큰 교환)
     @Transactional
     public TokenResponse kakaoLoginFromApp(String code) {
         try {
             // 1단계: 인가 코드 → 카카오 액세스 토큰 교환
-//            String kakaoAccessToken = getKakaoAccessToken(code);
+            String kakaoAccessToken = getKakaoAccessToken(code);
 
             // 2단계: 카카오 액세스 토큰 → 유저 정보 조회
             KakaoUserInfo kakaoUserInfo = getKakaoUserInfo(code);
@@ -77,31 +79,31 @@ public class KakaoService {
     }
 
     // 카카오에 인가 코드를 보내고 액세스 토큰을 받아오는 메서드 (redirect_uri 없음)
-//    private String getKakaoAccessToken(String code) {
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
-//
-//        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-//        body.add("grant_type", "authorization_code");
-//        body.add("client_id", clientId);
-//        body.add("code", code);
-//
-//        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-//
-//        ResponseEntity<KakaoTokenResponse> response = restTemplate.exchange(
-//                "https://kauth.kakao.com/oauth/token",
-//                HttpMethod.POST,
-//                request,
-//                KakaoTokenResponse.class
-//        );
-//
-//        if (response.getBody() == null || response.getBody().getAccessToken() == null) {
-//            throw new CustomException(ErrorMessage.INVALID_AUTH_INFO);
-//        }
-//
-//        return response.getBody().getAccessToken();
-//    }
+    private String getKakaoAccessToken(String code) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "authorization_code");
+        body.add("client_id", clientId);
+        body.add("code", code);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<KakaoTokenResponse> response = restTemplate.exchange(
+                "https://kauth.kakao.com/oauth/token",
+                HttpMethod.POST,
+                request,
+                KakaoTokenResponse.class
+        );
+
+        if (response.getBody() == null || response.getBody().getAccessToken() == null) {
+            throw new CustomException(ErrorMessage.INVALID_AUTH_INFO);
+        }
+
+        return response.getBody().getAccessToken();
+    }
 
     // 카카오 액세스 토큰으로 유저 정보를 조회하는 메서드
     private KakaoUserInfo getKakaoUserInfo(String accessToken) {

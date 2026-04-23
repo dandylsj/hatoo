@@ -57,7 +57,8 @@ public class GroupController {
     public ResponseEntity<GroupInviteCodeResponse> inviteCode(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody GroupInviteCodeRequest request) {
-        return ResponseEntity.ok(groupService.inviteCodeAPi(accessToken, request));
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(groupService.inviteCodeAPi(token, request));
     }
 
     @Operation(summary = "그룹 삭제", description = "방장이 그룹을 삭제합니다.")

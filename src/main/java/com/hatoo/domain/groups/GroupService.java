@@ -336,6 +336,6 @@ public class GroupService {
 
     // 초대코드 생성 유틸
     private String generateInviteCode() {
-        return UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        return String.format("%04d", new Random().nextInt(10000));
     }
 }

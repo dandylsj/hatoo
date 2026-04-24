@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,5 +47,25 @@ public class NotificationService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
         notificationHistoryRepository.markAllAsReadByUserId(user.getId());
+    }
+
+    //단건 읽음 처리
+    @Transactional
+    public void markRead(String accessToken, UUID notificationId) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        NotificationHistory notification = notificationHistoryRepository.findById(notificationId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.NOTIFICATION_NOT_FOUND));
+
+        // 소유자 검증: 내 알림이 아니면 접근 거부
+        if (!notification.getUserId().equals(user.getId())) {
+            throw new CustomException(ErrorMessage.ACCESS_DENIED);
+        }
+
+        notification.markAsRead();
     }
 }

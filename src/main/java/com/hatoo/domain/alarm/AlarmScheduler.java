@@ -148,14 +148,14 @@ public class AlarmScheduler {
 
     // ──────────────────────────────────────────
     // 6. 읽음 처리된 알림 삭제 - 매일 자정 (00:00 KST)
-    //    읽음 처리 후 3일이 지난 알림 자동 삭제
+    //    읽음 처리 후 7일이 지난 알림 자동 삭제
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     @Transactional
     public void deleteOldReadNotifications() {
-        LocalDateTime cutoff = LocalDateTime.now(KST).minusDays(3);
+        LocalDateTime cutoff = LocalDateTime.now(KST).minusDays(7);
         notificationHistoryRepository.deleteReadNotificationsOlderThan(cutoff);
-        log.info("[AlarmScheduler] 읽음 처리 3일 경과 알림 삭제 완료 - 기준시각: {}", cutoff);
+        log.info("[AlarmScheduler] 읽음 처리 7일 경과 알림 삭제 완료 - 기준시각: {}", cutoff);
     }
 
     // ──────────────────────────────────────────

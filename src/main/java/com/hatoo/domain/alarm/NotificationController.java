@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Tag(name = "Notification", description = "알림 내역 관련 API")
 @RestController
@@ -32,6 +33,15 @@ public class NotificationController {
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         notificationService.markAllAsRead(token);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "단건 읽음 처리", description = "특정 알림을 읽음 처리합니다.")
+    @PatchMapping("/{notificationId}/read")
+    public ResponseEntity<Void> markRead(@Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+                                         @PathVariable UUID notificationId) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        notificationService.markRead(token, notificationId);
         return ResponseEntity.ok().build();
     }
 }

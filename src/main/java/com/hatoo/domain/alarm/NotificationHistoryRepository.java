@@ -25,4 +25,6 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
     @Modifying
     @Query("DELETE FROM NotificationHistory n WHERE n.isRead = true AND n.updatedAt < :cutoff")
     void deleteReadNotificationsOlderThan(@Param("cutoff") LocalDateTime cutoff);
+
+
 }

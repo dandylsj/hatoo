@@ -29,8 +29,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: GHCR 로그인
         uses: docker/login-action@v3
@@ -61,48 +61,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # 1. 깃액션 작업 공간(Workspace)에 .env 파일을 동적으로 생성합니다.
       - name: 환경 변수 파일(.env) 생성
         run: |
-            rm -f .env
-            touch .env
-            # 1. 데이터베이스 설정 (순정 변수명)
-            echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
-            echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
-            echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
-            echo "SPRING_JPA_HIBERNATE_DDL_AUTO=update" >> .env
-            
-            # 2. 메일 설정 (순정 변수명으로 변경 & 누락된 설정 추가)
-            echo "SPRING_MAIL_HOST=smtp.gmail.com" >> .env
-            echo "SPRING_MAIL_PORT=587" >> .env
-            echo "SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
-            echo "SPRING_MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
-            echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true" >> .env
-            echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true" >> .env
+          rm -f .env
+          touch .env
+          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
+          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
+          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
+          echo "SPRING_JPA_HIBERNATE_DDL_AUTO=update" >> .env
+          echo "SPRING_MAIL_HOST=smtp.gmail.com" >> .env
+          echo "SPRING_MAIL_PORT=587" >> .env
+          echo "SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
+          echo "SPRING_MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
+          echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true" >> .env
+          echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true" >> .env
+          echo "TZ=Asia/Seoul" >> .env
+          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+          echo "FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}" >> .env
+          echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
+          echo "SPRINGDOC_SWAGGER_UI_OPERATIONS_SORTER=method" >> .env
+          echo "SPRINGDOC_SWAGGER_UI_TAGS_SORTER=alpha" >> .env
 
-            # 4. 기타 설정
-            echo "TZ=Asia/Seoul" >> .env
-            echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
-          
-            #5. 파이어베이스 키 파일 생성
-            echo "FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}" >> .env
-
-            #6. 카카오 설정
-            echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
-
-      # 2. 생성된 .env 파일을 참조하여 컨테이너를 실행합니다.
       - name: NAS에 자동 배포
         run: |
-          echo "🧹 기존 컨테이너 정리 중..."
           docker stop hatoo-app 2>/dev/null || true
           docker rm -f hatoo-app 2>/dev/null || true
-          
-          echo "📥 최신 도커 이미지 다운로드 중..."
           docker pull ghcr.io/dandylsj/hatoo:latest
-          
-          echo "🚀 새 컨테이너 실행 중..."
-          # 절대 경로 대신, 현재 작업 공간에 생성된 .env 파일을 사용합니다.
-          docker run -d \
-            --name hatoo-app \
-            --restart always \
-            --network
+          docker run -d --name hatoo-app --restart always --network hatoo -p 8080:8080 --env-file .env ghcr.io/dandylsj/hatoo:latest

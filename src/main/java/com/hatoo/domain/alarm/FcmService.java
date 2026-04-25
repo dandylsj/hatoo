@@ -91,14 +91,11 @@ public class FcmService {
     }
 
     // ──────────────────────────────────────────
-    // 7. 집안일 배정 알림 (TaskService에서 호출) - 그룹 전체 알림
+    // 7. 집안일 배정 알림 (TaskService에서 호출) - 개인 알림
     // ──────────────────────────────────────────
-    public void sendTaskAssigned(UUID groupId, String assignerNickname, String assigneeNickname) {
+    public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname) {
         String body = String.format(AlarmType.TASK_ASSIGNED.getBodyTemplate(), assignerNickname, assigneeNickname);
-        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
-        members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.TASK_ASSIGNED, body)
-        );
+        sendToUserIfAllowed(assigneeId, AlarmType.TASK_ASSIGNED, body);
     }
 
     // ──────────────────────────────────────────

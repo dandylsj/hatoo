@@ -90,6 +90,10 @@ jobs:
             #6. 카카오 설정
             echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
 
+            #7. Swagger UI 정렬 설정
+            echo "SPRINGDOC_SWAGGER_UI_OPERATIONS_SORTER=method" >> .env
+            echo "SPRINGDOC_SWAGGER_UI_TAGS_SORTER=alpha" >> .env
+
       # 2. 생성된 .env 파일을 참조하여 컨테이너를 실행합니다.
       - name: NAS에 자동 배포
         run: |
@@ -105,7 +109,4 @@ jobs:
           docker run -d \
             --name hatoo-app \
             --restart always \
-            --network hatoo \
-            -p 8080:8080 \
-            --env-file .env \
-            ghcr.io/dandylsj/hatoo:latest
+            --network

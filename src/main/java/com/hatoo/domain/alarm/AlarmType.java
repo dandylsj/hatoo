@@ -17,8 +17,7 @@ public enum AlarmType {
     // 이벤트 기반
     NEW_MEMBER("새 멤버 참여", "%s에 새 멤버 %s님이 참여했어요!"),
     TASK_CREATED("새 집안일 등록", "%s님이 새 집안일을 등록했어요. [%s]"),
-    TASK_ASSIGNED("집안일 배정", "%s님이 %s님에게 새로운 집안일을 배정했어요. 지금 확인해보세요!"),
-    TASK_COMPLETE("집안일 완료", "%s님이 [%s]을(를) 완료했어요!");
+    TASK_ASSIGNED("집안일 배정", "%s님이 %s님에게 새로운 집안일을 배정했어요. 지금 확인해보세요!");
 
     private final String title;
     private final String bodyTemplate; // %s 자리에 동적 값 삽입

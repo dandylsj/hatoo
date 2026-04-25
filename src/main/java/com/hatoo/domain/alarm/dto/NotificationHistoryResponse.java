@@ -15,16 +15,16 @@ public class NotificationHistoryResponse {
     @Schema(description = "알림 ID")
     private final UUID id;
 
-    @Schema(description = "알림 유형", example = "TASK_START")
+    @Schema(description = "알림 유형", example = "String")
     private final AlarmType type;
 
-    @Schema(description = "알림 유형 한글명", example = "집안일 시작")
+    @Schema(description = "알림 유형 한글명", example = "String")
     private final String typeLabel;
 
-    @Schema(description = "알림 제목", example = "집안일 시작")
+    @Schema(description = "알림 제목", example = "String")
     private final String title;
 
-    @Schema(description = "알림 내용", example = "(설거지) 할 일이 오늘 시작돼요!")
+    @Schema(description = "알림 내용", example = "String")
     private final String body;
 
     @Schema(description = "읽음 여부", example = "false")

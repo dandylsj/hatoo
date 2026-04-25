@@ -110,17 +110,6 @@ public class FcmService {
     }
 
     // ──────────────────────────────────────────
-    // 9. 집안일 완료 알림 (TaskService에서 호출)
-    // ──────────────────────────────────────────
-    public void sendTaskComplete(UUID groupId, String finisherNickname, String taskTitle) {
-        String body = String.format(AlarmType.TASK_COMPLETE.getBodyTemplate(), finisherNickname, taskTitle);
-        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
-        members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.TASK_COMPLETE, body)
-        );
-    }
-
-    // ──────────────────────────────────────────
     // 내부 공통 메서드
     // ──────────────────────────────────────────
 
@@ -199,12 +188,6 @@ public class FcmService {
                     case NEW_MEMBER:
                         if (Boolean.FALSE.equals(setting.getIsNewMemberNotiEnabled())) {
                             log.info("[FCM] 새 멤버 알림 OFF - userId: {}", userId);
-                            return;
-                        }
-                        break;
-                    case TASK_COMPLETE:
-                        if (Boolean.FALSE.equals(setting.getIsTaskCompleteNotiEnabled())) {
-                            log.info("[FCM] 집안일 완료 알림 OFF - userId: {}", userId);
                             return;
                         }
                         break;

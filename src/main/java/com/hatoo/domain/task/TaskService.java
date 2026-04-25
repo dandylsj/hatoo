@@ -107,7 +107,7 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        List<Task> tasks = taskRepository.findByGroupsId(groupId);
+        List<Task> tasks = taskRepository.findByGroupsIdOrderByDueToAsc(groupId);
 
         List<TaskAllGroupListResponse.TaskList> taskItems = tasks.stream()
                 .filter(task -> !Boolean.TRUE.equals(task.getFinished()))

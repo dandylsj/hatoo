@@ -77,12 +77,12 @@ public class TaskService {
         User creator = userRepository.findByLoginId(creatorLoginId).orElse(null);
         String creatorNickname = creator != null ? creator.getNickname() : "누군가";
 
-        // 6. 새 집안일 등록 알림 (그룹 전체에게)
-        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle());
-
-        // 7. 집안일 배정 알림 (담당자가 나 자신이 아닌 경우에만)
-        if (creator == null || !creator.getId().equals(assignee.getId())) {
-            fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname());
+        if (creator != null && creator.getId().equals(assignee.getId())) {
+            // 담당자가 나 자신 → 새 집안일 등록 알림 (그룹 전체)
+            fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle());
+        } else {
+            // 담당자가 다른 사람 → 집안일 배정 알림 (그룹 전체)
+            fcmService.sendTaskAssigned(group.getId(), creatorNickname, assignee.getNickname());
         }
 
         return new TaskListResponse(

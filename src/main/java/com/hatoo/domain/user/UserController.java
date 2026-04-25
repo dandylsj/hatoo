@@ -90,4 +90,18 @@ public class UserController {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         return ResponseEntity.ok(userService.withdrawUser(token));
     }
+
+    @Operation(summary = "아이디 찾기", description = "아이디를 찾습니다.")
+    @GetMapping("/find-user-id")
+    public ResponseEntity<Boolean> findUserId(@RequestParam String email) {
+
+        return ResponseEntity.ok(userService.findUserIdApi(email));
+
+    }
+
+    @Operation(summary = "아이디 찾기 이메일 인증코드 입력", description = "이메일에 받은 코드를 적으면 아이디를 반환")
+    @PostMapping("/email-code-find-id")
+    public ResponseEntity<UserFindIdEmailCodeResponse> findIdEmailCode(@RequestBody EmailVerifiRequest request) {
+        return ResponseEntity.ok(userService.enterTheVerifcationCodeApi(request));
+    }
 }

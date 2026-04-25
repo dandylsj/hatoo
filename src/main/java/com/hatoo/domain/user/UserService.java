@@ -1,10 +1,13 @@
 package com.hatoo.domain.user;
 
+import com.hatoo.common.email.SmtpEmailSender;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgreeRepository;
+import com.hatoo.domain.auth.EmailRepository;
+import com.hatoo.domain.auth.EmailVerification;
 import com.hatoo.domain.groupAlarmSetting.GroupAlarmSetting;
 import com.hatoo.domain.groupAlarmSetting.GroupAlarmSettingRepository;
 import com.hatoo.domain.groupMember.GroupMember;
@@ -15,6 +18,9 @@ import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.user.dto.*;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +41,12 @@ public class UserService {
     private final TaskRepository taskRepository;
     private final AlarmUserAgreeRepository alarmUserAgreeRepository;
     private final GroupAlarmSettingRepository groupAlarmSettingRepository;
+    private final SmtpEmailSender smtpEmailSender;
+    private final EmailRepository emailRepository;
+
+    private static final int MAX_SEND_COUNT = 3;
+    private static final int COOLDOWN_SECONDS = 10;
+    private static final int COUNT_RESET_MINUTES = 5;
 
     // 필수 동의 저장 (소셜 로그인 후 1회 호출)
     @Transactional
@@ -290,6 +302,72 @@ public class UserService {
         userRepository.delete(user);
 
         return true;
+    }
+
+    //아이디 찾기
+    @Transactional
+    public Boolean findUserIdApi(String email) {
+
+        try {
+            if (userRepository.findByEmail(email).isEmpty()) {
+                return false; // 해당 이메일로 가입된 계정 없음
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            EmailVerification verification = emailRepository.findByEmail(email)
+                    .orElse(new EmailVerification(email, "", now)); // New verification
+
+            // 쿨다운 확인
+            if (verification.getLastSendTime() != null && verification.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
+                return false;
+            }
+
+            // 5분 내 전송 횟수 초기화 확인
+            if (verification.getCountResetTime() != null && verification.getCountResetTime().isBefore(now)) {
+                verification.resetCount(now, COUNT_RESET_MINUTES);
+            }
+
+            if (verification.getSendCount() >= MAX_SEND_COUNT) {
+                return false;
+            }
+
+            if (verification.getCountResetTime() == null) {
+                verification.resetCount(now, COUNT_RESET_MINUTES);
+            }
+
+            String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
+            LocalDateTime expiry = now.plusMinutes(7);
+
+            verification.updateCode(token, expiry);
+            verification.recordSend(now);
+            emailRepository.save(verification);
+
+            smtpEmailSender.sendVerificationCode(email, token);
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+
+    }
+
+    //아이디 찾기 이메일 코드 인증
+    @Transactional
+    public UserFindIdEmailCodeResponse enterTheVerifcationCodeApi(EmailVerifiRequest request) {
+        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorMessage.EMAIL_NOT_FOUND));
+
+        if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE);
+        }
+        if (!verification.getToken().equals(request.getToken())) {
+            throw new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE);
+        }
+
+        User user = userRepository.findByEmail(verification.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        return new UserFindIdEmailCodeResponse(user.getLoginId());
     }
 
     // null이면 defaultValue 반환, 아니면 value 반환

@@ -104,4 +104,16 @@ public class UserController {
     public ResponseEntity<UserFindIdEmailCodeResponse> findIdEmailCode(@RequestBody EmailVerifiRequest request) {
         return ResponseEntity.ok(userService.enterTheVerifcationCodeApi(request));
     }
+
+    @Operation(summary = "비밀번호 재설정 인증코드 발송", description = "아이디와 이메일이 일치하는 경우 인증코드를 발송합니다.")
+    @PostMapping("/find-password/send-code")
+    public ResponseEntity<Boolean> sendPasswordResetCode(@RequestBody PasswordResetSendRequest request) {
+        return ResponseEntity.ok(userService.sendPasswordResetCode(request));
+    }
+
+    @Operation(summary = "비밀번호 재설정", description = "인증코드 확인 후 새 비밀번호로 변경합니다.")
+    @PostMapping("/find-password/reset")
+    public ResponseEntity<Boolean> resetPassword(@RequestBody PasswordResetConfirmRequest request) {
+        return ResponseEntity.ok(userService.resetPassword(request));
+    }
 }

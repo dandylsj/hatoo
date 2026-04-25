@@ -370,6 +370,73 @@ public class UserService {
         return new UserFindIdEmailCodeResponse(user.getLoginId());
     }
 
+    // 비밀번호 재설정 - 인증코드 발송 (loginId + email 일치 확인)
+    @Transactional
+    public Boolean sendPasswordResetCode(PasswordResetSendRequest request) {
+        // 1. loginId로 유저 조회
+        User user = userRepository.findByLoginId(request.getLoginId())
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 2. 이메일 일치 여부 확인
+        if (!user.getEmail().equals(request.getEmail())) {
+            throw new CustomException(ErrorMessage.INVALID_AUTH_INFO);
+        }
+
+        // 3. 인증 코드 발송 (쿨다운/횟수 제한 포함)
+        LocalDateTime now = LocalDateTime.now();
+        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
+                .orElse(new EmailVerification(request.getEmail(), "", now));
+
+        if (verification.getLastSendTime() != null
+                && verification.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
+            throw new CustomException(ErrorMessage.EMAIL_SEND_COOLDOWN);
+        }
+
+        if (verification.getCountResetTime() != null && verification.getCountResetTime().isBefore(now)) {
+            verification.resetCount(now, COUNT_RESET_MINUTES);
+        }
+
+        if (verification.getSendCount() >= MAX_SEND_COUNT) {
+            throw new CustomException(ErrorMessage.EMAIL_SEND_LIMIT_EXCEEDED);
+        }
+
+        if (verification.getCountResetTime() == null) {
+            verification.resetCount(now, COUNT_RESET_MINUTES);
+        }
+
+        String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
+        verification.updateCode(token, now.plusMinutes(7));
+        verification.recordSend(now);
+        emailRepository.save(verification);
+
+        smtpEmailSender.sendVerificationCode(request.getEmail(), token);
+
+        return true;
+    }
+
+    // 비밀번호 재설정 - 코드 인증 후 새 비밀번호 변경
+    @Transactional
+    public Boolean resetPassword(PasswordResetConfirmRequest request) {
+        // 1. 인증 코드 확인
+        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorMessage.EMAIL_NOT_FOUND));
+
+        if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE);
+        }
+        if (!verification.getToken().equals(request.getToken())) {
+            throw new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE);
+        }
+
+        // 2. 유저 조회 후 비밀번호 변경
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        user.changePassword(passwordEncoder.encode(request.getNewPassword()));
+
+        return true;
+    }
+
     // null이면 defaultValue 반환, 아니면 value 반환
     private Boolean getOrDefault(Boolean value, Boolean defaultValue) {
         return value != null ? value : defaultValue;

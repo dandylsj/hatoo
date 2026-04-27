@@ -153,6 +153,11 @@ public class RecurringTaskScheduler {
         }
 
         log.info("[WeeklyStats] 전체 주차 통계 저장 완료");
+
+        // 저장된 주차(weekStart)보다 이전 데이터 파기 (1주치만 유지)
+        String cutoffDate = weekStartDate.format(FORMATTER);
+        weeklyStatsRepository.deleteByWeekStartBefore(cutoffDate);
+        log.info("[WeeklyStats] {}  이전 주차 통계 데이터 파기 완료", cutoffDate);
     }
 
     private LocalDate calculateNextDate(String dateStr, Frequency frequency, Integer interval) {

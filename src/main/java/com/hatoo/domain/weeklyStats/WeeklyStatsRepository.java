@@ -26,4 +26,9 @@ public interface WeeklyStatsRepository extends JpaRepository<WeeklyStats, UUID> 
 
     // 특정 그룹의 특정 주차 데이터 존재 여부 확인 (중복 저장 방지)
     boolean existsByGroupIdAndWeekStart(UUID groupId, String weekStart);
+
+    // cutoffDate 이전의 모든 주차 데이터 삭제 (1주 지난 데이터 파기용)
+    @Modifying
+    @Query("DELETE FROM WeeklyStats w WHERE w.weekStart < :cutoffDate")
+    void deleteByWeekStartBefore(@Param("cutoffDate") String cutoffDate);
 }

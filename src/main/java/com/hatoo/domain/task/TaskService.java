@@ -285,22 +285,19 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    // 저장된 주차 통계 조회 (weekStart 없으면 가장 최근 주차 반환)
+    // 저장된 주차 통계 조회 (항상 가장 최근 저장된 지난 주차 반환)
     @Transactional(readOnly = true)
-    public List<WeeklyStatsResponse> getWeeklyStatsApi(String accessToken, UUID groupId, String weekStart) {
+    public List<WeeklyStatsResponse> getWeeklyStatsApi(String accessToken, UUID groupId) {
 
         jwtUtil.validateToken(accessToken);
 
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        String targetWeek = weekStart;
-        if (targetWeek == null || targetWeek.isBlank()) {
-            List<String> weekStarts = weeklyStatsRepository
-                    .findDistinctWeekStartsByGroupId(groupId);
-            if (weekStarts.isEmpty()) return List.of();
-            targetWeek = weekStarts.get(0); // 가장 최근 주차
-        }
+        // 가장 최근에 저장된 주차를 자동으로 사용
+        List<String> weekStarts = weeklyStatsRepository.findDistinctWeekStartsByGroupId(groupId);
+        if (weekStarts.isEmpty()) return List.of();
+        String targetWeek = weekStarts.get(0);
 
         List<WeeklyStats> statsList = weeklyStatsRepository
                 .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);

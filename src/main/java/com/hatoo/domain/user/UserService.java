@@ -16,6 +16,8 @@ import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
+import com.hatoo.domain.oAuth.KakaoService;
+import com.hatoo.domain.oAuth.NaverService;
 import com.hatoo.domain.user.dto.*;
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +45,8 @@ public class UserService {
     private final GroupAlarmSettingRepository groupAlarmSettingRepository;
     private final SmtpEmailSender smtpEmailSender;
     private final EmailRepository emailRepository;
+    private final KakaoService kakaoService;
+    private final NaverService naverService;
 
     private static final int MAX_SEND_COUNT = 3;
     private static final int COOLDOWN_SECONDS = 10;
@@ -75,10 +79,10 @@ public class UserService {
         AlarmUserAgree agree = alarmUserAgreeRepository.findByUserId(user.getId()).orElse(null);
 
         // 신규 컬럼은 기존 레코드에 NULL이 있을 수 있으므로 null 안전 처리 (기본값 true)
-        Boolean isAllNotiEnabled       = getOrDefault(agree != null ? agree.getIsAllNotiEnabled() : null, true);
+        Boolean isAllNotiEnabled = getOrDefault(agree != null ? agree.getIsAllNotiEnabled() : null, true);
         Boolean isMarketingNotiAllowed = getOrDefault(agree != null ? agree.getIsMarketingNotiAllowed() : null, false);
-        Boolean isPersonalNotiEnabled  = getOrDefault(agree != null ? agree.getIsPersonalNotiEnabled() : null, true);
-        Boolean isGroupNotiAllGlobal   = getOrDefault(agree != null ? agree.getIsGroupNotiAllGlobalEnabled() : null, true);
+        Boolean isPersonalNotiEnabled = getOrDefault(agree != null ? agree.getIsPersonalNotiEnabled() : null, true);
+        Boolean isGroupNotiAllGlobal = getOrDefault(agree != null ? agree.getIsGroupNotiAllGlobalEnabled() : null, true);
 
 //        // 내가 속한 그룹 목록 조회
 //        List<GroupMember> myGroups = groupMemberRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
@@ -159,40 +163,40 @@ public class UserService {
     //유저 정보 수정.
     @Transactional
     public UserInfoModifyResponse userInfoModifyResponse(String accessToken, UserInfoModifyRequest request) {
-            // 1. 토큰 검증
-            jwtUtil.validateToken(accessToken);
+        // 1. 토큰 검증
+        jwtUtil.validateToken(accessToken);
 
-            // 2. 토큰에서 로그인 아이디 추출
-            String loginId = jwtUtil.extractLoginId(accessToken);
+        // 2. 토큰에서 로그인 아이디 추출
+        String loginId = jwtUtil.extractLoginId(accessToken);
 
-            // 3. 유저 조회
-            User user = userRepository.findByLoginId(loginId)
-                    .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+        // 3. 유저 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-            // 4. 비밀번호 암호화 (수정 요청에 비밀번호가 있는 경우)
-            String encodedPassword = null;
-            if (request.getPassword() != null && !request.getPassword().isBlank()) {
-                encodedPassword = passwordEncoder.encode(request.getPassword());
+        // 4. 비밀번호 암호화 (수정 요청에 비밀번호가 있는 경우)
+        String encodedPassword = null;
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            encodedPassword = passwordEncoder.encode(request.getPassword());
+        }
+
+        // 5. 유저 정보 수정
+        user.updateInfo(
+                request.getNickname(),
+                encodedPassword,
+                request.getProfileImg(),
+                request.getFcmToken()
+        );
+
+        // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에도 반영
+        if (request.getProfileImg() != null) {
+            List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
+            for (GroupMember gm : groupMembers) {
+                gm.updateProfileImg(request.getProfileImg());
             }
+        }
 
-            // 5. 유저 정보 수정
-            user.updateInfo(
-                    request.getNickname(),
-                    encodedPassword,
-                    request.getProfileImg(),
-                    request.getFcmToken()
-            );
-
-            // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에도 반영
-            if (request.getProfileImg() != null) {
-                List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
-                for (GroupMember gm : groupMembers) {
-                    gm.updateProfileImg(request.getProfileImg());
-                }
-            }
-
-            // 7. 응답 DTO 생성 반환
-            return new UserInfoModifyResponse(user.getId(), user.getNickname(), user.getProfileImg());
+        // 7. 응답 DTO 생성 반환
+        return new UserInfoModifyResponse(user.getId(), user.getNickname(), user.getProfileImg());
     }
 
     //이전 비밀번호 확인
@@ -231,7 +235,7 @@ public class UserService {
                     .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
             //4. 이전 비밀번호와 같을경우 예외
-            if(passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 return false;
             }
             //5. 비밀번호 암호화
@@ -259,19 +263,26 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 4. 유저가 속한 모든 그룹 처리
-        List<GroupMember> myGroupMembers = groupMemberRepository.findByUserId(user.getId());
+        // 4. 소셜 계정 연결 해제 (DB에 저장된 정보로 서버에서 직접 처리)
+        if (user.getKakaoId() != null) {
+            kakaoService.unlinkKakaoAccount(user.getKakaoId()); // admin key 사용
+        }
+        if (user.getNaverId() != null) {
+            naverService.revokeNaverAccount(user.getNaverRefreshToken()); // refresh token 사용
+        }
 
+        // 5. 그룹별 처리
+        List<GroupMember> myGroupMembers = groupMemberRepository.findByUserId(user.getId());
         for (GroupMember gm : myGroupMembers) {
             Group group = gm.getGroup();
+            boolean isAssigner = user.getId().equals(group.getAssignerId());
 
-            // 해당 그룹에서 나를 제외한 다른 멤버 목록 (가입 순서 오름차순)
-            List<GroupMember> otherMembers = groupMemberRepository.findByGroupIdOrderByCreatedAtAsc(group.getId())
+            // 나를 제외한 다른 멤버 목록
+            List<GroupMember> otherMembers = groupMemberRepository
+                    .findByGroupIdOrderByCreatedAtAsc(group.getId())
                     .stream()
                     .filter(m -> !m.getUser().getId().equals(user.getId()))
-                    .toList();
-
-            boolean isAssigner = group.getAssignerId().equals(user.getId());
+                    .collect(Collectors.toList());
 
             if (isAssigner && otherMembers.isEmpty()) {
                 // 내가 방장이고 혼자인 그룹 → 그룹의 모든 할일 삭제 후 그룹 삭제
@@ -298,158 +309,130 @@ public class UserService {
             }
         }
 
-        // 6. 유저 하드 딜리트
+        // 6. 유저 삭제
         userRepository.delete(user);
 
         return true;
     }
 
-    //아이디 찾기
-    @Transactional
-    public Boolean findUserIdApi(String email) {
-
-        try {
-            if (userRepository.findByEmail(email).isEmpty()) {
-                return false; // 해당 이메일로 가입된 계정 없음
-            }
-
-            LocalDateTime now = LocalDateTime.now();
-            EmailVerification verification = emailRepository.findByEmail(email)
-                    .orElse(new EmailVerification(email, "", now)); // New verification
-
-            // 쿨다운 확인
-            if (verification.getLastSendTime() != null && verification.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
-                return false;
-            }
-
-            // 5분 내 전송 횟수 초기화 확인
-            if (verification.getCountResetTime() != null && verification.getCountResetTime().isBefore(now)) {
-                verification.resetCount(now, COUNT_RESET_MINUTES);
-            }
-
-            if (verification.getSendCount() >= MAX_SEND_COUNT) {
-                return false;
-            }
-
-            if (verification.getCountResetTime() == null) {
-                verification.resetCount(now, COUNT_RESET_MINUTES);
-            }
-
-            String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
-            LocalDateTime expiry = now.plusMinutes(7);
-
-            verification.updateCode(token, expiry);
-            verification.recordSend(now);
-            emailRepository.save(verification);
-
-            smtpEmailSender.sendVerificationCode(email, token);
-
-            return true;
-        } catch (Exception e) {
-            return false;
+    // 특정 그룹에서 내가 담당자인 할일 삭제
+    private void deleteMyTasksInGroup(UUID userId, UUID groupId) {
+        List<Task> myTasks = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
+        for (Task task : myTasks) {
+            task.getAssignees().clear();
+            task.getGroups().clear();
         }
-
+        taskRepository.deleteAll(myTasks);
     }
 
-    //아이디 찾기 이메일 코드 인증
-    @Transactional
-    public UserFindIdEmailCodeResponse enterTheVerifcationCodeApi(EmailVerifiRequest request) {
-        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException(ErrorMessage.EMAIL_NOT_FOUND));
+    // ──────────────────────────────────────────
+    // 아이디 찾기
+    // ──────────────────────────────────────────
 
-        if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE);
+    // 아이디 찾기 - 이메일로 인증코드 발송
+    @Transactional
+    public Boolean findUserIdApi(String email) {
+        // 해당 이메일로 가입된 유저가 없으면 예외
+        if (userRepository.findByEmail(email).isEmpty()) {
+            throw new CustomException(ErrorMessage.USER_NOT_FOUND);
         }
-        if (!verification.getToken().equals(request.getToken())) {
+        sendVerificationCode(email);
+        return true;
+    }
+
+    // 아이디 찾기 - 인증코드 확인 후 loginId 반환
+    @Transactional
+    public UserFindIdEmailCodeResponse enterTheVerifcationCodeApi(String email, String token) {
+        EmailVerification ev = emailRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE));
+
+        if (!ev.getToken().equals(token)) {
             throw new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE);
         }
+        if (ev.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE);
+        }
 
-        User user = userRepository.findByEmail(verification.getEmail())
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
         return new UserFindIdEmailCodeResponse(user.getLoginId());
     }
 
-    // 비밀번호 재설정 - 인증코드 발송 (loginId + email 일치 확인)
+    // ──────────────────────────────────────────
+    // 비밀번호 찾기
+    // ──────────────────────────────────────────
+
+    // 비밀번호 찾기 - 아이디+이메일 확인 후 인증코드 발송
     @Transactional
     public Boolean sendPasswordResetCode(PasswordResetSendRequest request) {
-        // 1. loginId로 유저 조회
         User user = userRepository.findByLoginId(request.getLoginId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 2. 이메일 일치 여부 확인
         if (!user.getEmail().equals(request.getEmail())) {
             throw new CustomException(ErrorMessage.INVALID_AUTH_INFO);
         }
 
-        // 3. 인증 코드 발송 (쿨다운/횟수 제한 포함)
-        LocalDateTime now = LocalDateTime.now();
-        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
-                .orElse(new EmailVerification(request.getEmail(), "", now));
-
-        if (verification.getLastSendTime() != null
-                && verification.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
-            throw new CustomException(ErrorMessage.EMAIL_SEND_COOLDOWN);
-        }
-
-        if (verification.getCountResetTime() != null && verification.getCountResetTime().isBefore(now)) {
-            verification.resetCount(now, COUNT_RESET_MINUTES);
-        }
-
-        if (verification.getSendCount() >= MAX_SEND_COUNT) {
-            throw new CustomException(ErrorMessage.EMAIL_SEND_LIMIT_EXCEEDED);
-        }
-
-        if (verification.getCountResetTime() == null) {
-            verification.resetCount(now, COUNT_RESET_MINUTES);
-        }
-
-        String token = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
-        verification.updateCode(token, now.plusMinutes(7));
-        verification.recordSend(now);
-        emailRepository.save(verification);
-
-        smtpEmailSender.sendVerificationCode(request.getEmail(), token);
-
+        sendVerificationCode(request.getEmail());
         return true;
     }
 
-    // 비밀번호 재설정 - 코드 인증 후 새 비밀번호 변경
+    // 비밀번호 찾기 - 인증코드 확인 후 새 비밀번호로 변경
     @Transactional
     public Boolean resetPassword(PasswordResetConfirmRequest request) {
-        // 1. 인증 코드 확인
-        EmailVerification verification = emailRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException(ErrorMessage.EMAIL_NOT_FOUND));
+        EmailVerification ev = emailRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE));
 
-        if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE);
-        }
-        if (!verification.getToken().equals(request.getToken())) {
+        if (!ev.getToken().equals(request.getToken())) {
             throw new CustomException(ErrorMessage.INVALID_VERIFICATION_CODE);
         }
+        if (ev.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorMessage.INVALID_TIME_VERIFICATION_CODE);
+        }
 
-        // 2. 유저 조회 후 비밀번호 변경
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
         user.changePassword(passwordEncoder.encode(request.getNewPassword()));
-
         return true;
     }
 
-    // null이면 defaultValue 반환, 아니면 value 반환
-    private Boolean getOrDefault(Boolean value, Boolean defaultValue) {
+    // ──────────────────────────────────────────
+    // 공통 내부 메서드
+    // ──────────────────────────────────────────
+
+    // 인증코드 발송 (쿨타임·횟수 제한 포함)
+    private void sendVerificationCode(String email) {
+        LocalDateTime now = LocalDateTime.now();
+        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+
+        EmailVerification ev = emailRepository.findByEmail(email).orElse(null);
+        if (ev == null) {
+            ev = new EmailVerification(email, code, now.plusMinutes(7));
+            emailRepository.save(ev);
+        } else {
+            // 쿨타임 체크 (10초)
+            if (ev.getLastSendTime() != null &&
+                    ev.getLastSendTime().plusSeconds(COOLDOWN_SECONDS).isAfter(now)) {
+                throw new CustomException(ErrorMessage.EMAIL_SEND_COOLDOWN);
+            }
+            // 횟수 리셋 체크 (5분 경과 시 초기화)
+            if (ev.getCountResetTime() != null && now.isAfter(ev.getCountResetTime())) {
+                ev.resetCount(now, COUNT_RESET_MINUTES);
+            }
+            // 횟수 초과 체크
+            if (ev.getSendCount() >= MAX_SEND_COUNT) {
+                throw new CustomException(ErrorMessage.EMAIL_SEND_LIMIT_EXCEEDED);
+            }
+            ev.updateCode(code, now.plusMinutes(7));
+        }
+
+        ev.recordSend(now);
+        smtpEmailSender.sendVerificationCode(email, code);
+    }
+
+    private <T> T getOrDefault(T value, T defaultValue) {
         return value != null ? value : defaultValue;
     }
-
-    // 특정 그룹에서 유저가 담당인 할일 삭제
-    private void deleteMyTasksInGroup(UUID userId, UUID groupId) {
-        List<Task> myTasksInGroup = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
-        for (Task task : myTasksInGroup) {
-            task.getAssignees().clear();
-            task.getGroups().clear();
-            taskRepository.delete(task);
-        }
-    }
-
 }
+   

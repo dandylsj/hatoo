@@ -15,7 +15,7 @@ public class AlarmAgreeRequest {
     @Schema(description = "마케팅 알림 수신 동의", example = "false")
     private Boolean isMarketingNotiAllowed;
 
-    @Schema(description = "개인 알림 (집안일 시작/마감 임박/마감 초과)", example = "true")
+    @Schema(description = "개인 알림 수신 여부", example = "true")
     private Boolean isPersonalNotiEnabled;
 
     @Schema(description = "그룹 알림 전체 마스터", example = "true")

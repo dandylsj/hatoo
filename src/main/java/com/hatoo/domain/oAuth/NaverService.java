@@ -15,6 +15,7 @@ import com.hatoo.domain.user.UserRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -41,15 +42,21 @@ public class NaverService {
     private final PasswordEncoder passwordEncoder;
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @Value("${naver.client-id}")
+    private String naverClientId;
+
+    @Value("${naver.client-secret}")
+    private String naverClientSecret;
+
     @Transactional
-    public TokenResponse naverLoginFromApp(String accessToken) {
+    public TokenResponse naverLoginFromApp(String accessToken, String naverRefreshToken) {
 
         try {
             // 앱에서 받은 네이버 액세스 토큰으로 유저 정보 조회
             NaverUserInfo naverUserInfo = getNaverUserInfo(accessToken);
 
             // 신규 가입 또는 로그인 처리
-            User user = registerOrLogin(naverUserInfo);
+            User user = registerOrLogin(naverUserInfo, naverRefreshToken);
 
             // 우리 서비스 JWT 발급
             String ourAccessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
@@ -98,7 +105,7 @@ public class NaverService {
     }
 
     // 기존 유저는 로그인, 새로운 유저는 자동 회원가입
-    private User registerOrLogin(NaverUserInfo naverUserInfo) {
+    private User registerOrLogin(NaverUserInfo naverUserInfo, String naverRefreshToken) {
 
         NaverUserInfo.NaverResponse naverResponse = naverUserInfo.getResponse();
 
@@ -108,32 +115,85 @@ public class NaverService {
                 : (naverResponse.getName() != null ? naverResponse.getName() : "네이버유저");
         String naverEmail = naverResponse.getEmail();
 
+        // 1. 이미 네이버로 로그인한 적 있는 유저 → refresh token 갱신 후 로그인
         User user = userRepository.findByNaverId(naverId).orElse(null);
-
-        if (user == null) {
-            // 신규 네이버 유저 → 자동 회원가입
-            String loginId = "naver_" + naverId;
-            String email = (naverEmail != null && !naverEmail.isEmpty())
-                    ? naverEmail
-                    : "naver_" + naverId + "@hatoo.app";
-            String password = UUID.randomUUID().toString();
-
-            user = User.builder()
-                    .email(email)
-                    .nickname(nickname)
-                    .loginId(loginId)
-                    .password(passwordEncoder.encode(password))
-                    .build();
-            user.setNaverId(naverId);
-            userRepository.save(user);
-
-            // 기본 그룹 자동 생성
-            Group defaultGroup = new Group(nickname, "기본 그룹", user.getId(), true);
-            groupRepository.save(defaultGroup);
-            GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
-            groupMemberRepository.save(defaultGroupMember);
+        if (user != null) {
+            if (naverRefreshToken != null) user.setNaverRefreshToken(naverRefreshToken);
+            return user;
         }
 
+        // 2. 같은 이메일로 일반/다른 소셜 가입한 유저가 있으면 → 기존 계정에 네이버 ID 연동
+        if (naverEmail != null && !naverEmail.isEmpty()) {
+            User existingUser = userRepository.findByEmail(naverEmail).orElse(null);
+            if (existingUser != null) {
+                log.info("[Naver] 기존 계정에 네이버 연동 - email: {}, userId: {}", naverEmail, existingUser.getId());
+                existingUser.setNaverId(naverId);
+                if (naverRefreshToken != null) existingUser.setNaverRefreshToken(naverRefreshToken);
+                return existingUser;
+            }
+        }
+
+        // 3. 완전히 신규 유저 → 자동 회원가입
+        String loginId = "naver_" + naverId;
+        String email = (naverEmail != null && !naverEmail.isEmpty())
+                ? naverEmail
+                : "naver_" + naverId + "@hatoo.app";
+        String password = UUID.randomUUID().toString();
+
+        user = User.builder()
+                .email(email)
+                .nickname(nickname)
+                .loginId(loginId)
+                .password(passwordEncoder.encode(password))
+                .build();
+        user.setNaverId(naverId);
+        if (naverRefreshToken != null) user.setNaverRefreshToken(naverRefreshToken);
+        userRepository.save(user);
+
+        // 기본 그룹 자동 생성
+        Group defaultGroup = new Group(nickname, "기본 그룹", user.getId(), true);
+        groupRepository.save(defaultGroup);
+        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
+        groupMemberRepository.save(defaultGroupMember);
+
+        log.info("[Naver] 신규 회원가입 완료 - loginId: {}, email: {}", loginId, email);
         return user;
+    }
+
+    // 네이버 앱 연결 해제 (회원탈퇴 시 호출) - 저장된 refresh token으로 access token 재발급 후 폐기
+    public void revokeNaverAccount(String naverRefreshToken) {
+        if (naverRefreshToken == null || naverRefreshToken.isBlank()) return;
+        try {
+            // 1. refresh token으로 새 access token 발급
+            String refreshUrl = "https://nid.naver.com/oauth2.0/token"
+                    + "?grant_type=refresh_token"
+                    + "&client_id=" + naverClientId
+                    + "&client_secret=" + naverClientSecret
+                    + "&refresh_token=" + naverRefreshToken;
+
+            ResponseEntity<NaverTokenResponse> refreshResponse = restTemplate.exchange(
+                    refreshUrl, HttpMethod.GET, HttpEntity.EMPTY, NaverTokenResponse.class);
+
+            String freshAccessToken = refreshResponse.getBody() != null
+                    ? refreshResponse.getBody().getAccessToken() : null;
+
+            if (freshAccessToken == null) {
+                log.warn("[Naver] access token 재발급 실패");
+                return;
+            }
+
+            // 2. 새 access token으로 앱 연결 해제
+            String revokeUrl = "https://nid.naver.com/oauth2.0/token"
+                    + "?grant_type=delete"
+                    + "&client_id=" + naverClientId
+                    + "&client_secret=" + naverClientSecret
+                    + "&access_token=" + freshAccessToken
+                    + "&service_provider=NAVER";
+
+            restTemplate.exchange(revokeUrl, HttpMethod.GET, HttpEntity.EMPTY, String.class);
+            log.info("[Naver] 앱 연결 해제 완료");
+        } catch (Exception e) {
+            log.warn("[Naver] 앱 연결 해제 실패 (무시하고 탈퇴 진행) - error: {}", e.getMessage());
+        }
     }
 }

@@ -23,7 +23,7 @@ public class NaverController {
     @Operation(summary = "네이버 로그인", description = "네이버 앱을 통해 로그인")
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> naverAppLogin(@RequestBody NaverLoginRequest request) {
-        TokenResponse token = naverService.naverLoginFromApp(request.getCode());
+        TokenResponse token = naverService.naverLoginFromApp(request.getAccessToken(), request.getRefreshToken());
         return ResponseEntity.ok(token);
     }
 }

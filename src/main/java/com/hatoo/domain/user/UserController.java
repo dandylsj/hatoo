@@ -83,7 +83,7 @@ public class UserController {
         return ResponseEntity.ok(userService.changePassword(token, request));
     }
 
-    @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. isDeleted가 true로 변경됩니다.")
+    @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. 소셜 계정 연결 해제도 서버에서 자동으로 처리됩니다.")
     @DeleteMapping
     public ResponseEntity<Boolean> withdrawUser(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
@@ -91,29 +91,36 @@ public class UserController {
         return ResponseEntity.ok(userService.withdrawUser(token));
     }
 
-    @Operation(summary = "아이디 찾기", description = "아이디를 찾습니다.")
-    @GetMapping("/find-user-id")
-    public ResponseEntity<Boolean> findUserId(@RequestParam String email) {
+    // ──────────────────────────────────────────
+    // 아이디 찾기
+    // ──────────────────────────────────────────
 
+    @Operation(summary = "아이디 찾기 - 인증코드 발송", description = "입력한 이메일로 가입된 계정이 있으면 6자리 인증코드를 발송합니다.")
+    @PostMapping("/find-id/send-code")
+    public ResponseEntity<Boolean> sendFindIdCode(@RequestParam String email) {
         return ResponseEntity.ok(userService.findUserIdApi(email));
-
     }
 
-    @Operation(summary = "아이디 찾기 이메일 인증코드 입력", description = "이메일에 받은 코드를 적으면 아이디를 반환")
-    @PostMapping("/email-code-find-id")
-    public ResponseEntity<UserFindIdEmailCodeResponse> findIdEmailCode(@RequestBody EmailVerifiRequest request) {
-        return ResponseEntity.ok(userService.enterTheVerifcationCodeApi(request));
+    @Operation(summary = "아이디 찾기 - 인증코드 확인", description = "인증코드가 맞으면 해당 이메일로 가입된 loginId를 반환합니다.")
+    @PostMapping("/find-id/verify")
+    public ResponseEntity<UserFindIdEmailCodeResponse> verifyFindIdCode(@RequestBody EmailVerifiRequest request) {
+        return ResponseEntity.ok(userService.enterTheVerifcationCodeApi(request.getEmail(), request.getToken()));
     }
 
-    @Operation(summary = "비밀번호 재설정 인증코드 발송", description = "아이디와 이메일이 일치하는 경우 인증코드를 발송합니다.")
+    // ──────────────────────────────────────────
+    // 비밀번호 찾기
+    // ──────────────────────────────────────────
+
+    @Operation(summary = "비밀번호 찾기 - 인증코드 발송", description = "아이디와 이메일이 일치하면 인증코드를 발송합니다.")
     @PostMapping("/find-password/send-code")
     public ResponseEntity<Boolean> sendPasswordResetCode(@RequestBody PasswordResetSendRequest request) {
         return ResponseEntity.ok(userService.sendPasswordResetCode(request));
     }
 
-    @Operation(summary = "비밀번호 재설정", description = "인증코드 확인 후 새 비밀번호로 변경합니다.")
+    @Operation(summary = "비밀번호 찾기 - 새 비밀번호 설정", description = "인증코드 확인 후 새 비밀번호로 변경합니다.")
     @PostMapping("/find-password/reset")
     public ResponseEntity<Boolean> resetPassword(@RequestBody PasswordResetConfirmRequest request) {
         return ResponseEntity.ok(userService.resetPassword(request));
     }
+
 }

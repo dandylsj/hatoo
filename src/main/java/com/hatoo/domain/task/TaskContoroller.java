@@ -107,11 +107,22 @@ public class TaskContoroller {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "주차별 통계 조회 (스냅샷)", description = "매주 일요일 23:59:59에 저장된 주차별 완료율 결과를 조회합니다. weekStart 미입력시 가장 최근 주차를 반환합니다.")
+    @Operation(
+        summary = "주차별 통계 조회 (스냅샷)",
+        description = "매주 월요일 오전 8시에 저장된 지난 주 기여도 결과를 조회합니다.\n\n" +
+                      "**weekStart** : 조회할 주의 **월요일 날짜**를 `yyyy-MM-dd` 형식으로 전달합니다.\n\n" +
+                      "예) 2026-04-21 → 2026년 4월 21일(월) ~ 27일(일) 주의 통계 조회\n\n" +
+                      "**미입력 시** 가장 최근에 저장된 주차를 자동으로 반환합니다.\n\n" +
+                      "신규 그룹처럼 아직 저장된 통계가 없으면 빈 배열 `[]`을 반환합니다."
+    )
     @GetMapping("/group/{groupId}/weekly-stats")
     public ResponseEntity<List<WeeklyStatsResponse>> getWeeklyStats(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId,
+            @Parameter(
+                description = "조회할 주의 월요일 날짜 (yyyy-MM-dd). 비워두면 가장 최근 주차 반환.",
+                example = "2026-04-21"
+            )
             @RequestParam(required = false) String weekStart) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;

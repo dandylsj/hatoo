@@ -19,11 +19,11 @@ public interface WeeklyStatsRepository extends JpaRepository<WeeklyStats, UUID> 
     @Query("SELECT DISTINCT w.weekStart FROM WeeklyStats w WHERE w.groupId = :groupId ORDER BY w.weekStart DESC")
     List<String> findDistinctWeekStartsByGroupId(@Param("groupId") UUID groupId);
 
-    // 중복 저장 방지: 이미 해당 주차에 저장된 데이터가 있는지 확인
-    boolean existsByGroupIdAndWeekStart(UUID groupId, String weekStart);
-
-    // 특정 그룹의 특정 주차 데이터 전체 삭제 (재저장 전 초기화용)
+    // 특정 그룹의 특정 주차 데이터 삭제
     @Modifying
     @Query("DELETE FROM WeeklyStats w WHERE w.groupId = :groupId AND w.weekStart = :weekStart")
     void deleteByGroupIdAndWeekStart(@Param("groupId") UUID groupId, @Param("weekStart") String weekStart);
+
+    // 특정 그룹의 특정 주차 데이터 존재 여부 확인 (중복 저장 방지)
+    boolean existsByGroupIdAndWeekStart(UUID groupId, String weekStart);
 }

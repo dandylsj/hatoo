@@ -89,28 +89,31 @@ public class RecurringTaskScheduler {
         });
     }
 
-    // 주차 통계 스냅샷 저장
-    // TODO: 테스트 완료 후 "0 */10 * * * *" → "59 59 23 * * SUN" 으로 변경
-    @Scheduled(cron = "0 */10 * * * *")
+    // 지난 주 통계 스냅샷 저장 - 매주 월요일 8시 (KST) 실행
+    @Scheduled(cron = "0 0 8 * * MON", zone = "Asia/Seoul")
     @Transactional
     public void saveWeeklyStats() {
 
         LocalDate today = LocalDate.now(KST);
-        LocalDate weekStartDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate weekEndDate = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        // 지난 주 월요일 ~ 일요일 (오늘이 월요일이므로 previous(MONDAY) = 7일 전 월요일)
+        LocalDate weekStartDate = today.with(TemporalAdjusters.previous(DayOfWeek.MONDAY));
+        LocalDate weekEndDate = weekStartDate.plusDays(6);
         String weekStart = weekStartDate.format(FORMATTER);
         String weekEnd = weekEndDate.format(FORMATTER);
 
-        log.info("[WeeklyStats] 주차 통계 저장 시작 - {}~{}", weekStart, weekEnd);
+        log.info("[WeeklyStats] 지난 주 통계 저장 시작 - {}~{}", weekStart, weekEnd);
 
         List<Group> allGroups = groupRepository.findAll();
 
         for (Group group : allGroups) {
 
-            // 이번 주 기존 데이터 삭제 후 재저장 (10분마다 최신 상태로 갱신)
-            weeklyStatsRepository.deleteByGroupIdAndWeekStart(group.getId(), weekStart);
+            // 이미 저장된 경우 중복 저장 방지
+            if (weeklyStatsRepository.existsByGroupIdAndWeekStart(group.getId(), weekStart)) {
+                log.info("[WeeklyStats] 이미 저장된 주차 - groupId: {}, weekStart: {}", group.getId(), weekStart);
+                continue;
+            }
 
-            // 이번 주 할일 집계 (월요일 00:00 ~ 일요일 23:59:59 기준)
+            // 지난 주 할일 집계
             List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(group.getId(), weekStartDate, weekEndDate);
 
             // userId → [myFinished, groupTotal] 맵

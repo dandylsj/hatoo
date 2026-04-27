@@ -65,6 +65,15 @@ public class WeeklyStatsResponse {
         LocalDate start = LocalDate.parse(stats.getWeekStart());
         LocalDate end = LocalDate.parse(stats.getWeekEnd());
 
+        // "N월 N주차" 라벨 계산
+        int month = start.getMonthValue();
+        int weekOfMonth = (start.getDayOfMonth() - 1) / 7 + 1;
+        String weekLabel = month + "월 " + weekOfMonth + "주차";
+
+        // "N월 N일 ~ N월 N일" 범위 표시
+        DateTimeFormatter labelFmt = DateTimeFormatter.ofPattern("M월 d일");
+        String weekRange = start.format(labelFmt) + " ~ " + end.format(labelFmt);
+
         return new WeeklyStatsResponse(
                 rank,
                 stats.getUserId(),
@@ -75,19 +84,8 @@ public class WeeklyStatsResponse {
                 stats.getPercent(),
                 stats.getWeekStart(),
                 stats.getWeekEnd(),
-                buildWeekLabel(start),
-                buildWeekRange(start, end)
+                weekLabel,
+                weekRange
         );
-    }
-
-    private static String buildWeekLabel(LocalDate weekStart) {
-        int month = weekStart.getMonthValue();
-        int weekOfMonth = (weekStart.getDayOfMonth() - 1) / 7 + 1;
-        return month + "월 " + weekOfMonth + "주차";
-    }
-
-    private static String buildWeekRange(LocalDate start, LocalDate end) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M월 d일");
-        return start.format(formatter) + " ~ " + end.format(formatter);
     }
 }

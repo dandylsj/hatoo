@@ -305,9 +305,11 @@ public class TaskService {
         List<WeeklyStats> statsList = weeklyStatsRepository
                 .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);
 
+        if (statsList.isEmpty()) return List.of();
+
         AtomicInteger rankCounter = new AtomicInteger(1);
         return statsList.stream()
-                .map(s -> WeeklyStatsResponse.from(s, rankCounter.getAndIncrement()))
+                .map(stats -> WeeklyStatsResponse.from(stats, rankCounter.getAndIncrement()))
                 .collect(Collectors.toList());
     }
 }

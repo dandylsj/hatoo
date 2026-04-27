@@ -131,11 +131,12 @@ public class RecurringTaskScheduler {
                 // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
                 int percent = groupTotal > 0 ? (int) Math.round(myFinished * 100.0 / groupTotal) : 0;
 
+                String profileImg = gm.getProfileImg() != null ? gm.getProfileImg() : "";
                 WeeklyStats weeklyStats = new WeeklyStats(
                         group.getId(),
                         gm.getUser().getId(),
                         gm.getUser().getNickname(),
-                        gm.getProfileImg(),
+                        profileImg,
                         weekStart,
                         weekEnd,
                         groupTotal,

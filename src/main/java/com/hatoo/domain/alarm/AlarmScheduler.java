@@ -37,7 +37,7 @@ public class AlarmScheduler {
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
     public void sendTaskStartAlarm() {
-        List<Task> tasks = taskRepository.findByFinishedFalseAndStartAlarmSentFalse();
+        List<Task> tasks = taskRepository.findByStarterTrueAndFinishedFalseAndStartAlarmSentFalse();
         LocalDateTime now = LocalDateTime.now(KST);
 
         tasks.forEach(task -> {

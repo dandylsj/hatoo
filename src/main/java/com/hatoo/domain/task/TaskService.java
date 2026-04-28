@@ -222,18 +222,7 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
 
-        boolean isCompleting = !request.getTaskStatus(); // true = 완료 처리, false = 완료 취소
-        task.setFinished(isCompleting);
-
-        // 완료 처리 시에만 그룹 전체에 알림 발송
-        if (isCompleting && !task.getGroups().isEmpty()) {
-            String completerLoginId = jwtUtil.extractLoginId(accessToken);
-            User completer = userRepository.findByLoginId(completerLoginId).orElse(null);
-            String completerNickname = completer != null ? completer.getNickname() : "누군가";
-
-            UUID groupId = task.getGroups().get(0).getId();
-            fcmService.sendTaskComplete(groupId, completerNickname, task.getTitle());
-        }
+        task.setFinished(!request.getTaskStatus());
 
         return new TaskStatusUpdateResponse(task.getFinished(), task.getFinishedAt());
     }

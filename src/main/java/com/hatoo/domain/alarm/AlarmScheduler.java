@@ -163,11 +163,41 @@ public class AlarmScheduler {
     // ──────────────────────────────────────────
     private LocalDateTime parseDueDateTime(String due) {
         if (due == null || due.isBlank()) return null;
-        try {
-            return LocalDateTime.parse(due, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-        } catch (Exception e) {
-            return null;
+
+        // 1. ISO 8601 형식 "2026-04-27T01:56:04.689Z" (UTC → KST 변환)
+        if (due.contains("T")) {
+            try {
+                java.time.Instant instant = java.time.Instant.parse(due);
+                return LocalDateTime.ofInstant(instant, KST);
+            } catch (Exception ignored) {}
+            // Z 없는 ISO 형식 "2026-04-27T13:55:01"
+            try {
+                return LocalDateTime.parse(due, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            } catch (Exception ignored) {}
         }
+
+        // 2. 공백 구분 형식 "2026-04-28 13:55:01.884884" 등
+        String[] patterns = {
+            "yyyy-MM-dd HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd HH:mm:ss.SSS",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm"
+        };
+
+        for (String pattern : patterns) {
+            try {
+                String trimmed = due.length() > pattern.length() ? due.substring(0, pattern.length()) : due;
+                return LocalDateTime.parse(trimmed, DateTimeFormatter.ofPattern(pattern));
+            } catch (Exception ignored) {}
+        }
+
+        // 3. 날짜만 "2026-04-28" → 자정 00:00
+        try {
+            return LocalDate.parse(due.substring(0, 10), DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay();
+        } catch (Exception ignored) {}
+
+        log.warn("[AlarmScheduler] 날짜 파싱 실패 - due: {}", due);
+        return null;
     }
 
     /**

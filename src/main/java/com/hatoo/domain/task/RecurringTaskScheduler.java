@@ -107,11 +107,8 @@ public class RecurringTaskScheduler {
 
         for (Group group : allGroups) {
 
-            // 이미 저장된 경우 중복 저장 방지
-            if (weeklyStatsRepository.existsByGroupIdAndWeekStart(group.getId(), weekStart)) {
-                log.info("[WeeklyStats] 이미 저장된 주차 - groupId: {}, weekStart: {}", group.getId(), weekStart);
-                continue;
-            }
+            // 기존 데이터 전부 삭제 후 새로 저장 (잘못된 날짜 데이터 포함 항상 초기화)
+            weeklyStatsRepository.deleteByGroupId(group.getId());
 
             // 지난 주 할일 집계
             List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(group.getId(), weekStartDate, weekEndDate);
@@ -149,15 +146,10 @@ public class RecurringTaskScheduler {
                 weeklyStatsRepository.save(weeklyStats);
             }
 
-            log.info("[WeeklyStats] 그룹 통계 저장 완료 - groupId: {}, 멤버 수: {}", group.getId(), members.size());
+            log.info("[WeeklyStats] 그룹 통계 저장 완료 - groupId: {}, weekStart: {}, 멤버 수: {}", group.getId(), weekStart, members.size());
         }
 
-        log.info("[WeeklyStats] 전체 주차 통계 저장 완료");
-
-        // 저장된 주차(weekStart)보다 이전 데이터 파기 (1주치만 유지)
-        String cutoffDate = weekStartDate.format(FORMATTER);
-        weeklyStatsRepository.deleteByWeekStartBefore(cutoffDate);
-        log.info("[WeeklyStats] {}  이전 주차 통계 데이터 파기 완료", cutoffDate);
+        log.info("[WeeklyStats] 전체 주차 통계 저장 완료 - {}~{}", weekStart, weekEnd);
     }
 
     private LocalDate calculateNextDate(String dateStr, Frequency frequency, Integer interval) {
@@ -165,18 +157,16 @@ public class RecurringTaskScheduler {
         int amount = interval != null ? interval : 1;
 
         return switch (frequency) {
+            case HOURLY -> date.plusDays(amount);
             case DAILY -> date.plusDays(amount);
             case WEEKLY -> date.plusWeeks(amount);
             case MONTHLY -> date.plusMonths(amount);
-            default -> date.plusDays(amount);
+            default -> date.plusDays(1);
         };
     }
 
-    // "2026-04-20T17:02:28.613Z" 같은 ISO 형식이 오면 날짜 부분만 추출
     private String normalizeDate(String dateStr) {
-        if (dateStr != null && dateStr.contains("T")) {
-            return dateStr.substring(0, 10);
-        }
-        return dateStr;
+        if (dateStr == null || dateStr.length() < 10) return LocalDate.now().format(FORMATTER);
+        return dateStr.substring(0, 10);
     }
 }

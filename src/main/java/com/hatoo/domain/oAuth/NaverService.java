@@ -107,6 +107,8 @@ public class NaverService {
     // 기존 유저는 로그인, 새로운 유저는 자동 회원가입
     private User registerOrLogin(NaverUserInfo naverUserInfo, String naverRefreshToken) {
 
+        log.info("[Naver] refreshToken 수신 여부: {}", naverRefreshToken != null ? "있음 (길이=" + naverRefreshToken.length() + ")" : "null - 프론트에서 refreshToken을 전달하지 않음");
+
         NaverUserInfo.NaverResponse naverResponse = naverUserInfo.getResponse();
 
         String naverId = naverResponse.getId();

@@ -294,8 +294,17 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 가장 최근에 저장된 주차를 자동으로 사용
-        List<String> weekStarts = weeklyStatsRepository.findDistinctWeekStartsByGroupId(groupId);
+        // 이번 주 월요일 계산 (KST 기준) - 이번 주 이상 데이터는 제외
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        String thisWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+
+        // 지난 주 이하 데이터만 사용 (이번 주 또는 미래 날짜의 잘못된 데이터 제외)
+        List<String> weekStarts = weeklyStatsRepository.findDistinctWeekStartsByGroupId(groupId)
+                .stream()
+                .filter(ws -> ws.compareTo(thisWeekMonday) < 0)
+                .collect(java.util.stream.Collectors.toList());
+
         if (weekStarts.isEmpty()) return List.of();
         String targetWeek = weekStarts.get(0);
 

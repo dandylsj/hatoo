@@ -32,9 +32,9 @@ public class AlarmScheduler {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     // ──────────────────────────────────────────
-    // 1. 할일 시작 알림 - 매 1분마다 실행
+    // 1. 할일 시작 알림 - 매 30초마다 실행
     // ──────────────────────────────────────────
-    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     @Transactional
     public void sendTaskStartAlarm() {
         List<Task> tasks = taskRepository.findByStarterTrueAndFinishedFalseAndStartAlarmSentFalse();
@@ -56,9 +56,9 @@ public class AlarmScheduler {
     }
 
     // ──────────────────────────────────────────
-    // 2. 마감 임박 알림 - 매 1분마다 실행
+    // 2. 마감 임박 알림 - 매 30초마다 실행
     // ──────────────────────────────────────────
-    @Scheduled(cron = "0 */5 * * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     @Transactional
     public void sendTaskDeadlineAlarm() {
         List<Task> tasks = taskRepository.findTasksForDeadlineAlarm();
@@ -85,9 +85,9 @@ public class AlarmScheduler {
     }
 
     // ──────────────────────────────────────────
-    // 3. 마감 초과 알림 - 매 1분마다 실행
+    // 3. 마감 초과 알림 - 매 30초마다 실행
     // ──────────────────────────────────────────
-    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     @Transactional
     public void sendTaskOverdueAlarm() {
         List<Task> tasks = taskRepository.findByFinishedFalseAndOverdueAlarmSentFalse();

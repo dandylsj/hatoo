@@ -297,12 +297,8 @@ public class TaskService {
 
         // 이번 주 월요일 계산 (KST 기준)
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        LocalDate thisWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        String thisWeekMondayStr = thisWeekMonday.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
-
-        // 지난 주 월~일 (기본값: 데이터 없을 때 사용)
-        LocalDate lastWeekMonday = thisWeekMonday.minusWeeks(1);
-        LocalDate lastWeekSunday = lastWeekMonday.plusDays(6);
+        String thisWeekMondayStr = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
 
         // 지난 주 이하 데이터만 사용
         List<String> weekStarts = weeklyStatsRepository.findDistinctWeekStartsByGroupId(groupId)
@@ -310,28 +306,26 @@ public class TaskService {
                 .filter(ws -> ws.compareTo(thisWeekMondayStr) < 0)
                 .collect(java.util.stream.Collectors.toList());
 
-        // 저장된 데이터 없으면 → 지난 주 주차 정보만 반환 (rankings 빈 배열)
+        // 저장된 데이터 없으면 → 지난 주 주차 정보만 반환 (ranks 빈 배열)
         if (weekStarts.isEmpty()) {
-            return WeeklyStatsWrapperResponse.of(lastWeekMonday, lastWeekSunday, List.of());
+            return WeeklyStatsWrapperResponse.empty();
         }
 
         String targetWeek = weekStarts.get(0);
-        LocalDate targetStart = LocalDate.parse(targetWeek);
-        LocalDate targetEnd = targetStart.plusDays(6);
 
         List<WeeklyStats> statsList = weeklyStatsRepository
                 .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);
 
-        // 해당 주차의 데이터가 없으면 → 주차 정보만 반환 (rankings 빈 배열)
+        // 해당 주차의 데이터가 없으면 → 주차 정보만 반환 (ranks 빈 배열)
         if (statsList.isEmpty()) {
-            return WeeklyStatsWrapperResponse.of(targetStart, targetEnd, List.of());
+            return WeeklyStatsWrapperResponse.of(targetWeek, List.of());
         }
 
         AtomicInteger rankCounter = new AtomicInteger(1);
-        List<WeeklyStatsResponse> rankings = statsList.stream()
+        List<WeeklyStatsResponse> ranks = statsList.stream()
                 .map(stats -> WeeklyStatsResponse.from(stats, rankCounter.getAndIncrement()))
                 .collect(Collectors.toList());
 
-        return WeeklyStatsWrapperResponse.of(targetStart, targetEnd, rankings);
+        return WeeklyStatsWrapperResponse.of(targetWeek, ranks);
     }
 }

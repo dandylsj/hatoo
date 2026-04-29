@@ -2,6 +2,7 @@ package com.hatoo.domain.task;
 
 import com.hatoo.domain.task.dto.*;
 import com.hatoo.domain.weeklyStats.WeeklyStatsResponse;
+import com.hatoo.domain.weeklyStats.WeeklyStatsWrapperResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -114,13 +115,13 @@ public class TaskContoroller {
                       "신규 그룹처럼 아직 저장된 통계가 없으면 빈 배열 `[]`을 반환합니다."
     )
     @GetMapping("/group/{groupId}/weekly-stats")
-    public ResponseEntity<List<WeeklyStatsResponse>> getWeeklyStats(
+    public ResponseEntity<WeeklyStatsWrapperResponse> getWeeklyStats(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @PathVariable UUID groupId) {
 
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
-        List<WeeklyStatsResponse> response = taskService.getWeeklyStatsApi(token, groupId);
+        WeeklyStatsWrapperResponse response = taskService.getWeeklyStatsApi(token, groupId);
 
         return ResponseEntity.ok(response);
     }

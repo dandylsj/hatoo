@@ -14,6 +14,7 @@ import com.hatoo.domain.alarm.FcmService;
 import com.hatoo.domain.weeklyStats.WeeklyStats;
 import com.hatoo.domain.weeklyStats.WeeklyStatsRepository;
 import com.hatoo.domain.weeklyStats.WeeklyStatsResponse;
+import com.hatoo.domain.weeklyStats.WeeklyStatsWrapperResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -285,36 +286,52 @@ public class TaskService {
     }
 
     // 저장된 주차 통계 조회 (항상 가장 최근 저장된 지난 주차 반환)
+    // 데이터 없을 경우에도 지난 주 주차 정보(weekStart, weekEnd, weekLabel, weekRange)는 반환
     @Transactional(readOnly = true)
-    public List<WeeklyStatsResponse> getWeeklyStatsApi(String accessToken, UUID groupId) {
+    public WeeklyStatsWrapperResponse getWeeklyStatsApi(String accessToken, UUID groupId) {
 
         jwtUtil.validateToken(accessToken);
 
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 이번 주 월요일 계산 (KST 기준) - 이번 주 이상 데이터는 제외
+        // 이번 주 월요일 계산 (KST 기준)
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        String thisWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate thisWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        String thisWeekMondayStr = thisWeekMonday.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
 
-        // 지난 주 이하 데이터만 사용 (이번 주 또는 미래 날짜의 잘못된 데이터 제외)
+        // 지난 주 월~일 (기본값: 데이터 없을 때 사용)
+        LocalDate lastWeekMonday = thisWeekMonday.minusWeeks(1);
+        LocalDate lastWeekSunday = lastWeekMonday.plusDays(6);
+
+        // 지난 주 이하 데이터만 사용
         List<String> weekStarts = weeklyStatsRepository.findDistinctWeekStartsByGroupId(groupId)
                 .stream()
-                .filter(ws -> ws.compareTo(thisWeekMonday) < 0)
+                .filter(ws -> ws.compareTo(thisWeekMondayStr) < 0)
                 .collect(java.util.stream.Collectors.toList());
 
-        if (weekStarts.isEmpty()) return List.of();
+        // 저장된 데이터 없으면 → 지난 주 주차 정보만 반환 (rankings 빈 배열)
+        if (weekStarts.isEmpty()) {
+            return WeeklyStatsWrapperResponse.of(lastWeekMonday, lastWeekSunday, List.of());
+        }
+
         String targetWeek = weekStarts.get(0);
+        LocalDate targetStart = LocalDate.parse(targetWeek);
+        LocalDate targetEnd = targetStart.plusDays(6);
 
         List<WeeklyStats> statsList = weeklyStatsRepository
                 .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);
 
-        if (statsList.isEmpty()) return List.of();
+        // 해당 주차의 데이터가 없으면 → 주차 정보만 반환 (rankings 빈 배열)
+        if (statsList.isEmpty()) {
+            return WeeklyStatsWrapperResponse.of(targetStart, targetEnd, List.of());
+        }
 
         AtomicInteger rankCounter = new AtomicInteger(1);
-        return statsList.stream()
+        List<WeeklyStatsResponse> rankings = statsList.stream()
                 .map(stats -> WeeklyStatsResponse.from(stats, rankCounter.getAndIncrement()))
                 .collect(Collectors.toList());
+
+        return WeeklyStatsWrapperResponse.of(targetStart, targetEnd, rankings);
     }
 }

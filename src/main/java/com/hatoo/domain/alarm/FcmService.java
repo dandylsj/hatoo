@@ -15,6 +15,7 @@ import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 1. 할일 시작 알림 (스케줄러 호출)
     // ──────────────────────────────────────────
+    @Async
     public void sendTaskStart(UUID userId, String taskTitle) {
         String body = String.format(AlarmType.TASK_START.getBodyTemplate(), taskTitle);
         sendToUserIfAllowed(userId, AlarmType.TASK_START, body);
@@ -44,6 +46,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 2. 할일 마감 임박 알림 (스케줄러 호출)
     // ──────────────────────────────────────────
+    @Async
     public void sendTaskDeadline(UUID userId, String taskTitle) {
         String body = String.format(AlarmType.TASK_DEADLINE.getBodyTemplate(), taskTitle);
         sendToUserIfAllowed(userId, AlarmType.TASK_DEADLINE, body);
@@ -52,6 +55,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 3. 마감 초과 알림 (스케줄러 호출)
     // ──────────────────────────────────────────
+    @Async
     public void sendTaskOverdue(UUID userId, String taskTitle) {
         String body = String.format(AlarmType.TASK_OVERDUE.getBodyTemplate(), taskTitle);
         sendToUserIfAllowed(userId, AlarmType.TASK_OVERDUE, body);
@@ -60,6 +64,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 4. 주간 차트 공개 알림 (매주 월요일 8시 스케줄러 호출)
     // ──────────────────────────────────────────
+    @Async
     public void sendWeeklyChart(UUID groupId) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
@@ -71,6 +76,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 5. 새 멤버 참여 알림 (GroupService에서 호출)
     // ──────────────────────────────────────────
+    @Async
     public void sendNewMember(UUID groupId, String groupName, String newMemberNickname) {
         String body = String.format(AlarmType.NEW_MEMBER.getBodyTemplate(), groupName, newMemberNickname);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
@@ -82,6 +88,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 6. 새 집안일 등록 알림 (TaskService에서 호출)
     // ──────────────────────────────────────────
+    @Async
     public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle) {
         String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname, taskTitle);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
@@ -93,6 +100,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 7. 집안일 배정 알림 (TaskService에서 호출) - 개인 알림
     // ──────────────────────────────────────────
+    @Async
     public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname) {
         String body = String.format(AlarmType.TASK_ASSIGNED.getBodyTemplate(), assignerNickname, assigneeNickname);
         sendToUserIfAllowed(assigneeId, AlarmType.TASK_ASSIGNED, body);
@@ -101,6 +109,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 8. 비활성 그룹 알림 (월간 스케줄러 호출)
     // ──────────────────────────────────────────
+    @Async
     public void sendInactiveGroup(UUID groupId) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->

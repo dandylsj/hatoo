@@ -35,12 +35,16 @@ public class NotificationHistory extends BaseEntity {
     @Column(nullable = false)
     private Boolean isRead = false;
 
-    public NotificationHistory(UUID userId, AlarmType type, String title, String body) {
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID taskId;
+
+    public NotificationHistory(UUID userId, AlarmType type, String title, String body, UUID taskId) {
         this.userId = userId;
         this.type = type;
         this.title = title;
         this.body = body;
         this.isRead = false;
+        this.taskId = taskId;
     }
 
     public void markAsRead() {

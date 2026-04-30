@@ -79,11 +79,11 @@ public class TaskService {
         String creatorNickname = creator != null ? creator.getNickname() : "누군가";
 
         // 6. 새 집안일 등록 알림 (그룹 전체에게)
-        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle());
+        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle(), task.getId());
 
         // 7. 집안일 배정 알림 (담당자가 나 자신이 아닌 경우에만)
         if (creator == null || !creator.getId().equals(assignee.getId())) {
-            fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname());
+            fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname(), task.getId());
         }
 
         return new TaskListResponse(

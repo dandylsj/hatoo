@@ -38,27 +38,27 @@ public class FcmService {
     // 1. 할일 시작 알림 (스케줄러 호출)
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskStart(UUID userId, String taskTitle) {
+    public void sendTaskStart(UUID userId, String taskTitle, UUID taskId) {
         String body = String.format(AlarmType.TASK_START.getBodyTemplate(), taskTitle);
-        sendToUserIfAllowed(userId, AlarmType.TASK_START, body);
+        sendToUserIfAllowed(userId, AlarmType.TASK_START, body, taskId);
     }
 
     // ──────────────────────────────────────────
     // 2. 할일 마감 임박 알림 (스케줄러 호출)
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskDeadline(UUID userId, String taskTitle) {
+    public void sendTaskDeadline(UUID userId, String taskTitle, UUID taskId) {
         String body = String.format(AlarmType.TASK_DEADLINE.getBodyTemplate(), taskTitle);
-        sendToUserIfAllowed(userId, AlarmType.TASK_DEADLINE, body);
+        sendToUserIfAllowed(userId, AlarmType.TASK_DEADLINE, body, taskId);
     }
 
     // ──────────────────────────────────────────
     // 3. 마감 초과 알림 (스케줄러 호출)
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskOverdue(UUID userId, String taskTitle) {
+    public void sendTaskOverdue(UUID userId, String taskTitle, UUID taskId) {
         String body = String.format(AlarmType.TASK_OVERDUE.getBodyTemplate(), taskTitle);
-        sendToUserIfAllowed(userId, AlarmType.TASK_OVERDUE, body);
+        sendToUserIfAllowed(userId, AlarmType.TASK_OVERDUE, body, taskId);
     }
 
     // ──────────────────────────────────────────
@@ -69,7 +69,7 @@ public class FcmService {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
                 sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.WEEKLY_CHART,
-                        AlarmType.WEEKLY_CHART.getBodyTemplate())
+                        AlarmType.WEEKLY_CHART.getBodyTemplate(), null)
         );
     }
 
@@ -81,7 +81,7 @@ public class FcmService {
         String body = String.format(AlarmType.NEW_MEMBER.getBodyTemplate(), groupName, newMemberNickname);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.NEW_MEMBER, body)
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.NEW_MEMBER, body, null)
         );
     }
 
@@ -89,11 +89,11 @@ public class FcmService {
     // 6. 새 집안일 등록 알림 (TaskService에서 호출)
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle) {
+    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle, UUID taskId) {
         String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname, taskTitle);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.TASK_CREATED, body)
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.TASK_CREATED, body, taskId)
         );
     }
 
@@ -101,9 +101,9 @@ public class FcmService {
     // 7. 집안일 배정 알림 (TaskService에서 호출) - 개인 알림
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname) {
+    public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname, UUID taskId) {
         String body = String.format(AlarmType.TASK_ASSIGNED.getBodyTemplate(), assignerNickname, assigneeNickname);
-        sendToUserIfAllowed(assigneeId, AlarmType.TASK_ASSIGNED, body);
+        sendToUserIfAllowed(assigneeId, AlarmType.TASK_ASSIGNED, body, taskId);
     }
 
     // ──────────────────────────────────────────
@@ -114,7 +114,7 @@ public class FcmService {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
                 sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.INACTIVE_GROUP,
-                        AlarmType.INACTIVE_GROUP.getBodyTemplate())
+                        AlarmType.INACTIVE_GROUP.getBodyTemplate(), null)
         );
     }
 
@@ -123,7 +123,7 @@ public class FcmService {
     // ──────────────────────────────────────────
 
     // 개인 알림: 전체 알림 마스터 → 개인 알림 토글 2단계 확인
-    private void sendToUserIfAllowed(UUID userId, AlarmType type, String body) {
+    private void sendToUserIfAllowed(UUID userId, AlarmType type, String body, UUID taskId) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
 
@@ -143,11 +143,11 @@ public class FcmService {
             return;
         }
 
-        sendMessage(userId, type, user.getFcmToken(), type.getTitle(), body);
+        sendMessage(userId, type, user.getFcmToken(), type.getTitle(), body, taskId);
     }
 
     // 그룹 알림: 개인 그룹 여부에 따라 분기
-    private void sendToGroupMemberIfAllowed(UUID userId, UUID groupId, AlarmType type, String body) {
+    private void sendToGroupMemberIfAllowed(UUID userId, UUID groupId, AlarmType type, String body, UUID taskId) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
 
@@ -211,11 +211,11 @@ public class FcmService {
             return;
         }
 
-        sendMessage(userId, type, user.getFcmToken(), type.getTitle(), body);
+        sendMessage(userId, type, user.getFcmToken(), type.getTitle(), body, taskId);
     }
 
     // 실제 FCM 전송 + DB 저장 (이 메서드까지 왔으면 모든 권한 체크 통과)
-    private void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body) {
+    private void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
         try {
             Message message = Message.builder()
                     .setNotification(Notification.builder()
@@ -227,7 +227,7 @@ public class FcmService {
             FirebaseMessaging.getInstance().send(message);
 
             // 전송 성공 시에만 DB에 알림 내역 저장
-            notificationHistoryRepository.save(new NotificationHistory(userId, type, title, body));
+            notificationHistoryRepository.save(new NotificationHistory(userId, type, title, body, taskId));
             log.info("[FCM] 알림 전송 성공 - userId: {}, type: {}", userId, type);
         } catch (FirebaseMessagingException e) {
             log.error("[FCM] 알림 전송 실패 - userId: {}, {}", userId, e.getMessage());

@@ -47,7 +47,7 @@ public class AlarmScheduler {
             if (!now.isBefore(dueFromDateTime) && now.isBefore(dueFromDateTime.plusMinutes(10))) {
                 if (!task.getAssignees().isEmpty()) {
                     UUID userId = task.getAssignees().get(0).getId();
-                    fcmService.sendTaskStart(userId, task.getTitle());
+                    fcmService.sendTaskStart(userId, task.getTitle(), task.getId());
                     task.markStartAlarmSent();
                     log.info("[AlarmScheduler] 할일 시작 알림 발송 - taskId: {}", task.getId());
                 }
@@ -76,7 +76,7 @@ public class AlarmScheduler {
             if (!now.isBefore(notifyAt) && now.isBefore(notifyAt.plusMinutes(10))) {
                 if (!task.getAssignees().isEmpty()) {
                     UUID userId = task.getAssignees().get(0).getId();
-                    fcmService.sendTaskDeadline(userId, task.getTitle());
+                    fcmService.sendTaskDeadline(userId, task.getTitle(), task.getId());
                     task.markDeadlineAlarmSent();
                     log.info("[AlarmScheduler] 마감 임박 알림 발송 - taskId: {}", task.getId());
                 }
@@ -102,7 +102,7 @@ public class AlarmScheduler {
             if (!now.isBefore(overdueAt) && now.isBefore(overdueAt.plusMinutes(15))) {
                 if (!task.getAssignees().isEmpty()) {
                     UUID userId = task.getAssignees().get(0).getId();
-                    fcmService.sendTaskOverdue(userId, task.getTitle());
+                    fcmService.sendTaskOverdue(userId, task.getTitle(), task.getId());
                     task.markOverdueAlarmSent();
                     log.info("[AlarmScheduler] 마감 초과 알림 발송 - taskId: {}", task.getId());
                 }

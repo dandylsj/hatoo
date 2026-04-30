@@ -33,6 +33,9 @@ public class NotificationHistoryResponse {
     @Schema(description = "수신 시각")
     private final LocalDateTime createdAt;
 
+    @Schema(description = "관련 할일 ID (할일 관련 알림일 때만 존재)")
+    private final UUID taskId;
+
     public NotificationHistoryResponse(NotificationHistory n) {
         this.id = n.getId();
         this.type = n.getType();
@@ -41,5 +44,6 @@ public class NotificationHistoryResponse {
         this.body = n.getBody();
         this.isRead = n.getIsRead();
         this.createdAt = n.getCreatedAt();
+        this.taskId = n.getTaskId();
     }
 }

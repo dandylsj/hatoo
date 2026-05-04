@@ -35,6 +35,7 @@ public class TaskAllGroupListResponse {
         private String dueFrom;
         private String dueTo;
         private Boolean finished;
+        private LocalDateTime finishedAt;
         private Frequency frequency;
         private Integer interval;
         private Boolean starter;
@@ -62,6 +63,7 @@ public class TaskAllGroupListResponse {
         private String dueFrom;
         private String dueTo;
         private Boolean finished;
+        private LocalDateTime finishedAt;
         private Frequency frequency;
         private Integer interval;
         private Boolean starter;

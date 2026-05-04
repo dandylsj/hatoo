@@ -4,10 +4,7 @@ import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.groupMember.GroupMember;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,8 +51,17 @@ public class User extends BaseEntity {
     @Column
     private Boolean isOverFourteen;
 
+    @Setter
     @Column(unique = true)
     private Long kakaoId;
+
+    @Setter
+    @Column(unique = true)
+    private String naverId;
+
+    @Setter
+    @Column(length = 1000)
+    private String naverRefreshToken; // 탈퇴 시 네이버 연결 해제용
 
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();
@@ -93,7 +99,10 @@ public class User extends BaseEntity {
         this.password = encodedPassword;
     }
 
-    public void setKakaoId(Long kakaoId) {
-        this.kakaoId = kakaoId;
+    public void updateAgree(Boolean isTermsAgreed, Boolean isPrivacyAgreed, Boolean isOverFourteen) {
+        if (isTermsAgreed != null) this.isTermsAgreed = isTermsAgreed;
+        if (isPrivacyAgreed != null) this.isPrivacyAgreed = isPrivacyAgreed;
+        if (isOverFourteen != null) this.isOverFourteen = isOverFourteen;
     }
+
 }

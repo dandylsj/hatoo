@@ -6,42 +6,77 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, UUID> {
+
     List<Task> findByGroupsId(UUID groupId);
 
-    // 특정 유저가 담당자로 있는 할일 조회
+    // 마감 임박순 정렬 (dueTo null인 항목은 맨 뒤)
+    @Query("SELECT t FROM Task t JOIN t.groups g WHERE g.id = :groupId " +
+           "ORDER BY CASE WHEN t.dueTo IS NULL THEN 1 ELSE 0 END ASC, t.dueTo ASC")
+    List<Task> findByGroupsIdOrderByDueToAsc(@Param("groupId") UUID groupId);
+
     List<Task> findByAssigneesId(UUID userId);
 
-    // 특정 그룹에서 특정 유저가 담당인 할일 조회
     List<Task> findByAssigneesIdAndGroupsId(UUID userId, UUID groupId);
 
     List<Task> findAllByGroupsContainingAndFinishedTrue(Group group);
 
-    // dueFrom ~ dueTo 범위 안에 오늘이 포함되는 반복 할일 조회 (NONE 제외)
-    // SUBSTRING으로 앞 10자리만 비교 → "2026-04-20T17:02:28.613Z" 같은 ISO 형식도 처리 가능
-    @Query("SELECT t FROM Task t WHERE t.frequency IS NOT NULL AND t.frequency != com.hatoo.domain.task.Frequency.NONE AND SUBSTRING(t.dueFrom, 1, 10) <= :today AND SUBSTRING(t.dueTo, 1, 10) >= :today")
-    List<Task> findRecurringTasksDueOn(@org.springframework.data.repository.query.Param("today") String today);
+    // 반복 할일 조회 (오늘 날짜가 dueFrom~dueTo 범위 안에 있는 것)
+    @Query("SELECT t FROM Task t WHERE t.frequency IS NOT NULL AND t.frequency != com.hatoo.domain.task.Frequency.NONE " +
+           "AND SUBSTRING(t.dueFrom, 1, 10) <= :today AND SUBSTRING(t.dueTo, 1, 10) >= :today")
+    List<Task> findRecurringTasksDueOn(@Param("today") String today);
 
-    // 중복 생성 방지: 같은 반복그룹에 동일한 dueTo를 가진 할일이 이미 있는지 확인
+    // 중복 생성 방지
     boolean existsByRecurringTaskIdAndDueTo(String recurringTaskId, String dueTo);
 
-    // 그룹 내 담당자별 완료 할일 수 + 그룹 전체 할일 수 집계 (완료율 계산용)
-    // [userId, nickname, profileImg, userFinishedCount, groupTotalCount] 순서로 반환
-    // 완료율 = 내가 완료한 수 / 그룹 전체 할일 수 * 100
+    // 알림 스케줄러용 - dueFrom이 특정 날짜로 시작하는 할일 조회
+    List<Task> findByDueFromStartingWith(String date);
+
+    // 알림 스케줄러용 - dueTo가 특정 날짜로 시작하는 할일 조회
+    List<Task> findByDueToStartingWith(String date);
+
+    // ──────────────────────────────────────────
+    // 알림 스케줄러용 (개선된 버전)
+    // ──────────────────────────────────────────
+
+    // 1. 시작 알림: starter=true + 미완료 + 시작 알림 미발송
+    List<Task> findByStarterTrueAndFinishedFalseAndStartAlarmSentFalse();
+
+    // 2. 마감 임박 알림: deadLine이 설정됐고, 미완료, 마감임박 알림 미발송
+    @Query("SELECT t FROM Task t WHERE t.deadLine IS NOT NULL " +
+           "AND t.deadLine != com.hatoo.domain.task.DeadLine.NONE " +
+           "AND t.finished = false " +
+           "AND t.deadlineAlarmSent = false")
+    List<Task> findTasksForDeadlineAlarm();
+
+    // 3. 마감 초과 알림: 미완료, 마감초과 알림 미발송
+    List<Task> findByFinishedFalseAndOverdueAlarmSentFalse();
+
+    // 이번 주(weekStart~weekEnd) 그룹 내 담당자별 기여도 집계
+    // [userId, nickname, profileImg, myFinishedCount, groupTotalFinishedCount] 순서로 반환
+    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
+    // finishedAt 기준으로 이번 주에 완료된 할일을 집계
     @Query("SELECT u.id, u.nickname, gm.profileImg, " +
-           "SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END), " +
-           "(SELECT COUNT(t2) FROM Task t2 JOIN t2.groups g2 WHERE g2.id = :groupId) " +
+           "SUM(CASE WHEN t.finished = true AND t.finishedAt IS NOT NULL " +
+           "    AND CAST(t.finishedAt AS date) >= :weekStart " +
+           "    AND CAST(t.finishedAt AS date) <= :weekEnd THEN 1 ELSE 0 END), " +
+           "(SELECT COUNT(t2) FROM Task t2 JOIN t2.groups g2 WHERE g2.id = :groupId " +
+           " AND t2.finished = true AND t2.finishedAt IS NOT NULL " +
+           " AND CAST(t2.finishedAt AS date) >= :weekStart " +
+           " AND CAST(t2.finishedAt AS date) <= :weekEnd) " +
            "FROM Task t " +
            "JOIN t.assignees u " +
            "JOIN t.groups g " +
            "JOIN GroupMember gm ON gm.user.id = u.id AND gm.group.id = g.id " +
            "WHERE g.id = :groupId " +
-           "GROUP BY u.id, u.nickname, gm.profileImg " +
-           "ORDER BY SUM(CASE WHEN t.finished = true THEN 1 ELSE 0 END) DESC")
-    List<Object[]> countFinishedTasksByGroupId(@Param("groupId") UUID groupId);
-
+           "GROUP BY u.id, u.nickname, gm.profileImg")
+    List<Object[]> countFinishedTasksByGroupIdThisWeek(
+            @Param("groupId") UUID groupId,
+            @Param("weekStart") LocalDate weekStart,
+            @Param("weekEnd") LocalDate weekEnd);
 }

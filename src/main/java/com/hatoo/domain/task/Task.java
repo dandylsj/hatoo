@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +40,10 @@ public class Task extends BaseEntity {
     @Column
     private Boolean finished = false;
 
+    // 완료 처리 시각 (KST), 완료 취소 시 null
+    @Column
+    private LocalDateTime finishedAt;
+
     @Enumerated(EnumType.STRING)
     private DeadLine deadLine;
 
@@ -53,6 +59,19 @@ public class Task extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "frequency")
     private Frequency frequency;
+
+    // ──────────────────────────────────────────
+    // 알림 발송 여부 플래그 (중복 알림 방지)
+    // ──────────────────────────────────────────
+
+    @Column(name = "start_alarm_sent")
+    private Boolean startAlarmSent = false;
+
+    @Column(name = "deadline_alarm_sent")
+    private Boolean deadlineAlarmSent = false;
+
+    @Column(name = "overdue_alarm_sent")
+    private Boolean overdueAlarmSent = false;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -97,7 +116,6 @@ public class Task extends BaseEntity {
         return this.assignees.get(0).getId();
     }
 
-
     public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
         this.title = title;
         this.description = description;
@@ -110,9 +128,23 @@ public class Task extends BaseEntity {
 
     public void setFinished(boolean finished) {
         this.finished = finished;
+        // 완료 처리 시 현재 KST 시각 기록, 완료 취소 시 null로 초기화
+        this.finishedAt = finished ? LocalDateTime.now(ZoneId.of("Asia/Seoul")) : null;
     }
 
     public void setRecurringTaskId(String recurringTaskId) {
         this.recurringTaskId = recurringTaskId;
+    }
+
+    public void markStartAlarmSent() {
+        this.startAlarmSent = true;
+    }
+
+    public void markDeadlineAlarmSent() {
+        this.deadlineAlarmSent = true;
+    }
+
+    public void markOverdueAlarmSent() {
+        this.overdueAlarmSent = true;
     }
 }

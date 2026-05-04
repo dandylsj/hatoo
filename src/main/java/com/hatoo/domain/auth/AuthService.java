@@ -5,6 +5,7 @@ import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.auth.dto.LoginRequest;
+import com.hatoo.domain.auth.dto.RefreshTokenReissuanceRequest;
 import com.hatoo.domain.auth.dto.SignRequest;
 import com.hatoo.domain.auth.dto.UserInfoResposne;
 import com.hatoo.domain.groupMember.GroupMember;
@@ -20,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -104,6 +107,40 @@ public class AuthService {
         refreshTokenRepository.save(refreshTokenEntity);
 
         return new TokenResponse(accessToken, refreshToken);
+    }
+
+    // 토큰 재발급
+    @Transactional
+    public TokenResponse reissueToken(RefreshTokenReissuanceRequest request) {
+
+        // 1. 리프레시 토큰 서명/만료 검증
+        jwtUtil.validateRefreshToken(request.getRefreshToken());
+
+        // 2. 토큰에서 userId 추출
+        UUID userId = jwtUtil.extractUserId(request.getRefreshToken());
+
+        // 3. DB에서 리프레시 토큰 조회
+        RefreshToken savedToken = refreshTokenRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.INVALID_REFRESH_TOKEN));
+
+        // 4. DB 토큰과 요청 토큰 일치 여부 확인 (탈취 방지)
+        if (!savedToken.getToken().equals(request.getRefreshToken())) {
+            throw new CustomException(ErrorMessage.INVALID_REFRESH_TOKEN);
+        }
+
+        // 5. 유저 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 6. 새 토큰 쌍 발급
+        String newAccessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        // 7. DB 리프레시 토큰 갱신 (토큰 로테이션)
+        savedToken.updateToken(newRefreshToken);
+        refreshTokenRepository.save(savedToken);
+
+        return new TokenResponse(newAccessToken, newRefreshToken);
     }
 
     //유저정보 불러오기

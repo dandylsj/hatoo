@@ -1,4 +1,4 @@
-package com.hatoo.domain.user;
+package com.hatoo.domain.auth;
 
 import com.hatoo.common.BaseEntity;
 import jakarta.persistence.*;

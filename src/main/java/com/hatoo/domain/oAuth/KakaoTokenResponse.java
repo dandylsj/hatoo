@@ -1,4 +1,4 @@
-package com.hatoo.domain.kakao;
+package com.hatoo.domain.oAuth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;

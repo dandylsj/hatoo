@@ -1,4 +1,4 @@
-package com.hatoo.domain.kakao;
+package com.hatoo.domain.oAuth;
 
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
@@ -44,6 +44,9 @@ public class KakaoService {
 
 //    @Value("${kakao.client-id}")
 //    private String clientId;
+
+    @Value("${kakao.admin-key}")
+    private String kakaoAdminKey;
 
     // 앱용 로그인 (네이티브 SDK - redirect_uri 없이 토큰 교환)
     @Transactional
@@ -132,39 +135,80 @@ public class KakaoService {
     private User registerOrLogin(KakaoUserInfo kakaoUserInfo) {
 
         Long kakaoId = kakaoUserInfo.getId();
-        String nickname = kakaoUserInfo.getProperties().getNickname();
-        
+        String nickname = kakaoUserInfo.getProperties() != null
+                ? kakaoUserInfo.getProperties().getNickname()
+                : "카카오유저";
+
         // 카카오 계정의 이메일 가져오기
         String kakaoEmail = null;
         if (kakaoUserInfo.getKakaoAccount() != null) {
             kakaoEmail = kakaoUserInfo.getKakaoAccount().getEmail();
         }
 
+        // 1. 이미 카카오로 로그인한 적 있는 유저 → 그냥 로그인
         User user = userRepository.findByKakaoId(kakaoId).orElse(null);
-
-        if (user == null) {
-            // 신규 카카오 유저 → 자동 회원가입
-            String loginId = "kakao_" + kakaoId;
-            // 실제 이메일이 제공되지 않으면 임시 이메일 사용
-            String email = (kakaoEmail != null && !kakaoEmail.isEmpty()) ? kakaoEmail : "kakao_" + kakaoId + "@hatoo.app";
-            String password = UUID.randomUUID().toString();
-
-            user = User.builder()
-                    .email(email)
-                    .nickname(nickname)
-                    .loginId(loginId)
-                    .password(passwordEncoder.encode(password))
-                    .build();
-            user.setKakaoId(kakaoId);
-            userRepository.save(user);
-
-            // 기본 그룹 자동 생성
-            Group defaultGroup = new Group(nickname, "기본 그룹", user.getId(), true);
-            groupRepository.save(defaultGroup);
-            GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
-            groupMemberRepository.save(defaultGroupMember);
+        if (user != null) {
+            return user;
         }
 
+        // 2. 같은 이메일로 일반/다른 소셜 가입한 유저가 있으면 → 기존 계정에 카카오 ID 연동
+        if (kakaoEmail != null && !kakaoEmail.isEmpty()) {
+            User existingUser = userRepository.findByEmail(kakaoEmail).orElse(null);
+            if (existingUser != null) {
+                log.info("[Kakao] 기존 계정에 카카오 연동 - email: {}, userId: {}", kakaoEmail, existingUser.getId());
+                existingUser.setKakaoId(kakaoId);
+                return existingUser;
+            }
+        }
+
+        // 3. 완전히 신규 유저 → 자동 회원가입
+        String loginId = "kakao_" + kakaoId;
+        String email = (kakaoEmail != null && !kakaoEmail.isEmpty())
+                ? kakaoEmail
+                : "kakao_" + kakaoId + "@hatoo.app";
+        String password = UUID.randomUUID().toString();
+
+        user = User.builder()
+                .email(email)
+                .nickname(nickname)
+                .loginId(loginId)
+                .password(passwordEncoder.encode(password))
+                .build();
+        user.setKakaoId(kakaoId);
+        userRepository.save(user);
+
+        // 기본 그룹 자동 생성
+        Group defaultGroup = new Group(nickname, "기본 그룹", user.getId(), true);
+        groupRepository.save(defaultGroup);
+        GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
+        groupMemberRepository.save(defaultGroupMember);
+
+        log.info("[Kakao] 신규 회원가입 완료 - loginId: {}, email: {}", loginId, email);
         return user;
+    }
+
+    // 카카오 앱 연결 해제 (회원탈퇴 시 호출) - admin key + 저장된 kakaoId 사용
+    public void unlinkKakaoAccount(Long kakaoId) {
+        if (kakaoId == null) return;
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "KakaoAK " + kakaoAdminKey);
+            headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("target_id_type", "user_id");
+            body.add("target_id", String.valueOf(kakaoId));
+
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+            restTemplate.exchange(
+                    "https://kapi.kakao.com/v1/user/unlink",
+                    HttpMethod.POST,
+                    request,
+                    String.class
+            );
+            log.info("[Kakao] 앱 연결 해제 완료 - kakaoId: {}", kakaoId);
+        } catch (Exception e) {
+            log.warn("[Kakao] 앱 연결 해제 실패 (무시하고 탈퇴 진행) - kakaoId: {}, error: {}", kakaoId, e.getMessage());
+        }
     }
 }

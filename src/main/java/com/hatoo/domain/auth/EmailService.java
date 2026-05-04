@@ -1,16 +1,19 @@
-package com.hatoo.domain.user;
+package com.hatoo.domain.auth;
 
 import com.hatoo.common.email.SmtpEmailSender;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
+import com.hatoo.domain.user.UserRepository;
 import com.hatoo.domain.user.dto.EmailVerifiRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -28,6 +31,7 @@ public class EmailService {
     public boolean checkEmailSend(String email) {
         try {
             if (userRepository.findByEmail(email).isPresent()) {
+                log.info("[Email] 이미 가입된 이메일 - email: {}", email);
                 return false;
             }
 
@@ -61,9 +65,11 @@ public class EmailService {
             emailRepository.save(verification);
 
             smtpEmailSender.sendVerificationCode(email, token);
+            log.info("[Email] 인증코드 DB 저장 완료 - email: {}", email);
 
             return true;
         } catch (Exception e) {
+            log.error("[Email] 인증코드 전송 실패 - email: {}, error: {}", email, e.getMessage());
             return false;
         }
     }

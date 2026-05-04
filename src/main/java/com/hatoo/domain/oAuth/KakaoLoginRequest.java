@@ -1,4 +1,4 @@
-package com.hatoo.domain.kakao;
+package com.hatoo.domain.oAuth;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

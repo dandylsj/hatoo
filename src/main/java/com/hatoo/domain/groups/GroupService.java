@@ -3,6 +3,8 @@ package com.hatoo.domain.groups;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSetting;
+import com.hatoo.domain.groupAlarmSetting.GroupAlarmSettingRepository;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.dto.*;
@@ -11,6 +13,7 @@ import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.user.User;
 import com.hatoo.domain.user.UserRepository;
+import com.hatoo.domain.alarm.FcmService;
 import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,8 +29,10 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final GroupAlarmSettingRepository groupAlarmSettingRepository;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final FcmService fcmService;
     private final TaskRepository taskRepository;
 
     // 내가 속한 그룹 조회
@@ -67,6 +72,10 @@ public class GroupService {
         // 그룹 생성자를 GroupMember로 등록
         GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
+
+        // 그룹 알람 설정 기본값 생성 (전부 ON)
+        GroupAlarmSetting alarmSetting = new GroupAlarmSetting(user.getId(), group.getId());
+        groupAlarmSettingRepository.save(alarmSetting);
 
         return new GroupCreateResponse(
                 group.getId(),
@@ -126,14 +135,16 @@ public class GroupService {
             throw new CustomException(ErrorMessage.GROUP_FULL);
         }
 
-//        // 6. 선택한 색상이 이미 사용 중인지 확인
-//        if (groupMemberRepository.existsByGroupIdAndProfileImg(groupId, profileImg)) {
-//            throw new CustomException(ErrorMessage.COLOR_ALREADY_TAKEN);
-//        }
-
-        // 7. GroupMember 생성 및 저장
+        // 6. GroupMember 생성 및 저장
         GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
         groupMemberRepository.save(groupMember);
+
+        // 7. 그룹 알람 설정 기본값 생성 (전부 ON)
+        GroupAlarmSetting alarmSetting = new GroupAlarmSetting(user.getId(), group.getId());
+        groupAlarmSettingRepository.save(alarmSetting);
+
+        // 8. 새 멤버 참여 알림 전송 (그룹 전체에게)
+        fcmService.sendNewMember(groupId, group.getName(), user.getNickname());
 
         return true;
     }
@@ -173,9 +184,10 @@ public class GroupService {
             throw new CustomException(ErrorMessage.NO_DELETE_PERMISSION);
         }
 
-        // group_members 전체 삭제 후 그룹 삭제
+        // group_members + group_alarm_settings 전체 삭제 후 그룹 삭제
         List<GroupMember> members = groupMemberRepository.findByGroupIdOrderByCreatedAtAsc(groupId);
         groupMemberRepository.deleteAll(members);
+        groupAlarmSettingRepository.deleteByGroupId(groupId);
 
         groupRepository.delete(group);
 
@@ -206,6 +218,7 @@ public class GroupService {
             taskRepository.delete(task);
         }
         groupMemberRepository.delete(groupMember);
+        groupAlarmSettingRepository.deleteByUserIdAndGroupId(user.getId(), groupId);
 
         return true;
     }
@@ -232,6 +245,7 @@ public class GroupService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
 
         groupMemberRepository.delete(groupMember);
+        groupAlarmSettingRepository.deleteByUserIdAndGroupId(memberId, groupId);
 
         return true;
     }
@@ -249,40 +263,79 @@ public class GroupService {
                 .map(GroupTokenSameListDto::from)
                 .collect(Collectors.toList());
     }
-    //초대 코드 생성 로직
-    private String generateInviteCode() {
-        int length = 4;
-        String characters = "0123456789";
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(characters.charAt(random.nextInt(characters.length())));
-        }
-        return sb.toString();
-    }
 
-    //그룹 가입시 멤버 프로필 이미지 선택
+    // 프로필 이미지 선택 (그룹 참여 시)
     @Transactional
     public Boolean profileImgSelectApi(String accessToken, GroupJoinProfileRequest request, UUID groupId) {
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
 
-        // 1. 유저 조회
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 2. 그룹 조회
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
-
-        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), group.getId())
-                .orElse(new GroupMember(user, group, request.getProfileImg()));
+        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
 
         groupMember.updateProfileImg(request.getProfileImg());
 
-        groupMemberRepository.save(groupMember);
-
         return true;
+    }
+
+    // 그룹 알람 설정 조회
+    @Transactional(readOnly = true)
+    public GroupAlarmSettingResponse getGroupAlarmSetting(String accessToken, UUID groupId) {
+
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        GroupAlarmSetting setting = groupAlarmSettingRepository
+                .findByUserIdAndGroupId(user.getId(), groupId)
+                .orElse(null);
+
+        return setting != null
+                ? GroupAlarmSettingResponse.from(setting)
+                : GroupAlarmSettingResponse.defaultEnabled(groupId);
+    }
+
+    // 그룹 알람 설정 수정
+    @Transactional
+    public GroupAlarmSettingResponse updateGroupAlarmSetting(String accessToken, UUID groupId, GroupAlarmSettingRequest request) {
+
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        GroupAlarmSetting setting = groupAlarmSettingRepository
+                .findByUserIdAndGroupId(user.getId(), groupId)
+                .orElseGet(() -> {
+                    GroupAlarmSetting newSetting = new GroupAlarmSetting(user.getId(), groupId);
+                    return groupAlarmSettingRepository.save(newSetting);
+                });
+
+        setting.update(
+                request.getIsGroupNotiEnabled(),
+                request.getIsNewTaskNotiEnabled(),
+                request.getIsNewMemberNotiEnabled(),
+                request.getIsTaskCompleteNotiEnabled()
+        );
+
+        return GroupAlarmSettingResponse.from(setting);
+    }
+
+    // 초대코드 생성 유틸
+    private String generateInviteCode() {
+        return String.format("%04d", new Random().nextInt(10000));
     }
 }

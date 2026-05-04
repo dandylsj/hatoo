@@ -255,7 +255,6 @@ public class TaskService {
     }
 
     // 그룹 내 이번 주 기여도 순위 실시간 조회
-    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
     @Transactional(readOnly = true)
     public List<TaskRankingResponse> getGroupRankingApi(String accessToken, UUID groupId) {
 
@@ -264,12 +263,10 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 이번 주 월요일 ~ 일요일 (KST 기준)
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
-        // row[3] = 내가 완료한 수, row[4] = 그룹 전체 완료된 수
         List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(groupId, weekStart, weekEnd);
 
         Map<UUID, Integer> myFinishedMap = new HashMap<>();
@@ -289,7 +286,6 @@ public class TaskService {
         return allMembers.stream()
                 .map(gm -> {
                     int myFinished = myFinishedMap.getOrDefault(gm.getUser().getId(), 0);
-                    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
                     int percent = finalGroupTotal > 0 ? (int) Math.round(myFinished * 100.0 / finalGroupTotal) : 0;
                     return new TaskRankingResponse(0, gm.getUser().getId(), gm.getUser().getNickname(), gm.getProfileImg(), finalGroupTotal, myFinished, percent);
                 })
@@ -299,7 +295,6 @@ public class TaskService {
     }
 
     // 저장된 주차 통계 조회 (항상 가장 최근 저장된 지난 주차 반환)
-    // 데이터 없을 경우에도 지난 주 주차 정보(weekStart, weekEnd, weekLabel, weekRange)는 반환
     @Transactional(readOnly = true)
     public WeeklyStatsWrapperResponse getWeeklyStatsApi(String accessToken, UUID groupId) {
 
@@ -308,18 +303,15 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 이번 주 월요일 계산 (KST 기준)
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         String thisWeekMondayStr = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
 
-        // 지난 주 이하 데이터만 사용
         List<String> weekStarts = weeklyStatsRepository.findDistinctWeekStartsByGroupId(groupId)
                 .stream()
                 .filter(ws -> ws.compareTo(thisWeekMondayStr) < 0)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
-        // 저장된 데이터 없으면 → 지난 주 주차 정보만 반환 (ranks 빈 배열)
         if (weekStarts.isEmpty()) {
             return WeeklyStatsWrapperResponse.empty();
         }
@@ -329,4 +321,15 @@ public class TaskService {
         List<WeeklyStats> statsList = weeklyStatsRepository
                 .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);
 
-        // 해당 주차의 데이터가 없으면 → 주차 정
+        if (statsList.isEmpty()) {
+            return WeeklyStatsWrapperResponse.of(targetWeek, List.of());
+        }
+
+        AtomicInteger rankCounter = new AtomicInteger(1);
+        List<WeeklyStatsResponse> ranks = statsList.stream()
+                .map(s -> WeeklyStatsResponse.from(s, rankCounter.getAndIncrement()))
+                .collect(Collectors.toList());
+
+        return WeeklyStatsWrapperResponse.of(targetWeek, ranks);
+    }
+}

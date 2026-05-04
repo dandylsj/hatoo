@@ -63,14 +63,17 @@ public class FcmService {
 
     // ──────────────────────────────────────────
     // 4. 주간 차트 공개 알림 (매주 월요일 8시 스케줄러 호출)
+    //    notifiedUsers: 이미 알림을 보낸 유저 Set — 여러 그룹에 속해도 1번만 발송
     // ──────────────────────────────────────────
-    @Async
-    public void sendWeeklyChart(UUID groupId) {
+    public void sendWeeklyChart(UUID groupId, java.util.Set<UUID> notifiedUsers) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
-        members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.WEEKLY_CHART,
-                        AlarmType.WEEKLY_CHART.getBodyTemplate(), null)
-        );
+        members.forEach(gm -> {
+            UUID userId = gm.getUser().getId();
+            if (notifiedUsers.contains(userId)) return;
+            notifiedUsers.add(userId);
+            sendToGroupMemberIfAllowed(userId, groupId, AlarmType.WEEKLY_CHART,
+                    AlarmType.WEEKLY_CHART.getBodyTemplate(), null);
+        });
     }
 
     // ──────────────────────────────────────────
@@ -87,14 +90,14 @@ public class FcmService {
 
     // ──────────────────────────────────────────
     // 6. 새 집안일 등록 알림 (TaskService에서 호출)
-    //    assigneeId 는 배정받은 사람 → 그룹 전체 알림에서 제외 (배정 알림이 따로 가므로)
+    //    assigneeIds 는 배정받은 사람들 → 그룹 전체 알림에서 제외 (배정 알림이 따로 가므로)
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle, UUID taskId, UUID assigneeId) {
+    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle, UUID taskId, java.util.List<UUID> assigneeIds) {
         String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname, taskTitle);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.stream()
-                .filter(gm -> !gm.getUser().getId().equals(assigneeId))
+                .filter(gm -> !assigneeIds.contains(gm.getUser().getId()))
                 .forEach(gm ->
                         sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.TASK_CREATED, body, taskId)
                 );

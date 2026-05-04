@@ -51,8 +51,7 @@ public class TaskService {
         Group group = groupRepository.findById(request.getGroupId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        User assignee = userRepository.findById(request.getAssigneeId())
-                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+        List<User> assignees = userRepository.findAllById(request.getAssigneeIds());
 
         Task task = new Task(
                 request.getTitle(),
@@ -65,7 +64,7 @@ public class TaskService {
                 request.getInterval()
         );
 
-        task.addAssignee(assignee);
+        assignees.forEach(task::addAssignee);
         task.addGroup(group);
         taskRepository.save(task);
 
@@ -78,13 +77,23 @@ public class TaskService {
         User creator = userRepository.findByLoginId(creatorLoginId).orElse(null);
         String creatorNickname = creator != null ? creator.getNickname() : "누군가";
 
-        // 6. 새 집안일 등록 알림 (그룹 전체에게)
-        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle(), task.getId(), assignee.getId());
+        // 배정된 유저 ID 목록
+        List<UUID> assigneeIds = assignees.stream().map(User::getId).collect(Collectors.toList());
 
-        // 7. 집안일 배정 알림 (담당자가 나 자신이 아닌 경우에만)
-        if (creator == null || !creator.getId().equals(assignee.getId())) {
-            fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname(), task.getId());
-        }
+        // 새 집안일 등록 알림 (배정받은 사람 제외 그룹 전체에게)
+        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle(), task.getId(), assigneeIds);
+
+        // 집안일 배정 알림 (담당자 각각에게, 본인이 만든 경우 제외)
+        final UUID creatorId = creator != null ? creator.getId() : null;
+        assignees.forEach(assignee -> {
+            if (creatorId == null || !creatorId.equals(assignee.getId())) {
+                fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname(), task.getId());
+            }
+        });
+
+        List<TaskListResponse.AssigneeDto> assigneeDtos = assignees.stream()
+                .map(a -> new TaskListResponse.AssigneeDto(a.getNickname()))
+                .collect(Collectors.toList());
 
         return new TaskListResponse(
                 task.getId(),
@@ -95,7 +104,7 @@ public class TaskService {
                 task.getDueTo(),
                 false,
                 task.getRecurringTaskId(),
-                new TaskListResponse.AssigneeDto(assignee.getNickname())
+                assigneeDtos
         );
     }
 
@@ -201,6 +210,10 @@ public class TaskService {
                 request.getStarter()
         );
 
+        List<TaskListResponse.AssigneeDto> assigneeDtos = task.getAssignees().stream()
+                .map(a -> new TaskListResponse.AssigneeDto(a.getNickname()))
+                .collect(Collectors.toList());
+
         return new TaskListResponse(
                 task.getId(),
                 task.getTitle(),
@@ -210,7 +223,7 @@ public class TaskService {
                 task.getDueTo(),
                 false,
                 task.getRecurringTaskId(),
-                new TaskListResponse.AssigneeDto(task.getAssigneeId().toString())
+                assigneeDtos
         );
     }
 
@@ -316,16 +329,4 @@ public class TaskService {
         List<WeeklyStats> statsList = weeklyStatsRepository
                 .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);
 
-        // 해당 주차의 데이터가 없으면 → 주차 정보만 반환 (ranks 빈 배열)
-        if (statsList.isEmpty()) {
-            return WeeklyStatsWrapperResponse.of(targetWeek, List.of());
-        }
-
-        AtomicInteger rankCounter = new AtomicInteger(1);
-        List<WeeklyStatsResponse> ranks = statsList.stream()
-                .map(stats -> WeeklyStatsResponse.from(stats, rankCounter.getAndIncrement()))
-                .collect(Collectors.toList());
-
-        return WeeklyStatsWrapperResponse.of(targetWeek, ranks);
-    }
-}
+        // 해당 주차의 데이터가 없으면 → 주차 정

@@ -3,6 +3,7 @@ package com.hatoo.domain.task.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -25,7 +26,7 @@ public class TaskListResponse {
 
     private String recurringTaskId;
 
-    private AssigneeDto assignee;
+    private List<AssigneeDto> assignees;
 
     @Getter
     @AllArgsConstructor

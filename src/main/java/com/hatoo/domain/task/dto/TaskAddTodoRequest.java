@@ -4,6 +4,7 @@ import com.hatoo.domain.task.DeadLine;
 import com.hatoo.domain.task.Frequency;
 import lombok.Getter;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -13,7 +14,7 @@ public class TaskAddTodoRequest {
 
     private String description;
 
-    private UUID assigneeId;
+    private List<UUID> assigneeIds;
 
     private UUID groupId;
 

@@ -73,6 +73,9 @@ public class Task extends BaseEntity {
     @Column(name = "overdue_alarm_sent")
     private Boolean overdueAlarmSent = false;
 
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID creatorId;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "task_assignees",
@@ -142,5 +145,9 @@ public void updateTask(String title, String description, Frequency frequency, St
 
     public void markOverdueAlarmSent() {
         this.overdueAlarmSent = true;
+    }
+
+    public void setCreatorId(UUID creatorId) {
+        this.creatorId = creatorId;
     }
 }

@@ -42,6 +42,7 @@ public class TaskAllGroupListResponse {
         private DeadLine deadLine;
         private List<AssigneeDto> assignees;
         private String recurringTaskId;
+        private UUID creatorId;
 
         @Getter
         @AllArgsConstructor
@@ -71,5 +72,6 @@ public class TaskAllGroupListResponse {
         private DeadLine deadLine;
         private List<TaskList.AssigneeDto> assignees;
         private String recurringTaskId;
+        private UUID creatorId;
     }
 }

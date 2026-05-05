@@ -28,6 +28,8 @@ public class TaskListResponse {
 
     private List<AssigneeDto> assignees;
 
+    private UUID creatorId;
+
     @Getter
     @AllArgsConstructor
     public static class AssigneeDto {

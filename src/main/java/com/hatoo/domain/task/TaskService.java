@@ -77,11 +77,15 @@ public class TaskService {
         User creator = userRepository.findByLoginId(creatorLoginId).orElse(null);
         String creatorNickname = creator != null ? creator.getNickname() : "누군가";
 
+        if (creator != null) {
+            task.setCreatorId(creator.getId());
+        }
+
         // 배정된 유저 ID 목록
         List<UUID> assigneeIds = assignees.stream().map(User::getId).collect(Collectors.toList());
 
-        // 새 집안일 등록 알림 (배정받은 사람 제외 그룹 전체에게)
-        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle(), task.getId(), assigneeIds);
+        // 새 집안일 등록 알림 (배정받은 사람 + 생성자 제외 그룹 전체에게)
+        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle(), task.getId(), assigneeIds, task.getCreatorId());
 
         // 집안일 배정 알림 (담당자 각각에게, 본인이 만든 경우 제외)
         final UUID creatorId = creator != null ? creator.getId() : null;
@@ -104,7 +108,8 @@ public class TaskService {
                 task.getDueTo(),
                 false,
                 task.getRecurringTaskId(),
-                assigneeDtos
+                assigneeDtos,
+                task.getCreatorId()
         );
     }
 
@@ -141,7 +146,8 @@ public class TaskService {
                             task.getStarter(),
                             task.getDeadLine(),
                             assigneeDtos,
-                            task.getRecurringTaskId()
+                            task.getRecurringTaskId(),
+                            task.getCreatorId()
                     );
                 })
                 .collect(Collectors.toList());
@@ -168,7 +174,8 @@ public class TaskService {
                             task.getStarter(),
                             task.getDeadLine(),
                             assigneeDtos,
-                            task.getRecurringTaskId()
+                            task.getRecurringTaskId(),
+                            task.getCreatorId()
                     );
                 })
                 .collect(Collectors.toList());
@@ -221,7 +228,8 @@ public class TaskService {
                 task.getDueTo(),
                 false,
                 task.getRecurringTaskId(),
-                assigneeDtos
+                assigneeDtos,
+                task.getCreatorId()
         );
     }
 

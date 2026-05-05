@@ -91,13 +91,15 @@ public class FcmService {
     // ──────────────────────────────────────────
     // 6. 새 집안일 등록 알림 (TaskService에서 호출)
     //    assigneeIds 는 배정받은 사람들 → 그룹 전체 알림에서 제외 (배정 알림이 따로 가므로)
+    //    creatorId 는 할일 생성자 → 본인이 만든 할일 알림은 받지 않아야 하므로 제외
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle, UUID taskId, java.util.List<UUID> assigneeIds) {
+    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle, UUID taskId, java.util.List<UUID> assigneeIds, UUID creatorId) {
         String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname, taskTitle);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.stream()
                 .filter(gm -> !assigneeIds.contains(gm.getUser().getId()))
+                .filter(gm -> creatorId == null || !creatorId.equals(gm.getUser().getId()))
                 .forEach(gm ->
                         sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.TASK_CREATED, body, taskId)
                 );

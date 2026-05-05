@@ -76,9 +76,10 @@ public class RecurringTaskScheduler {
                     return;
                 }
 
-                // 담당자 & 그룹 복사
+                // 담당자 & 그룹 & 생성자 복사
                 task.getAssignees().forEach(newTask::addAssignee);
                 task.getGroups().forEach(newTask::addGroup);
+                newTask.setCreatorId(task.getCreatorId());
 
                 taskRepository.save(newTask);
                 log.info("[TaskScheduler] 반복 할일 생성 완료 - title: {}, 다음 마감일: {}", task.getTitle(), nextDueTo);

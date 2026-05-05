@@ -16,6 +16,7 @@ public class TaskAllGroupListResponse {
 
     private List<TaskList> tasks;
     private List<FinishedTaskList> finishedTasks;
+
     @Schema(example = "0")
     private Integer totalCount;
 
@@ -34,7 +35,7 @@ public class TaskAllGroupListResponse {
         private UUID groupId;
         private String dueFrom;
         private String dueTo;
-        private Boolean finished;
+        private Boolean allFinished;
         private LocalDateTime finishedAt;
         private Frequency frequency;
         private Integer interval;
@@ -49,6 +50,8 @@ public class TaskAllGroupListResponse {
         public static class AssigneeDto {
             private UUID id;
             private String nickname;
+            private Boolean finished;
+            private LocalDateTime finishedAt;
         }
     }
 
@@ -64,7 +67,7 @@ public class TaskAllGroupListResponse {
         private UUID groupId;
         private String dueFrom;
         private String dueTo;
-        private Boolean finished;
+        private Boolean allFinished;
         private LocalDateTime finishedAt;
         private Frequency frequency;
         private Integer interval;

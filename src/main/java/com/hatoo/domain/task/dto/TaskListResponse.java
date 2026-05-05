@@ -11,23 +11,14 @@ import java.util.UUID;
 public class TaskListResponse {
 
     private UUID id;
-
     private String title;
-
     private String description;
-
     private UUID groupId;
-
     private String dueFrom;
-
     private String dueTo;
-
-    private Boolean finished;
-
+    private Boolean allFinished;
     private String recurringTaskId;
-
     private List<AssigneeDto> assignees;
-
     private UUID creatorId;
 
     @Getter

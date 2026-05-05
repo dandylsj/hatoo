@@ -112,11 +112,7 @@ public class Task extends BaseEntity {
         return this.groups.get(0).getId();
     }
 
-    public UUID getAssigneeId() {
-        return this.assignees.get(0).getId();
-    }
-
-    public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
+public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
         this.title = title;
         this.description = description;
         this.frequency = frequency;

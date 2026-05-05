@@ -122,7 +122,9 @@ public class TaskService {
         List<TaskAllGroupListResponse.TaskList> taskItems = tasks.stream()
                 .filter(task -> !Boolean.TRUE.equals(task.getFinished()))
                 .map(task -> {
-                    User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
+                    List<TaskAllGroupListResponse.TaskList.AssigneeDto> assigneeDtos = task.getAssignees().stream()
+                            .map(a -> new TaskAllGroupListResponse.TaskList.AssigneeDto(a.getId(), a.getNickname()))
+                            .collect(Collectors.toList());
                     return new TaskAllGroupListResponse.TaskList(
                             task.getCreatedAt(),
                             task.getUpdatedAt(),
@@ -138,11 +140,8 @@ public class TaskService {
                             task.getInterval(),
                             task.getStarter(),
                             task.getDeadLine(),
-                            firstAssignee != null ? firstAssignee.getId().toString() : null,
-                            task.getRecurringTaskId(),
-                            firstAssignee != null
-                                    ? new TaskAllGroupListResponse.TaskList.AssigneeDto(firstAssignee.getNickname())
-                                    : null
+                            assigneeDtos,
+                            task.getRecurringTaskId()
                     );
                 })
                 .collect(Collectors.toList());
@@ -150,7 +149,9 @@ public class TaskService {
         List<TaskAllGroupListResponse.FinishedTaskList> finishedTaskItems = tasks.stream()
                 .filter(task -> Boolean.TRUE.equals(task.getFinished()))
                 .map(task -> {
-                    User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
+                    List<TaskAllGroupListResponse.TaskList.AssigneeDto> assigneeDtos = task.getAssignees().stream()
+                            .map(a -> new TaskAllGroupListResponse.TaskList.AssigneeDto(a.getId(), a.getNickname()))
+                            .collect(Collectors.toList());
                     return new TaskAllGroupListResponse.FinishedTaskList(
                             task.getCreatedAt(),
                             task.getUpdatedAt(),
@@ -166,11 +167,8 @@ public class TaskService {
                             task.getInterval(),
                             task.getStarter(),
                             task.getDeadLine(),
-                            firstAssignee != null ? firstAssignee.getId().toString() : null,
-                            task.getRecurringTaskId(),
-                            firstAssignee != null
-                                    ? new TaskAllGroupListResponse.TaskList.AssigneeDto(firstAssignee.getNickname())
-                                    : null
+                            assigneeDtos,
+                            task.getRecurringTaskId()
                     );
                 })
                 .collect(Collectors.toList());

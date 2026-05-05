@@ -40,16 +40,17 @@ public class TaskAllGroupListResponse {
         private Integer interval;
         private Boolean starter;
         private DeadLine deadLine;
-        private String assigneeId;
+        private List<AssigneeDto> assignees;
         private String recurringTaskId;
-        private AssigneeDto assignee;
 
         @Getter
         @AllArgsConstructor
         public static class AssigneeDto {
+            private UUID id;
             private String nickname;
         }
     }
+
     @Getter
     @AllArgsConstructor
     public static class FinishedTaskList {
@@ -68,14 +69,7 @@ public class TaskAllGroupListResponse {
         private Integer interval;
         private Boolean starter;
         private DeadLine deadLine;
-        private String assigneeId;
+        private List<TaskList.AssigneeDto> assignees;
         private String recurringTaskId;
-        private TaskList.AssigneeDto assignee;
-
-        @Getter
-        @AllArgsConstructor
-        public static class AssigneeDto {
-            private String nickname;
-        }
     }
 }

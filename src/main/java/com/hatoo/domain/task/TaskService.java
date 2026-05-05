@@ -103,7 +103,7 @@ public class TaskService {
         });
 
         List<TaskListResponse.AssigneeDto> assigneeDtos = assignees.stream()
-                .map(a -> new TaskListResponse.AssigneeDto(a.getNickname()))
+                .map(a -> new TaskListResponse.AssigneeDto(a.getId(), a.getNickname(), false))
                 .collect(Collectors.toList());
 
         return new TaskListResponse(
@@ -233,13 +233,22 @@ public class TaskService {
                 request.getStarter()
         );
 
-        List<TaskAssignee> taskAssignees = taskAssigneeRepository.findByTaskId(taskId);
-        List<TaskListResponse.AssigneeDto> assigneeDtos = taskAssignees.stream()
-                .map(ta -> new TaskListResponse.AssigneeDto(ta.getUser().getNickname()))
+        // 담당자 교체: 기존 전체 삭제 후 새 담당자 등록
+        taskAssigneeRepository.deleteByTaskId(taskId);
+        List<User> newAssignees = userRepository.findAllById(request.getAssigneeIds());
+        newAssignees.forEach(user -> {
+            TaskAssignee ta = new TaskAssignee(task, user);
+            taskAssigneeRepository.save(ta);
+        });
+
+        // 담당자가 교체됐으므로 태스크 완료 상태 초기화
+        task.setFinished(false);
+
+        List<TaskListResponse.AssigneeDto> assigneeDtos = newAssignees.stream()
+                .map(a -> new TaskListResponse.AssigneeDto(a.getId(), a.getNickname(), false))
                 .collect(Collectors.toList());
 
-        boolean allFinished = !taskAssignees.isEmpty() &&
-                taskAssignees.stream().allMatch(ta -> Boolean.TRUE.equals(ta.getFinished()));
+        boolean allFinished = false;
 
         return new TaskListResponse(
                 task.getId(),

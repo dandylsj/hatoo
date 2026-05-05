@@ -24,6 +24,8 @@ public class TaskListResponse {
     @Getter
     @AllArgsConstructor
     public static class AssigneeDto {
+        private UUID id;
         private String nickname;
+        private Boolean finished;
     }
 }

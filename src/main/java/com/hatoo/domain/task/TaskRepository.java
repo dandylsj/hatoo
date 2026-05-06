@@ -57,6 +57,16 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 3. 마감 초과 알림: 미완료, 마감초과 알림 미발송
     List<Task> findByFinishedFalseAndOverdueAlarmSentFalse();
 
+    // ──────────────────────────────────────────
+    // N+1 문제 해결: JOIN FETCH로 assignees를 한 번에 조회
+    // ──────────────────────────────────────────
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "JOIN FETCH t.assignees " +
+           "JOIN t.groups g " +
+           "WHERE g.id = :groupId " +
+           "ORDER BY CASE WHEN t.dueTo IS NULL THEN 1 ELSE 0 END ASC, t.dueTo ASC")
+    List<Task> findByGroupsIdWithAssigneesOrderByDueToAsc(@Param("groupId") UUID groupId);
+
     // 이번 주(weekStart~weekEnd) 그룹 내 담당자별 기여도 집계
     // [userId, nickname, profileImg, myFinishedCount, groupTotalFinishedCount] 순서로 반환
     // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100

@@ -63,6 +63,10 @@ public class User extends BaseEntity {
     @Column(length = 1000)
     private String naverRefreshToken; // 탈퇴 시 네이버 연결 해제용
 
+    @Setter
+    @Column(unique = true)
+    private String googleId;
+
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();
 

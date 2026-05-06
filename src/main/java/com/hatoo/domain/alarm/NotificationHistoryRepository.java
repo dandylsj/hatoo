@@ -26,5 +26,11 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
     @Query("DELETE FROM NotificationHistory n WHERE n.isRead = true AND n.updatedAt < :cutoff")
     void deleteReadNotificationsOlderThan(@Param("cutoff") LocalDateTime cutoff);
 
+    // 주간 차트 N 뱃지: 특정 시각 이후 생성된 읽지 않은 알림 존재 여부
+    boolean existsByUserIdAndTypeAndIsReadFalseAndCreatedAtAfter(UUID userId, AlarmType type, java.time.LocalDateTime createdAt);
 
+    // 주간 차트 알림 읽음 처리 (벌크)
+    @Modifying
+    @Query("UPDATE NotificationHistory n SET n.isRead = true WHERE n.userId = :userId AND n.type = :type AND n.isRead = false")
+    void markAsReadByUserIdAndType(@Param("userId") UUID userId, @Param("type") AlarmType type);
 }

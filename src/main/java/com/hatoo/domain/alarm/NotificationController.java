@@ -44,4 +44,21 @@ public class NotificationController {
         notificationService.markRead(token, notificationId);
         return ResponseEntity.ok().build();
     }
+
+    @Operation(summary = "주간 차트 N 뱃지 조회", description = "읽지 않은 주간 차트 알림이 있으면 true를 반환합니다. 앱 실행 시 호출하여 뱃지 표시 여부를 결정합니다.")
+    @GetMapping("/weekly-chart/unread")
+    public ResponseEntity<Boolean> hasUnreadWeeklyChart(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(notificationService.hasUnreadWeeklyChart(token));
+    }
+
+    @Operation(summary = "주간 차트 읽음 처리", description = "주간 차트 탭 진입 시 호출합니다. 해당 유저의 주간 차트 알림을 모두 읽음 처리하여 N 뱃지를 제거합니다.")
+    @PatchMapping("/weekly-chart/read")
+    public ResponseEntity<Void> markWeeklyChartAsRead(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        notificationService.markWeeklyChartAsRead(token);
+        return ResponseEntity.ok().build();
+    }
 }

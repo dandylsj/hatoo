@@ -15,11 +15,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     List<Task> findByGroupsId(UUID groupId);
 
-    // 담당자 + 유저 정보 fetch join 으로 N+1 방지
-    @Query("SELECT DISTINCT t FROM Task t " +
-           "LEFT JOIN FETCH t.taskAssignees ta " +
-           "LEFT JOIN FETCH ta.user " +
-           "JOIN t.groups g WHERE g.id = :groupId " +
+    @Query("SELECT t FROM Task t JOIN t.groups g WHERE g.id = :groupId " +
            "ORDER BY CASE WHEN t.dueTo IS NULL THEN 1 ELSE 0 END ASC, t.dueTo ASC")
     List<Task> findByGroupsIdOrderByDueToAsc(@Param("groupId") UUID groupId);
 

@@ -85,6 +85,7 @@ jobs:
           echo "SPRINGDOC_SWAGGER_UI_OPERATIONS_SORTER=method" >> .env
           echo "SPRINGDOC_SWAGGER_UI_TAGS_SORTER=alpha" >> .env
           echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+          echo "REDIS_PORT=6379" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
 
       - name: Redis 컨테이너 hatoo 네트워크 연결 확인

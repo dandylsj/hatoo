@@ -16,11 +16,14 @@ import com.hatoo.domain.user.UserRepository;
 import com.hatoo.domain.alarm.FcmService;
 import com.hatoo.domain.groups.dto.GroupTokenSameListDto;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +37,7 @@ public class GroupService {
     private final UserRepository userRepository;
     private final FcmService fcmService;
     private final TaskRepository taskRepository;
+    private final RedissonClient redissonClient;
 
     // 내가 속한 그룹 조회
     @Transactional(readOnly = true)
@@ -104,11 +108,34 @@ public class GroupService {
     }
 
     // 그룹 참여
-    @Transactional
     public boolean joinGroupApi(String accessToken, UUID groupId, String token) {
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
+
+        // Redis 분산 락: 같은 그룹에 동시 참여 요청이 몰려도 5명 초과 방지
+        String lockKey = "lock:group:join:" + groupId;
+        RLock lock = redissonClient.getLock(lockKey);
+
+        try {
+            // 최대 3초 대기, 락 획득 후 5초 안에 자동 해제
+            boolean acquired = lock.tryLock(3, 5, TimeUnit.SECONDS);
+            if (!acquired) {
+                throw new CustomException(ErrorMessage.GROUP_JOIN_LOCK_FAILED);
+            }
+            return joinGroupWithLock(loginId, groupId, token);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CustomException(ErrorMessage.GROUP_JOIN_LOCK_FAILED);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+
+    @Transactional
+    protected boolean joinGroupWithLock(String loginId, UUID groupId, String token) {
 
         // 1. 유저 조회
         User user = userRepository.findByLoginId(loginId)
@@ -129,7 +156,7 @@ public class GroupService {
             throw new CustomException(ErrorMessage.ALREADY_JOINED_GROUP);
         }
 
-        // 5. 그룹 인원 최대 5명 확인
+        // 5. 그룹 인원 최대 5명 확인 (락 안에서 재확인 → 레이스 컨디션 완전 차단)
         List<GroupMember> currentMembers = groupMemberRepository.findByGroupId(groupId);
         if (currentMembers.size() >= 5) {
             throw new CustomException(ErrorMessage.GROUP_FULL);
@@ -210,10 +237,9 @@ public class GroupService {
         GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
 
-        // 그룹내의 할 일 모두 삭제
+        // 그룹내의 할 일 모두 삭제 (TaskAssignee는 CascadeType.ALL로 자동 삭제)
         List<Task> myTasksInGroup = taskRepository.findByAssigneesIdAndGroupsId(user.getId(), group.getId());
         for (Task task : myTasksInGroup) {
-            task.getAssignees().clear();
             task.getGroups().clear();
             taskRepository.delete(task);
         }
@@ -265,17 +291,45 @@ public class GroupService {
     }
 
     // 프로필 이미지 선택 (그룹 참여 시)
-    @Transactional
     public Boolean profileImgSelectApi(String accessToken, GroupJoinProfileRequest request, UUID groupId) {
 
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
+
+        // Redis 분산 락: 같은 그룹에서 동시에 같은 프로필 선택 방지
+        String lockKey = "lock:group:profile:" + groupId;
+        RLock lock = redissonClient.getLock(lockKey);
+
+        try {
+            boolean acquired = lock.tryLock(3, 5, TimeUnit.SECONDS);
+            if (!acquired) {
+                throw new CustomException(ErrorMessage.GROUP_JOIN_LOCK_FAILED);
+            }
+            return profileImgSelectWithLock(loginId, request, groupId);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CustomException(ErrorMessage.GROUP_JOIN_LOCK_FAILED);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+
+    @Transactional
+    protected Boolean profileImgSelectWithLock(String loginId, GroupJoinProfileRequest request, UUID groupId) {
 
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
         GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
+
+        // 다른 멤버가 이미 같은 프로필을 선택했는지 확인
+        if (groupMemberRepository.existsByGroupIdAndProfileImgAndUserIdNot(
+                groupId, request.getProfileImg(), user.getId())) {
+            throw new CustomException(ErrorMessage.DUPLICATE_PROFILE_IMG);
+        }
 
         groupMember.updateProfileImg(request.getProfileImg());
 

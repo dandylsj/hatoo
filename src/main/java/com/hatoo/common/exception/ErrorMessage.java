@@ -35,6 +35,10 @@ public enum ErrorMessage {
     NOT_SAME_INVITED(HttpStatus.CONFLICT, "초대코드가 맞지 않습니다."),
     ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 해당 그룹에 가입되어 있습니다."),
     GROUP_FULL(HttpStatus.CONFLICT, "그룹 인원이 가득 찼습니다. (최대 5명)"),
+    DUPLICATE_PROFILE_IMG(HttpStatus.CONFLICT, "이미 다른 멤버가 선택한 프로필입니다."),
+
+    /* --- 423 Locked --- */
+    GROUP_JOIN_LOCK_FAILED(HttpStatus.LOCKED, "잠시 후 다시 시도해주세요. (그룹 참여 처리 중)"),
 
     /* --- 429 Too Many Requests --- */
     EMAIL_SEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "10초 후에 다시 시도해주세요."),

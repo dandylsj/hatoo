@@ -84,6 +84,18 @@ jobs:
           echo "NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}" >> .env
           echo "SPRINGDOC_SWAGGER_UI_OPERATIONS_SORTER=method" >> .env
           echo "SPRINGDOC_SWAGGER_UI_TAGS_SORTER=alpha" >> .env
+          echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+
+      - name: Redis 컨테이너 hatoo 네트워크 연결 확인
+        run: |
+          # redis-1 컨테이너가 hatoo 네트워크에 없으면 연결
+          if ! docker inspect redis-1 --format '{{json .NetworkSettings.Networks}}' | grep -q '"hatoo"'; then
+            echo "redis-1 컨테이너를 hatoo 네트워크에 연결합니다..."
+            docker network connect hatoo redis-1
+          else
+            echo "redis-1 이미 hatoo 네트워크에 연결되어 있습니다."
+          fi
 
       - name: NAS에 자동 배포
         run: |

@@ -286,9 +286,9 @@ public class UserService {
 
             if (isAssigner && otherMembers.isEmpty()) {
                 // 내가 방장이고 혼자인 그룹 → 그룹의 모든 할일 삭제 후 그룹 삭제
+                // TaskAssignee는 CascadeType.ALL로 자동 삭제
                 List<Task> groupTasks = taskRepository.findByGroupsId(group.getId());
                 for (Task task : groupTasks) {
-                    task.getAssignees().clear();
                     task.getGroups().clear();
                 }
                 taskRepository.deleteAll(groupTasks);
@@ -316,10 +316,10 @@ public class UserService {
     }
 
     // 특정 그룹에서 내가 담당자인 할일 삭제
+    // TaskAssignee는 CascadeType.ALL + orphanRemoval = true 로 자동 삭제
     private void deleteMyTasksInGroup(UUID userId, UUID groupId) {
         List<Task> myTasks = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
         for (Task task : myTasks) {
-            task.getAssignees().clear();
             task.getGroups().clear();
         }
         taskRepository.deleteAll(myTasks);

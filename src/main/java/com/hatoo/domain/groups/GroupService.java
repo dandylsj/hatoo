@@ -162,15 +162,23 @@ public class GroupService {
             throw new CustomException(ErrorMessage.GROUP_FULL);
         }
 
-        // 6. GroupMember 생성 및 저장
-        GroupMember groupMember = new GroupMember(user, group, user.getProfileImg(), false);
+        // 6. 기본 프로필 이미지 중복 확인 (락 안에서 체크 → 동시성 완전 차단)
+        // 중복이면 null로 저장 → 프론트에서 profileImg=null 감지 시 프로필 선택 화면으로 강제 이동
+        String profileImg = user.getProfileImg();
+        if (profileImg != null && groupMemberRepository.existsByGroupIdAndProfileImgAndUserIdNot(
+                groupId, profileImg, user.getId())) {
+            profileImg = null;
+        }
+
+        // 7. GroupMember 생성 및 저장
+        GroupMember groupMember = new GroupMember(user, group, profileImg, false);
         groupMemberRepository.save(groupMember);
 
-        // 7. 그룹 알람 설정 기본값 생성 (전부 ON)
+        // 8. 그룹 알람 설정 기본값 생성 (전부 ON)
         GroupAlarmSetting alarmSetting = new GroupAlarmSetting(user.getId(), group.getId());
         groupAlarmSettingRepository.save(alarmSetting);
 
-        // 8. 새 멤버 참여 알림 전송 (그룹 전체에게)
+        // 9. 새 멤버 참여 알림 전송 (그룹 전체에게)
         fcmService.sendNewMember(groupId, group.getName(), user.getNickname());
 
         return true;
@@ -332,6 +340,7 @@ public class GroupService {
         }
 
         groupMember.updateProfileImg(request.getProfileImg());
+        groupMemberRepository.save(groupMember);
 
         return true;
     }

@@ -130,7 +130,7 @@ public class TaskService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         // fetch join 으로 taskAssignees + user 한 번에 로드 (N+1 방지)
-        List<Task> tasks = taskRepository.findByGroupsIdOrderByDueToAsc(groupId);
+        List<Task> tasks = taskRepository.findByGroupsIdOrderByDueToDesc(groupId);
 
         List<TaskAllGroupListResponse.TaskList> taskItems = tasks.stream()
                 .filter(task -> !Boolean.TRUE.equals(task.getFinished()))

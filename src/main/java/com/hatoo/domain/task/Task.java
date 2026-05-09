@@ -77,6 +77,9 @@ public class Task extends BaseEntity {
     @Column(columnDefinition = "BINARY(16)")
     private UUID creatorId;
 
+    @Version
+    private Long version;
+
     // 담당자별 완료 상태 포함 (Direction 2)
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<TaskAssignee> taskAssignees = new ArrayList<>();

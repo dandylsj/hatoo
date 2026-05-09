@@ -36,6 +36,7 @@ public enum ErrorMessage {
     ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 해당 그룹에 가입되어 있습니다."),
     GROUP_FULL(HttpStatus.CONFLICT, "그룹 인원이 가득 찼습니다. (최대 5명)"),
     DUPLICATE_PROFILE_IMG(HttpStatus.CONFLICT, "이미 다른 멤버가 선택한 프로필입니다."),
+    TASK_CONFLICT(HttpStatus.CONFLICT, "다른 사용자가 이미 수정했습니다. 다시 시도해주세요."),
 
     /* --- 423 Locked --- */
     GROUP_JOIN_LOCK_FAILED(HttpStatus.LOCKED, "잠시 후 다시 시도해주세요. (그룹 참여 처리 중)"),

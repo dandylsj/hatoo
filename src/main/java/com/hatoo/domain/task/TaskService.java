@@ -27,7 +27,6 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -276,53 +275,15 @@ public class TaskService {
                 request.getStarter()
         );
 
-        // 현재 담당자 목록 (완료 상태 포함)
-        List<TaskAssignee> currentAssignees = taskAssigneeRepository.findByTaskId(taskId);
-        Map<UUID, TaskAssignee> currentAssigneeMap = currentAssignees.stream()
-                .collect(Collectors.toMap(ta -> ta.getUser().getId(), ta -> ta));
-
-        Set<UUID> requestAssigneeIdSet = new java.util.HashSet<>(request.getAssigneeIds());
-        Set<UUID> currentAssigneeIdSet = currentAssigneeMap.keySet();
-
-        // 제거된 담당자 삭제
-        currentAssignees.stream()
-                .filter(ta -> !requestAssigneeIdSet.contains(ta.getUser().getId()))
-                .forEach(ta -> taskAssigneeRepository.delete(ta));
-
-        // 새로 추가된 담당자 등록 (finished=false)
-        List<UUID> addedIds = request.getAssigneeIds().stream()
-                .filter(id -> !currentAssigneeIdSet.contains(id))
+        // 담당자 및 완료 상태는 수정하지 않고 그대로 유지
+        List<TaskAssignee> existingAssignees = taskAssigneeRepository.findByTaskId(taskId);
+        List<TaskListResponse.AssigneeDto> assigneeDtos = existingAssignees.stream()
+                .map(ta -> new TaskListResponse.AssigneeDto(
+                        ta.getUser().getId(),
+                        ta.getUser().getNickname(),
+                        Boolean.TRUE.equals(ta.getFinished())))
                 .collect(Collectors.toList());
-        List<User> addedUsers = userRepository.findAllById(addedIds);
-        addedUsers.forEach(user -> taskAssigneeRepository.save(new TaskAssignee(task, user)));
-
-        // 최종 담당자 목록으로 응답 구성 (기존 완료 상태 유지 + 신규 false)
-        List<TaskListResponse.AssigneeDto> assigneeDtos = request.getAssigneeIds().stream()
-                .map(id -> {
-                    TaskAssignee existing = currentAssigneeMap.get(id);
-                    if (existing != null) {
-                        // 기존 담당자: 완료 상태 그대로
-                        return new TaskListResponse.AssigneeDto(
-                                existing.getUser().getId(),
-                                existing.getUser().getNickname(),
-                                Boolean.TRUE.equals(existing.getFinished()));
-                    } else {
-                        // 신규 담당자: finished=false
-                        User user = addedUsers.stream()
-                                .filter(u -> u.getId().equals(id))
-                                .findFirst().orElse(null);
-                        return user != null
-                                ? new TaskListResponse.AssigneeDto(user.getId(), user.getNickname(), false)
-                                : null;
-                    }
-                })
-                .filter(dto -> dto != null)
-                .collect(Collectors.toList());
-
-        // 모든 담당자가 완료했으면 task.finished=true, 아니면 false
-        boolean allFinished = !assigneeDtos.isEmpty() &&
-                assigneeDtos.stream().allMatch(dto -> Boolean.TRUE.equals(dto.getFinished()));
-        task.setFinished(allFinished);
+        boolean allFinished = Boolean.TRUE.equals(task.getFinished());
 
         return new TaskListResponse(
                 task.getId(),

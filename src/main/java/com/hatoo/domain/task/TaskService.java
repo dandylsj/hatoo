@@ -16,6 +16,7 @@ import com.hatoo.domain.weeklyStats.WeeklyStatsRepository;
 import com.hatoo.domain.weeklyStats.WeeklyStatsResponse;
 import com.hatoo.domain.weeklyStats.WeeklyStatsWrapperResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j(topic = "TaskService")
 public class TaskService {
 
     private final TaskRepository taskRepository;
@@ -201,6 +203,46 @@ public class TaskService {
         return new TaskAllGroupListResponse(taskItems, finishedTaskItems, tasks.size(), finishedTaskItems.size());
     }
 
+    // 할일 단건 조회
+    @Transactional(readOnly = true)
+    public TaskDetailResponse getTaskDetailApi(String accessToken, UUID taskId) {
+
+        jwtUtil.validateToken(accessToken);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
+
+        List<TaskAssignee> taskAssignees = taskAssigneeRepository.findByTaskId(taskId);
+
+        List<TaskDetailResponse.AssigneeDto> assigneeDtos = taskAssignees.stream()
+                .map(ta -> new TaskDetailResponse.AssigneeDto(
+                        ta.getUser().getId(),
+                        ta.getUser().getNickname(),
+                        Boolean.TRUE.equals(ta.getFinished()),
+                        ta.getFinishedAt()))
+                .collect(Collectors.toList());
+
+        return new TaskDetailResponse(
+                task.getCreatedAt(),
+                task.getUpdatedAt(),
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getGroupId(),
+                task.getDueFrom(),
+                task.getDueTo(),
+                Boolean.TRUE.equals(task.getFinished()),
+                task.getFinishedAt(),
+                task.getFrequency(),
+                task.getInterval(),
+                task.getStarter(),
+                task.getDeadLine(),
+                assigneeDtos,
+                task.getRecurringTaskId(),
+                task.getCreatorId()
+        );
+    }
+
     // 할일 삭제
     @Transactional
     public Boolean deleteTaskApi(String accessToken, UUID taskId) {
@@ -246,6 +288,9 @@ public class TaskService {
 
         // 담당자가 변경된 경우에만 초기화
         boolean assigneesChanged = !currentAssigneeIds.equals(requestAssigneeIds);
+
+        log.info("[Task 수정] taskId={}, currentFinished={}, currentAssigneeIds={}, requestAssigneeIds={}, assigneesChanged={}",
+                taskId, task.getFinished(), currentAssigneeIds, requestAssigneeIds, assigneesChanged);
 
         List<User> newAssignees;
         List<TaskListResponse.AssigneeDto> assigneeDtos;

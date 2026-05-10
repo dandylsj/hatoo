@@ -233,22 +233,46 @@ public class TaskService {
                 request.getStarter()
         );
 
-        // 담당자 교체: 기존 전체 삭제 후 새 담당자 등록
-        taskAssigneeRepository.deleteByTaskId(taskId);
-        List<User> newAssignees = userRepository.findAllById(request.getAssigneeIds());
-        newAssignees.forEach(user -> {
-            TaskAssignee ta = new TaskAssignee(task, user);
-            taskAssigneeRepository.save(ta);
-        });
-
-        // 담당자가 교체됐으므로 태스크 완료 상태 초기화
-        task.setFinished(false);
-
-        List<TaskListResponse.AssigneeDto> assigneeDtos = newAssignees.stream()
-                .map(a -> new TaskListResponse.AssigneeDto(a.getId(), a.getNickname(), false))
+        // 현재 담당자 ID 목록
+        List<UUID> currentAssigneeIds = taskAssigneeRepository.findByTaskId(taskId)
+                .stream()
+                .map(ta -> ta.getUser().getId())
+                .sorted()
+                .collect(Collectors.toList());
+        List<UUID> requestAssigneeIds = request.getAssigneeIds()
+                .stream()
+                .sorted()
                 .collect(Collectors.toList());
 
-        boolean allFinished = false;
+        // 담당자가 변경된 경우에만 초기화
+        boolean assigneesChanged = !currentAssigneeIds.equals(requestAssigneeIds);
+
+        List<User> newAssignees;
+        List<TaskListResponse.AssigneeDto> assigneeDtos;
+        boolean allFinished;
+
+        if (assigneesChanged) {
+            // 담당자 변경: 전체 삭제 후 새 담당자 등록, 완료 상태 초기화
+            taskAssigneeRepository.deleteByTaskId(taskId);
+            newAssignees = userRepository.findAllById(request.getAssigneeIds());
+            newAssignees.forEach(user -> taskAssigneeRepository.save(new TaskAssignee(task, user)));
+            task.setFinished(false);
+            assigneeDtos = newAssignees.stream()
+                    .map(a -> new TaskListResponse.AssigneeDto(a.getId(), a.getNickname(), false))
+                    .collect(Collectors.toList());
+            allFinished = false;
+        } else {
+            // 담당자 변경 없음: 기존 완료 상태 유지
+            List<TaskAssignee> existingAssignees = taskAssigneeRepository.findByTaskId(taskId);
+            newAssignees = existingAssignees.stream().map(TaskAssignee::getUser).collect(Collectors.toList());
+            assigneeDtos = existingAssignees.stream()
+                    .map(ta -> new TaskListResponse.AssigneeDto(
+                            ta.getUser().getId(),
+                            ta.getUser().getNickname(),
+                            Boolean.TRUE.equals(ta.getFinished())))
+                    .collect(Collectors.toList());
+            allFinished = Boolean.TRUE.equals(task.getFinished());
+        }
 
         return new TaskListResponse(
                 task.getId(),

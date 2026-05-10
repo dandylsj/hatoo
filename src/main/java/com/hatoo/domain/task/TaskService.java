@@ -277,6 +277,14 @@ public class TaskService {
 
         // 담당자 및 완료 상태는 수정하지 않고 그대로 유지
         List<TaskAssignee> existingAssignees = taskAssigneeRepository.findByTaskId(taskId);
+
+        log.info("[Task 수정] taskId={}, task.finished={}, assignees={}",
+                taskId,
+                task.getFinished(),
+                existingAssignees.stream()
+                        .map(ta -> ta.getUser().getId() + "=" + ta.getFinished())
+                        .collect(Collectors.toList()));
+
         List<TaskListResponse.AssigneeDto> assigneeDtos = existingAssignees.stream()
                 .map(ta -> new TaskListResponse.AssigneeDto(
                         ta.getUser().getId(),

@@ -2,7 +2,7 @@ name: Spring Boot -> NAS Docker 배포
 
 on:
   push:
-    branches: [ main, master, dev ]
+    branches: [ dev ]
   workflow_dispatch:
 
 jobs:

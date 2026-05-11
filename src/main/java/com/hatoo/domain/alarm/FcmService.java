@@ -128,6 +128,15 @@ public class FcmService {
     }
 
     // ──────────────────────────────────────────
+    // 9. 강제 탈퇴 알림 (GroupService에서 호출)
+    // ──────────────────────────────────────────
+    @Async
+    public void sendForcedLeave(UUID userId, String groupName) {
+        String body = String.format(AlarmType.FORCED_LEAVE.getBodyTemplate(), groupName);
+        sendToUserIfAllowed(userId, AlarmType.FORCED_LEAVE, body, null);
+    }
+
+    // ──────────────────────────────────────────
     // 내부 공통 메서드
     // ──────────────────────────────────────────
 

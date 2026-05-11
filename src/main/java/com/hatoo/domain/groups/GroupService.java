@@ -290,6 +290,9 @@ public class GroupService {
         groupMemberRepository.delete(groupMember);
         groupAlarmSettingRepository.deleteByUserIdAndGroupId(memberId, groupId);
 
+        // 강제 탈퇴된 멤버에게 알림 전송
+        fcmService.sendForcedLeave(memberId, group.getName());
+
         return true;
     }
 

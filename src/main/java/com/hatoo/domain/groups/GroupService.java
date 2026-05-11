@@ -219,7 +219,15 @@ public class GroupService {
             throw new CustomException(ErrorMessage.NO_DELETE_PERMISSION);
         }
 
-        // group_members + group_alarm_settings 전체 삭제 후 그룹 삭제
+        // 1. 그룹에 속한 모든 할일 삭제 (group_tasks, task_assignees 중간 테이블 먼저 정리)
+        List<Task> groupTasks = taskRepository.findByGroupsId(groupId);
+        for (Task task : groupTasks) {
+            task.getAssignees().clear();
+            task.getGroups().clear();
+        }
+        taskRepository.deleteAll(groupTasks);
+
+        // 2. group_members + group_alarm_settings 삭제 후 그룹 삭제
         List<GroupMember> members = groupMemberRepository.findByGroupIdOrderByCreatedAtAsc(groupId);
         groupMemberRepository.deleteAll(members);
         groupAlarmSettingRepository.deleteByGroupId(groupId);
@@ -245,9 +253,10 @@ public class GroupService {
         GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(user.getId(), groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_IN_GROUP));
 
-        // 그룹내의 할 일 모두 삭제 (TaskAssignee는 CascadeType.ALL로 자동 삭제)
+        // 그룹내의 내 담당 할일 삭제 (중간 테이블 먼저 정리 후 삭제)
         List<Task> myTasksInGroup = taskRepository.findByAssigneesIdAndGroupsId(user.getId(), group.getId());
         for (Task task : myTasksInGroup) {
+            task.getAssignees().clear();
             task.getGroups().clear();
             taskRepository.delete(task);
         }

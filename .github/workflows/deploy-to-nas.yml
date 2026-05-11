@@ -49,6 +49,7 @@ jobs:
   deploy:
     needs: build
     runs-on: self-hosted
+    environment: staging
     permissions:
       contents: read
       packages: read

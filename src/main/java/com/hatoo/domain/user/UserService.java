@@ -140,6 +140,19 @@ public class UserService {
         return getAlarmSetting(accessToken);
     }
 
+    // FCM 토큰 갱신 (앱 실행 시 호출)
+    @Transactional
+    public Boolean updateFcmToken(String accessToken, String fcmToken) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        user.updateInfo(null, null, null, fcmToken);
+        return true;
+    }
+
     //아이디 중복 확인
     @Transactional(readOnly = true)
     public boolean checkLoginIdApi(String loginId) {

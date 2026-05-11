@@ -3,6 +3,7 @@ package com.hatoo.domain.alarm;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.Notification;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
@@ -223,7 +224,8 @@ public class FcmService {
     }
 
     // 실제 FCM 전송 + DB 저장 (이 메서드까지 왔으면 모든 권한 체크 통과)
-    private void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
+    @Transactional
+    public void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
         try {
             Message message = Message.builder()
                     .setNotification(Notification.builder()
@@ -238,7 +240,16 @@ public class FcmService {
             notificationHistoryRepository.save(new NotificationHistory(userId, type, title, body, taskId));
             log.info("[FCM] 알림 전송 성공 - userId: {}, type: {}", userId, type);
         } catch (FirebaseMessagingException e) {
-            log.error("[FCM] 알림 전송 실패 - userId: {}, {}", userId, e.getMessage());
+            // 토큰 만료 또는 앱 삭제 등으로 무효화된 토큰 → DB에서 자동 삭제
+            if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
+                    || e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
+                log.warn("[FCM] 무효 토큰 감지, DB에서 삭제 - userId: {}, errorCode: {}", userId, e.getMessagingErrorCode());
+                userRepository.findById(userId).ifPresent(user -> {
+                    user.clearFcmToken();
+                });
+            } else {
+                log.error("[FCM] 알림 전송 실패 - userId: {}, {}", userId, e.getMessage());
+            }
         }
     }
 }

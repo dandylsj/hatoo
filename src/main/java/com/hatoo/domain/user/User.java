@@ -99,6 +99,10 @@ public class User extends BaseEntity {
         }
     }
 
+    public void clearFcmToken() {
+        this.fcmToken = null;
+    }
+
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
     }

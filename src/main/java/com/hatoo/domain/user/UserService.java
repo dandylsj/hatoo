@@ -187,11 +187,14 @@ public class UserService {
                 request.getFcmToken()
         );
 
-        // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에도 반영
+        // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에만 반영
+        //    (이미 그룹에서 별도 프로필을 선택한 경우 덮어쓰지 않음)
         if (request.getProfileImg() != null) {
             List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
             for (GroupMember gm : groupMembers) {
-                gm.updateProfileImg(request.getProfileImg());
+                if (gm.getProfileImg() == null) {
+                    gm.updateProfileImg(request.getProfileImg());
+                }
             }
         }
 

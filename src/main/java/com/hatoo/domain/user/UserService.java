@@ -140,6 +140,19 @@ public class UserService {
         return getAlarmSetting(accessToken);
     }
 
+    // FCM 토큰 갱신 (앱 실행 시 호출)
+    @Transactional
+    public Boolean updateFcmToken(String accessToken, String fcmToken) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        user.updateInfo(null, null, null, fcmToken);
+        return true;
+    }
+
     //아이디 중복 확인
     @Transactional(readOnly = true)
     public boolean checkLoginIdApi(String loginId) {
@@ -187,11 +200,14 @@ public class UserService {
                 request.getFcmToken()
         );
 
-        // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에도 반영
+        // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에만 반영
+        //    (이미 그룹에서 별도 프로필을 선택한 경우 덮어쓰지 않음)
         if (request.getProfileImg() != null) {
             List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
             for (GroupMember gm : groupMembers) {
-                gm.updateProfileImg(request.getProfileImg());
+                if (gm.getProfileImg() == null) {
+                    gm.updateProfileImg(request.getProfileImg());
+                }
             }
         }
 
@@ -286,9 +302,9 @@ public class UserService {
 
             if (isAssigner && otherMembers.isEmpty()) {
                 // 내가 방장이고 혼자인 그룹 → 그룹의 모든 할일 삭제 후 그룹 삭제
+                // TaskAssignee는 CascadeType.ALL로 자동 삭제
                 List<Task> groupTasks = taskRepository.findByGroupsId(group.getId());
                 for (Task task : groupTasks) {
-                    task.getAssignees().clear();
                     task.getGroups().clear();
                 }
                 taskRepository.deleteAll(groupTasks);
@@ -316,10 +332,10 @@ public class UserService {
     }
 
     // 특정 그룹에서 내가 담당자인 할일 삭제
+    // TaskAssignee는 CascadeType.ALL + orphanRemoval = true 로 자동 삭제
     private void deleteMyTasksInGroup(UUID userId, UUID groupId) {
         List<Task> myTasks = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
         for (Task task : myTasks) {
-            task.getAssignees().clear();
             task.getGroups().clear();
         }
         taskRepository.deleteAll(myTasks);

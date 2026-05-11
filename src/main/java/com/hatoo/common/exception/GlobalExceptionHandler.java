@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -68,6 +69,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponse<Void>> handleSignatureException(SignatureException e) {
         log.error("[JWT] 토큰 서명이 유효하지 않습니다 - 메시지: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(GlobalResponse.fail("토큰 서명이 유효하지 않습니다."));
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<GlobalResponse<Void>> handleOptimisticLockingFailureException(ObjectOptimisticLockingFailureException e) {
+        log.warn("낙관적 락 충돌 발생 : {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(GlobalResponse.fail(ErrorMessage.TASK_CONFLICT.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

@@ -29,6 +29,7 @@ import java.util.UUID;
 public class RecurringTaskScheduler {
 
     private final TaskRepository taskRepository;
+    private final TaskAssigneeRepository taskAssigneeRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final WeeklyStatsRepository weeklyStatsRepository;
@@ -76,11 +77,18 @@ public class RecurringTaskScheduler {
                     return;
                 }
 
-                // 담당자 & 그룹 복사
-                task.getAssignees().forEach(newTask::addAssignee);
+                // 그룹 & 생성자 복사
                 task.getGroups().forEach(newTask::addGroup);
+                newTask.setCreatorId(task.getCreatorId());
 
                 taskRepository.save(newTask);
+
+                // 담당자 복사 (task 저장 후 ID가 생성된 뒤 TaskAssignee 생성)
+                List<TaskAssignee> originalAssignees = taskAssigneeRepository.findByTaskId(task.getId());
+                originalAssignees.forEach(ta -> {
+                    TaskAssignee newTa = new TaskAssignee(newTask, ta.getUser());
+                    taskAssigneeRepository.save(newTa);
+                });
                 log.info("[TaskScheduler] 반복 할일 생성 완료 - title: {}, 다음 마감일: {}", task.getTitle(), nextDueTo);
 
             } catch (DateTimeParseException e) {

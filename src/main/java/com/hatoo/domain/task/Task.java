@@ -13,6 +13,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "tasks")
@@ -73,13 +74,12 @@ public class Task extends BaseEntity {
     @Column(name = "overdue_alarm_sent")
     private Boolean overdueAlarmSent = false;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "task_assignees",
-            joinColumns = @JoinColumn(name = "task_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    private List<User> assignees = new ArrayList<>();
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID creatorId;
+
+    // 담당자별 완료 상태 포함 (Direction 2)
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<TaskAssignee> taskAssignees = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -100,8 +100,11 @@ public class Task extends BaseEntity {
         this.interval = interval;
     }
 
-    public void addAssignee(User user) {
-        this.assignees.add(user);
+    // 편의 메서드: User 목록 반환 (AlarmScheduler 등 기존 호출부 호환)
+    public List<User> getAssignees() {
+        return taskAssignees.stream()
+                .map(TaskAssignee::getUser)
+                .collect(Collectors.toList());
     }
 
     public void addGroup(Group group) {
@@ -112,11 +115,7 @@ public class Task extends BaseEntity {
         return this.groups.get(0).getId();
     }
 
-    public UUID getAssigneeId() {
-        return this.assignees.get(0).getId();
-    }
-
-    public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
+public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
         this.title = title;
         this.description = description;
         this.frequency = frequency;
@@ -146,5 +145,9 @@ public class Task extends BaseEntity {
 
     public void markOverdueAlarmSent() {
         this.overdueAlarmSent = true;
+    }
+
+    public void setCreatorId(UUID creatorId) {
+        this.creatorId = creatorId;
     }
 }

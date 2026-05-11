@@ -83,6 +83,15 @@ public class UserController {
         return ResponseEntity.ok(userService.changePassword(token, request));
     }
 
+    @Operation(summary = "FCM 토큰 갱신", description = "앱 실행 시 FCM 토큰을 서버에 등록/갱신합니다.")
+    @PatchMapping("/fcm-token")
+    public ResponseEntity<Boolean> updateFcmToken(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @RequestParam String fcmToken) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(userService.updateFcmToken(token, fcmToken));
+    }
+
     @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. 소셜 계정 연결 해제도 서버에서 자동으로 처리됩니다.")
     @DeleteMapping
     public ResponseEntity<Boolean> withdrawUser(

@@ -46,8 +46,9 @@ public class AlarmScheduler {
 
             if (!now.isBefore(dueFromDateTime) && now.isBefore(dueFromDateTime.plusMinutes(10))) {
                 if (!task.getAssignees().isEmpty()) {
-                    UUID userId = task.getAssignees().get(0).getId();
-                    fcmService.sendTaskStart(userId, task.getTitle(), task.getId());
+                    task.getAssignees().forEach(assignee ->
+                            fcmService.sendTaskStart(assignee.getId(), task.getTitle(), task.getId())
+                    );
                     task.markStartAlarmSent();
                     log.info("[AlarmScheduler] 할일 시작 알림 발송 - taskId: {}", task.getId());
                 }
@@ -75,8 +76,9 @@ public class AlarmScheduler {
 
             if (!now.isBefore(notifyAt) && now.isBefore(notifyAt.plusMinutes(10))) {
                 if (!task.getAssignees().isEmpty()) {
-                    UUID userId = task.getAssignees().get(0).getId();
-                    fcmService.sendTaskDeadline(userId, task.getTitle(), task.getId());
+                    task.getAssignees().forEach(assignee ->
+                            fcmService.sendTaskDeadline(assignee.getId(), task.getTitle(), task.getId())
+                    );
                     task.markDeadlineAlarmSent();
                     log.info("[AlarmScheduler] 마감 임박 알림 발송 - taskId: {}", task.getId());
                 }
@@ -101,8 +103,9 @@ public class AlarmScheduler {
 
             if (!now.isBefore(overdueAt) && now.isBefore(overdueAt.plusMinutes(15))) {
                 if (!task.getAssignees().isEmpty()) {
-                    UUID userId = task.getAssignees().get(0).getId();
-                    fcmService.sendTaskOverdue(userId, task.getTitle(), task.getId());
+                    task.getAssignees().forEach(assignee ->
+                            fcmService.sendTaskOverdue(assignee.getId(), task.getTitle(), task.getId())
+                    );
                     task.markOverdueAlarmSent();
                     log.info("[AlarmScheduler] 마감 초과 알림 발송 - taskId: {}", task.getId());
                 }
@@ -112,13 +115,18 @@ public class AlarmScheduler {
 
     // ──────────────────────────────────────────
     // 4. 주간 차트 알림 - 매주 월요일 오전 8시
+    //    여러 그룹에 속한 유저도 알림은 1번만 수신
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 0 8 * * MON", zone = "Asia/Seoul")
     @Transactional
     public void sendWeeklyChartAlarm() {
         List<Group> groups = groupRepository.findAll();
+
+        // 전체 그룹에서 유저 UUID를 수집하되 중복 제거
+        java.util.Set<UUID> notifiedUsers = new java.util.HashSet<>();
+
         groups.forEach(group -> {
-            fcmService.sendWeeklyChart(group.getId());
+            fcmService.sendWeeklyChart(group.getId(), notifiedUsers);
             log.info("[AlarmScheduler] 주간 차트 알림 발송 - groupId: {}", group.getId());
         });
     }

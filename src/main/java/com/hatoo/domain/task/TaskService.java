@@ -16,6 +16,7 @@ import com.hatoo.domain.weeklyStats.WeeklyStatsRepository;
 import com.hatoo.domain.weeklyStats.WeeklyStatsResponse;
 import com.hatoo.domain.weeklyStats.WeeklyStatsWrapperResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +33,11 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j(topic = "TaskService")
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final TaskAssigneeRepository taskAssigneeRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -51,8 +54,7 @@ public class TaskService {
         Group group = groupRepository.findById(request.getGroupId())
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        User assignee = userRepository.findById(request.getAssigneeId())
-                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+        List<User> assignees = userRepository.findAllById(request.getAssigneeIds());
 
         Task task = new Task(
                 request.getTitle(),
@@ -65,9 +67,14 @@ public class TaskService {
                 request.getInterval()
         );
 
-        task.addAssignee(assignee);
         task.addGroup(group);
         taskRepository.save(task);
+
+        // 담당자 등록 (task 저장 후 ID가 생성된 뒤 TaskAssignee 생성)
+        assignees.forEach(user -> {
+            TaskAssignee ta = new TaskAssignee(task, user);
+            taskAssigneeRepository.save(ta);
+        });
 
         if (task.getFrequency() != null && task.getFrequency() != Frequency.NONE) {
             task.setRecurringTaskId(task.getId().toString());
@@ -78,13 +85,28 @@ public class TaskService {
         User creator = userRepository.findByLoginId(creatorLoginId).orElse(null);
         String creatorNickname = creator != null ? creator.getNickname() : "누군가";
 
-        // 6. 새 집안일 등록 알림 (그룹 전체에게)
-        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle(), task.getId(), assignee.getId());
-
-        // 7. 집안일 배정 알림 (담당자가 나 자신이 아닌 경우에만)
-        if (creator == null || !creator.getId().equals(assignee.getId())) {
-            fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname(), task.getId());
+        // 생성자 ID 저장
+        if (creator != null) {
+            task.setCreatorId(creator.getId());
         }
+
+        // 배정된 유저 ID 목록
+        List<UUID> assigneeIds = assignees.stream().map(User::getId).collect(Collectors.toList());
+
+        // 새 집안일 등록 알림 (배정받은 사람 + 생성자 제외 그룹 전체에게)
+        fcmService.sendTaskCreated(group.getId(), creatorNickname, task.getTitle(), task.getId(), assigneeIds, task.getCreatorId());
+
+        // 집안일 배정 알림 (담당자 각각에게, 본인이 만든 경우 제외)
+        final UUID creatorId = creator != null ? creator.getId() : null;
+        assignees.forEach(assignee -> {
+            if (creatorId == null || !creatorId.equals(assignee.getId())) {
+                fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname(), task.getId());
+            }
+        });
+
+        List<TaskListResponse.AssigneeDto> assigneeDtos = assignees.stream()
+                .map(a -> new TaskListResponse.AssigneeDto(a.getId(), a.getNickname(), false))
+                .collect(Collectors.toList());
 
         return new TaskListResponse(
                 task.getId(),
@@ -95,7 +117,8 @@ public class TaskService {
                 task.getDueTo(),
                 false,
                 task.getRecurringTaskId(),
-                new TaskListResponse.AssigneeDto(assignee.getNickname())
+                assigneeDtos,
+                task.getCreatorId()
         );
     }
 
@@ -108,12 +131,20 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        List<Task> tasks = taskRepository.findByGroupsIdOrderByDueToAsc(groupId);
+        // fetch join 으로 taskAssignees + user 한 번에 로드 (N+1 방지)
+        List<Task> tasks = taskRepository.findByGroupsIdOrderByDueToDesc(groupId);
 
         List<TaskAllGroupListResponse.TaskList> taskItems = tasks.stream()
                 .filter(task -> !Boolean.TRUE.equals(task.getFinished()))
                 .map(task -> {
-                    User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
+                    List<TaskAllGroupListResponse.TaskList.AssigneeDto> assigneeDtos =
+                            task.getTaskAssignees().stream()
+                                    .map(ta -> new TaskAllGroupListResponse.TaskList.AssigneeDto(
+                                            ta.getUser().getId(),
+                                            ta.getUser().getNickname(),
+                                            Boolean.TRUE.equals(ta.getFinished()),
+                                            ta.getFinishedAt()))
+                                    .collect(Collectors.toList());
                     return new TaskAllGroupListResponse.TaskList(
                             task.getCreatedAt(),
                             task.getUpdatedAt(),
@@ -129,11 +160,9 @@ public class TaskService {
                             task.getInterval(),
                             task.getStarter(),
                             task.getDeadLine(),
-                            firstAssignee != null ? firstAssignee.getId().toString() : null,
+                            assigneeDtos,
                             task.getRecurringTaskId(),
-                            firstAssignee != null
-                                    ? new TaskAllGroupListResponse.TaskList.AssigneeDto(firstAssignee.getNickname())
-                                    : null
+                            task.getCreatorId()
                     );
                 })
                 .collect(Collectors.toList());
@@ -141,7 +170,14 @@ public class TaskService {
         List<TaskAllGroupListResponse.FinishedTaskList> finishedTaskItems = tasks.stream()
                 .filter(task -> Boolean.TRUE.equals(task.getFinished()))
                 .map(task -> {
-                    User firstAssignee = task.getAssignees().isEmpty() ? null : task.getAssignees().get(0);
+                    List<TaskAllGroupListResponse.TaskList.AssigneeDto> assigneeDtos =
+                            task.getTaskAssignees().stream()
+                                    .map(ta -> new TaskAllGroupListResponse.TaskList.AssigneeDto(
+                                            ta.getUser().getId(),
+                                            ta.getUser().getNickname(),
+                                            Boolean.TRUE.equals(ta.getFinished()),
+                                            ta.getFinishedAt()))
+                                    .collect(Collectors.toList());
                     return new TaskAllGroupListResponse.FinishedTaskList(
                             task.getCreatedAt(),
                             task.getUpdatedAt(),
@@ -157,16 +193,54 @@ public class TaskService {
                             task.getInterval(),
                             task.getStarter(),
                             task.getDeadLine(),
-                            firstAssignee != null ? firstAssignee.getId().toString() : null,
+                            assigneeDtos,
                             task.getRecurringTaskId(),
-                            firstAssignee != null
-                                    ? new TaskAllGroupListResponse.TaskList.AssigneeDto(firstAssignee.getNickname())
-                                    : null
+                            task.getCreatorId()
                     );
                 })
                 .collect(Collectors.toList());
 
         return new TaskAllGroupListResponse(taskItems, finishedTaskItems, tasks.size(), finishedTaskItems.size());
+    }
+
+    // 할일 단건 조회
+    @Transactional(readOnly = true)
+    public TaskDetailResponse getTaskDetailApi(String accessToken, UUID taskId) {
+
+        jwtUtil.validateToken(accessToken);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
+
+        List<TaskAssignee> taskAssignees = taskAssigneeRepository.findByTaskId(taskId);
+
+        List<TaskDetailResponse.AssigneeDto> assigneeDtos = taskAssignees.stream()
+                .map(ta -> new TaskDetailResponse.AssigneeDto(
+                        ta.getUser().getId(),
+                        ta.getUser().getNickname(),
+                        Boolean.TRUE.equals(ta.getFinished()),
+                        ta.getFinishedAt()))
+                .collect(Collectors.toList());
+
+        return new TaskDetailResponse(
+                task.getCreatedAt(),
+                task.getUpdatedAt(),
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getGroupId(),
+                task.getDueFrom(),
+                task.getDueTo(),
+                Boolean.TRUE.equals(task.getFinished()),
+                task.getFinishedAt(),
+                task.getFrequency(),
+                task.getInterval(),
+                task.getStarter(),
+                task.getDeadLine(),
+                assigneeDtos,
+                task.getRecurringTaskId(),
+                task.getCreatorId()
+        );
     }
 
     // 할일 삭제
@@ -201,6 +275,24 @@ public class TaskService {
                 request.getStarter()
         );
 
+        // 담당자 및 완료 상태는 수정하지 않고 그대로 유지
+        List<TaskAssignee> existingAssignees = taskAssigneeRepository.findByTaskId(taskId);
+
+        log.info("[Task 수정] taskId={}, task.finished={}, assignees={}",
+                taskId,
+                task.getFinished(),
+                existingAssignees.stream()
+                        .map(ta -> ta.getUser().getId() + "=" + ta.getFinished())
+                        .collect(Collectors.toList()));
+
+        List<TaskListResponse.AssigneeDto> assigneeDtos = existingAssignees.stream()
+                .map(ta -> new TaskListResponse.AssigneeDto(
+                        ta.getUser().getId(),
+                        ta.getUser().getNickname(),
+                        Boolean.TRUE.equals(ta.getFinished())))
+                .collect(Collectors.toList());
+        boolean allFinished = Boolean.TRUE.equals(task.getFinished());
+
         return new TaskListResponse(
                 task.getId(),
                 task.getTitle(),
@@ -208,27 +300,60 @@ public class TaskService {
                 task.getGroupId(),
                 task.getDueFrom(),
                 task.getDueTo(),
-                false,
+                allFinished,
                 task.getRecurringTaskId(),
-                new TaskListResponse.AssigneeDto(task.getAssigneeId().toString())
+                assigneeDtos,
+                task.getCreatorId()
         );
     }
 
-    // 할일 완료 처리
+    // 할일 완료 처리 (담당자 개인별 완료 토글)
     @Transactional
     public TaskStatusUpdateResponse taskFinishApi(String accessToken, UUID taskId, TaskStatusUpdateRequest request) {
 
         jwtUtil.validateToken(accessToken);
 
+        String loginId = jwtUtil.extractLoginId(accessToken);
+        User currentUser = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
 
-        task.setFinished(!request.getTaskStatus());
+        List<TaskAssignee> taskAssignees = taskAssigneeRepository.findByTaskId(taskId);
 
-        return new TaskStatusUpdateResponse(task.getFinished(), task.getFinishedAt());
+        // 담당자로 지정된 경우 → 개인 완료 상태 토글
+        TaskAssignee myAssignee = taskAssignees.stream()
+                .filter(ta -> ta.getUser().getId().equals(currentUser.getId()))
+                .findFirst()
+                .orElse(null);
+
+        boolean myFinished;
+        java.time.LocalDateTime myFinishedAt;
+
+        if (myAssignee != null) {
+            myAssignee.toggleFinished();
+            taskAssigneeRepository.save(myAssignee);
+
+            myFinished = Boolean.TRUE.equals(myAssignee.getFinished());
+            myFinishedAt = myAssignee.getFinishedAt();
+
+            // 모든 담당자가 완료했는지 확인 → Task.finished 동기화
+            boolean allDone = taskAssignees.stream()
+                    .allMatch(ta -> Boolean.TRUE.equals(ta.getFinished()));
+            task.setFinished(allDone);
+
+        } else {
+            // 담당자 없는 태스크 → 기존 방식으로 태스크 자체를 토글
+            task.setFinished(!request.getTaskStatus());
+            myFinished = task.getFinished();
+            myFinishedAt = task.getFinishedAt();
+        }
+
+        return new TaskStatusUpdateResponse(myFinished, myFinishedAt, task.getFinished());
     }
 
-    // 완료된 할일 일괄 삭제
+    // 완료된 할일 일괄 삭제 (allFinished = true 인 할일만)
     @Transactional
     public void taskBatchDeleteApi(String accessToken, UUID groupId) {
 
@@ -242,7 +367,6 @@ public class TaskService {
     }
 
     // 그룹 내 이번 주 기여도 순위 실시간 조회
-    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
     @Transactional(readOnly = true)
     public List<TaskRankingResponse> getGroupRankingApi(String accessToken, UUID groupId) {
 
@@ -251,12 +375,10 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 이번 주 월요일 ~ 일요일 (KST 기준)
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate weekEnd = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
-        // row[3] = 내가 완료한 수, row[4] = 그룹 전체 완료된 수
         List<Object[]> results = taskRepository.countFinishedTasksByGroupIdThisWeek(groupId, weekStart, weekEnd);
 
         Map<UUID, Integer> myFinishedMap = new HashMap<>();
@@ -276,7 +398,6 @@ public class TaskService {
         return allMembers.stream()
                 .map(gm -> {
                     int myFinished = myFinishedMap.getOrDefault(gm.getUser().getId(), 0);
-                    // 기여도 = 내가 완료한 수 / 그룹 전체 완료된 수 * 100
                     int percent = finalGroupTotal > 0 ? (int) Math.round(myFinished * 100.0 / finalGroupTotal) : 0;
                     return new TaskRankingResponse(0, gm.getUser().getId(), gm.getUser().getNickname(), gm.getProfileImg(), finalGroupTotal, myFinished, percent);
                 })
@@ -285,8 +406,7 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    // 저장된 주차 통계 조회 (항상 가장 최근 저장된 지난 주차 반환)
-    // 데이터 없을 경우에도 지난 주 주차 정보(weekStart, weekEnd, weekLabel, weekRange)는 반환
+    // 저장된 주차 통계 조회
     @Transactional(readOnly = true)
     public WeeklyStatsWrapperResponse getWeeklyStatsApi(String accessToken, UUID groupId) {
 
@@ -295,18 +415,15 @@ public class TaskService {
         groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
-        // 이번 주 월요일 계산 (KST 기준)
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         String thisWeekMondayStr = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
 
-        // 지난 주 이하 데이터만 사용
         List<String> weekStarts = weeklyStatsRepository.findDistinctWeekStartsByGroupId(groupId)
                 .stream()
                 .filter(ws -> ws.compareTo(thisWeekMondayStr) < 0)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
-        // 저장된 데이터 없으면 → 지난 주 주차 정보만 반환 (ranks 빈 배열)
         if (weekStarts.isEmpty()) {
             return WeeklyStatsWrapperResponse.empty();
         }
@@ -316,14 +433,13 @@ public class TaskService {
         List<WeeklyStats> statsList = weeklyStatsRepository
                 .findByGroupIdAndWeekStartOrderByPercentDesc(groupId, targetWeek);
 
-        // 해당 주차의 데이터가 없으면 → 주차 정보만 반환 (ranks 빈 배열)
         if (statsList.isEmpty()) {
             return WeeklyStatsWrapperResponse.of(targetWeek, List.of());
         }
 
         AtomicInteger rankCounter = new AtomicInteger(1);
         List<WeeklyStatsResponse> ranks = statsList.stream()
-                .map(stats -> WeeklyStatsResponse.from(stats, rankCounter.getAndIncrement()))
+                .map(s -> WeeklyStatsResponse.from(s, rankCounter.getAndIncrement()))
                 .collect(Collectors.toList());
 
         return WeeklyStatsWrapperResponse.of(targetWeek, ranks);

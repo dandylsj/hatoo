@@ -45,6 +45,18 @@ public class TaskContoroller {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "할 일 단건 조회", description = "할 일 하나를 상세 조회합니다.")
+    @GetMapping("/{taskId}")
+    public ResponseEntity<TaskDetailResponse> getTaskDetail(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID taskId) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+
+        TaskDetailResponse response = taskService.getTaskDetailApi(token, taskId);
+
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "할 일 삭제", description = "할 일을 삭제합니다.")
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Boolean> deleteTask(

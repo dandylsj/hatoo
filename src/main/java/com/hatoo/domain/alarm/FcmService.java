@@ -3,6 +3,7 @@ package com.hatoo.domain.alarm;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.Notification;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
@@ -63,14 +64,17 @@ public class FcmService {
 
     // ──────────────────────────────────────────
     // 4. 주간 차트 공개 알림 (매주 월요일 8시 스케줄러 호출)
+    //    notifiedUsers: 이미 알림을 보낸 유저 Set — 여러 그룹에 속해도 1번만 발송
     // ──────────────────────────────────────────
-    @Async
-    public void sendWeeklyChart(UUID groupId) {
+    public void sendWeeklyChart(UUID groupId, java.util.Set<UUID> notifiedUsers) {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
-        members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.WEEKLY_CHART,
-                        AlarmType.WEEKLY_CHART.getBodyTemplate(), null)
-        );
+        members.forEach(gm -> {
+            UUID userId = gm.getUser().getId();
+            if (notifiedUsers.contains(userId)) return;
+            notifiedUsers.add(userId);
+            sendToGroupMemberIfAllowed(userId, groupId, AlarmType.WEEKLY_CHART,
+                    AlarmType.WEEKLY_CHART.getBodyTemplate(), null);
+        });
     }
 
     // ──────────────────────────────────────────
@@ -87,14 +91,16 @@ public class FcmService {
 
     // ──────────────────────────────────────────
     // 6. 새 집안일 등록 알림 (TaskService에서 호출)
-    //    assigneeId 는 배정받은 사람 → 그룹 전체 알림에서 제외 (배정 알림이 따로 가므로)
+    //    assigneeIds 는 배정받은 사람들 → 그룹 전체 알림에서 제외 (배정 알림이 따로 가므로)
+    //    creatorId 는 할일 생성자 → 본인이 만든 할일 알림은 받지 않아야 하므로 제외
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle, UUID taskId, UUID assigneeId) {
+    public void sendTaskCreated(UUID groupId, String creatorNickname, String taskTitle, UUID taskId, java.util.List<UUID> assigneeIds, UUID creatorId) {
         String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname, taskTitle);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.stream()
-                .filter(gm -> !gm.getUser().getId().equals(assigneeId))
+                .filter(gm -> !assigneeIds.contains(gm.getUser().getId()))
+                .filter(gm -> creatorId == null || !creatorId.equals(gm.getUser().getId()))
                 .forEach(gm ->
                         sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.TASK_CREATED, body, taskId)
                 );
@@ -119,6 +125,15 @@ public class FcmService {
                 sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, AlarmType.INACTIVE_GROUP,
                         AlarmType.INACTIVE_GROUP.getBodyTemplate(), null)
         );
+    }
+
+    // ──────────────────────────────────────────
+    // 9. 강제 탈퇴 알림 (GroupService에서 호출)
+    // ──────────────────────────────────────────
+    @Async
+    public void sendForcedLeave(UUID userId, String groupName) {
+        String body = String.format(AlarmType.FORCED_LEAVE.getBodyTemplate(), groupName);
+        sendToUserIfAllowed(userId, AlarmType.FORCED_LEAVE, body, null);
     }
 
     // ──────────────────────────────────────────
@@ -218,7 +233,8 @@ public class FcmService {
     }
 
     // 실제 FCM 전송 + DB 저장 (이 메서드까지 왔으면 모든 권한 체크 통과)
-    private void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
+    @Transactional
+    public void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
         try {
             Message message = Message.builder()
                     .setNotification(Notification.builder()
@@ -233,7 +249,16 @@ public class FcmService {
             notificationHistoryRepository.save(new NotificationHistory(userId, type, title, body, taskId));
             log.info("[FCM] 알림 전송 성공 - userId: {}, type: {}", userId, type);
         } catch (FirebaseMessagingException e) {
-            log.error("[FCM] 알림 전송 실패 - userId: {}, {}", userId, e.getMessage());
+            // 토큰 만료 또는 앱 삭제 등으로 무효화된 토큰 → DB에서 자동 삭제
+            if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
+                    || e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
+                log.warn("[FCM] 무효 토큰 감지, DB에서 삭제 - userId: {}, errorCode: {}", userId, e.getMessagingErrorCode());
+                userRepository.findById(userId).ifPresent(user -> {
+                    user.clearFcmToken();
+                });
+            } else {
+                log.error("[FCM] 알림 전송 실패 - userId: {}, {}", userId, e.getMessage());
+            }
         }
     }
 }

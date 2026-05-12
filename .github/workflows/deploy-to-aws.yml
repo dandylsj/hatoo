@@ -46,66 +46,68 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ec2]
     environment: production
 
     steps:
-      - name: EC2에 SSH 접속하여 배포
-        uses: appleboy/ssh-action@v1.0.3
+      - name: AWS 자격증명 설정
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # ECR 로그인
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-              docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-            # 환경 변수 파일(.env) 생성
-            rm -f .env
-            touch .env
-            echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
-            echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
-            echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
-            echo "SPRING_JPA_HIBERNATE_DDL_AUTO=update" >> .env
-            echo "SPRING_MAIL_HOST=smtp.gmail.com" >> .env
-            echo "SPRING_MAIL_PORT=587" >> .env
-            echo "SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
-            echo "SPRING_MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
-            echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true" >> .env
-            echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true" >> .env
-            echo "TZ=Asia/Seoul" >> .env
-            echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
-            echo "FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}" >> .env
-            echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
-            echo "KAKAO_ADMIN_KEY=${{ secrets.KAKAO_ADMIN_KEY }}" >> .env
-            echo "NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}" >> .env
-            echo "NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}" >> .env
-            echo "SPRINGDOC_SWAGGER_UI_OPERATIONS_SORTER=method" >> .env
-            echo "SPRINGDOC_SWAGGER_UI_TAGS_SORTER=alpha" >> .env
-            echo "SPRING_JPA_SHOW_SQL=false" >> .env
-            echo "SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL=false" >> .env
-            echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
-            echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
-            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+      - name: ECR 로그인
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+            docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
-            # Redis 네트워크 연결 확인
-            docker network inspect hatoo >/dev/null 2>&1 || docker network create hatoo
-            if ! docker inspect redis --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | grep -q '"hatoo"'; then
-              docker network connect hatoo redis 2>/dev/null || true
-            fi
+      - name: 환경 변수 파일(.env) 생성
+        run: |
+          rm -f .env
+          touch .env
+          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
+          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
+          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
+          echo "SPRING_JPA_HIBERNATE_DDL_AUTO=update" >> .env
+          echo "SPRING_MAIL_HOST=smtp.gmail.com" >> .env
+          echo "SPRING_MAIL_PORT=587" >> .env
+          echo "SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
+          echo "SPRING_MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
+          echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true" >> .env
+          echo "SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true" >> .env
+          echo "TZ=Asia/Seoul" >> .env
+          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+          echo "FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}" >> .env
+          echo "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" >> .env
+          echo "KAKAO_ADMIN_KEY=${{ secrets.KAKAO_ADMIN_KEY }}" >> .env
+          echo "NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}" >> .env
+          echo "NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}" >> .env
+          echo "SPRINGDOC_SWAGGER_UI_OPERATIONS_SORTER=method" >> .env
+          echo "SPRINGDOC_SWAGGER_UI_TAGS_SORTER=alpha" >> .env
+          echo "SPRING_JPA_SHOW_SQL=false" >> .env
+          echo "SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL=false" >> .env
+          echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+          echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
 
-            # 기존 컨테이너 중지 및 새 이미지로 실행
-            docker stop hatoo-app 2>/dev/null || true
-            docker rm -f hatoo-app 2>/dev/null || true
-            docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
-            docker run -d \
-              --name hatoo-app \
-              --restart always \
-              --network hatoo \
-              -p 8080:8080 \
-              --env-file .env \
-              ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
+      - name: Redis 네트워크 연결 확인
+        run: |
+          docker network inspect hatoo >/dev/null 2>&1 || docker network create hatoo
+          if ! docker inspect redis --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | grep -q '"hatoo"'; then
+            docker network connect hatoo redis 2>/dev/null || true
+          fi
 
-            # 사용하지 않는 이미지 정리
-            docker image prune -f
+      - name: 배포
+        run: |
+          docker stop hatoo-app 2>/dev/null || true
+          docker rm -f hatoo-app 2>/dev/null || true
+          docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
+          docker run -d \
+            --name hatoo-app \
+            --restart always \
+            --network hatoo \
+            -p 8080:8080 \
+            --env-file .env \
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
+          docker image prune -f

@@ -87,9 +87,9 @@ public class UserController {
     @PatchMapping("/fcm-token")
     public ResponseEntity<Boolean> updateFcmToken(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @RequestParam String fcmToken) {
+            @RequestBody FcmTokenRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        return ResponseEntity.ok(userService.updateFcmToken(token, fcmToken));
+        return ResponseEntity.ok(userService.updateFcmToken(token, request.getFcmToken()));
     }
 
     @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. 소셜 계정 연결 해제도 서버에서 자동으로 처리됩니다.")

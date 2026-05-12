@@ -23,7 +23,7 @@ public class NotificationHistory extends BaseEntity {
     private UUID userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(50)")
     private AlarmType type;
 
     @Column(nullable = false)

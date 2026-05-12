@@ -46,15 +46,21 @@ public class SwaggerConfig {
         localServer.setUrl("http://localhost:8080");
         localServer.setDescription("Local Development Server");
 
-        // 배포된 도메인 주소
+        // NAS 서버
         Server productionServer = new Server();
         productionServer.setUrl("https://lsjyahoo.synology.me");
-        productionServer.setDescription("Hatoo Production Server");
+        productionServer.setDescription("Hatoo Production Server (NAS)");
+
+        // AWS EC2 서버
+        Server awsServer = new Server();
+        awsServer.setUrl("http://43.203.92.102:8080");
+        awsServer.setDescription("Hatoo AWS EC2 Server");
 
         return new OpenAPI()
                 .info(apiInfo())
                 .addServersItem(localServer)
                 .addServersItem(productionServer)
+                .addServersItem(awsServer)
                 .addSecurityItem(securityRequirement)
                 .components(components);
     }

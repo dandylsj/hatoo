@@ -78,9 +78,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",      // 로컬 개발
-                "https://lsjyahoo.synology.me", // NAS
-                "http://43.203.92.102:8080"   // AWS EC2
+                "http://localhost:3000",
+                "https://lsjyahoo.synology.me",
+                "http://43.203.92.102:8080",
+                "https://43.203.92.102"
         ));
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");

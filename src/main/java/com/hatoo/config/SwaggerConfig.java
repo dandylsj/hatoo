@@ -53,7 +53,7 @@ public class SwaggerConfig {
 
         // AWS EC2 서버
         Server awsServer = new Server();
-        awsServer.setUrl("http://43.203.92.102:8080");
+        awsServer.setUrl("https://43.203.92.102");
         awsServer.setDescription("Hatoo AWS EC2 Server");
 
         return new OpenAPI()

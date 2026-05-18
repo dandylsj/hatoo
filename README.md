@@ -1,6 +1,10 @@
 # 🏠 Hatoo — 집안일 공유 & 알림 플랫폼
 
 > **그룹으로 집안일을 함께 관리하고, 알림과 주간 통계로 기여도를 추적하는 백엔드 API 서버**
+>
+> <img width="796" height="776" alt="스크린샷 2026-04-03 174744" src="https://github.com/user-attachments/assets/6f5d50a7-427c-4d8d-af56-f7a92145c9a4" />
+
+<img width="2817" height="1480" alt="하투 앱사진" src="https://github.com/user-attachments/assets/e454760d-81bb-4ae6-971e-09ac69077c58" />
 
 <br>
 

@@ -2,9 +2,14 @@
 
 > **그룹으로 집안일을 함께 관리하고, 알림과 주간 통계로 기여도를 추적하는 백엔드 API 서버**
 >
-> <img width="796" height="776" alt="스크린샷 2026-04-03 174744" src="https://github.com/user-attachments/assets/6f5d50a7-427c-4d8d-af56-f7a92145c9a4" />
+> <img width="200" height="200" alt="스크린샷 2026-04-03 174744" src="https://github.com/user-attachments/assets/6f5d50a7-427c-4d8d-af56-f7a92145c9a4" />
 
 <img width="2817" height="1480" alt="하투 앱사진" src="https://github.com/user-attachments/assets/e454760d-81bb-4ae6-971e-09ac69077c58" />
+
+## 구글 플레이 출시
+<img width="2190" height="1688" alt="image" src="https://github.com/user-attachments/assets/17875349-d54c-4fc7-bb03-98fabc65ceb8" />
+
+https://play.google.com/store/apps/details?id=com.rfive.hatoo&hl=ko
 
 <br>
 
@@ -58,7 +63,6 @@ Hatoo는 가족, 룸메이트 등 소규모 그룹이 집안일을 효율적으�
 - **마감 알림 설정**: 10분 전 / 30분 전 / 1시간 전 / 1일 전 / 1주 전
 
 ### 🔔 알림 시스템 (FCM)
-![Screenshot_20260429_165022_Hatoo.jpg](../../CrossDevice/%EC%84%B8%EC%A7%84%EC%9D%98%20Z%20Fold7/storage/DCIM/Screenshots/Screenshot_20260429_165022_Hatoo.jpg)
 - 할일 시작 알림 (30초 주기 스캔)
 - 마감 임박 알림 (30초 주기 스캔)
 - 마감 초과 알림 (30초 주기 스캔)
@@ -133,8 +137,8 @@ src/main/java/com/hatoo/
 <br>
 
 ## 🗄 ERD
+<img width="2569" height="1536" alt="Hatoo ERD" src="https://github.com/user-attachments/assets/ca2cd407-4316-4b86-9949-0a1629457250" />
 
-> [dbdiagram.io에서 확인하기](https://dbdiagram.io) — `hatoo_dbdiagram.txt` 파일 내용을 붙여넣으면 확인할 수 있습니다.
 
 주요 테이블:
 

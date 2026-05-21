@@ -46,6 +46,7 @@ jobs:
   deploy:
     needs: build
     runs-on: [self-hosted, Linux, ubuntu-server]
+    environment: ubuntu
 
     steps:
       - name: GHCR 로그인 (PAT 사용)

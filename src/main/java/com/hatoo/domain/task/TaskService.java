@@ -269,6 +269,7 @@ public class TaskService {
                 request.getTitle(),
                 request.getDescription(),
                 request.getFrequency(),
+                request.getInterval(),
                 request.getDueFrom(),
                 request.getDueTo(),
                 request.getDeadLine(),

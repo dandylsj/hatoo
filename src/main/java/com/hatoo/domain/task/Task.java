@@ -115,10 +115,11 @@ public class Task extends BaseEntity {
         return this.groups.get(0).getId();
     }
 
-public void updateTask(String title, String description, Frequency frequency, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
+public void updateTask(String title, String description, Frequency frequency, Integer interval, String dueFrom, String dueTo, DeadLine deadLine, Boolean starter) {
         this.title = title;
         this.description = description;
         this.frequency = frequency;
+        this.interval = interval;
         this.dueFrom = dueFrom;
         this.dueTo = dueTo;
         this.deadLine = deadLine;

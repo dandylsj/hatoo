@@ -1,8 +1,8 @@
-name: Spring Boot -> NAS Docker 배포
+name: Spring Boot -> Ubuntu Server 배포
 
 on:
   push:
-    branches: [  ]
+    branches: [ dev ]
   workflow_dispatch:
 
 jobs:
@@ -26,12 +26,6 @@ jobs:
       - name: Gradle 빌드
         run: ./gradlew clean build -x test
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: GHCR 로그인
         uses: docker/login-action@v3
         with:
@@ -44,15 +38,12 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/dandylsj/hatoo:latest
+          tags: ghcr.io/dandylsj/hatoo:ubuntu
 
   deploy:
     needs: build
-    runs-on: self-hosted
-    environment: staging
-    permissions:
-      contents: read
-      packages: read
+    runs-on: [self-hosted, Linux, ubuntu-server]
+    environment: ubuntu
 
     steps:
       - name: GHCR 로그인 (PAT 사용)
@@ -91,19 +82,28 @@ jobs:
           echo "REDIS_PORT=6379" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
 
+      - name: Docker 네트워크 생성 (없을 경우)
+        run: docker network inspect hatoo >/dev/null 2>&1 || docker network create hatoo
+
       - name: Redis 컨테이너 hatoo 네트워크 연결 확인
         run: |
-          # redis 컨테이너가 hatoo 네트워크에 없으면 연결
-          if ! docker inspect redis --format '{{json .NetworkSettings.Networks}}' | grep -q '"hatoo"'; then
+          if ! docker inspect redis --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | grep -q '"hatoo"'; then
             echo "redis 컨테이너를 hatoo 네트워크에 연결합니다..."
-            docker network connect hatoo redis
+            docker network connect hatoo redis 2>/dev/null || true
           else
             echo "redis 이미 hatoo 네트워크에 연결되어 있습니다."
           fi
 
-      - name: NAS에 자동 배포
+      - name: Ubuntu Server에 자동 배포
         run: |
           docker stop hatoo-app 2>/dev/null || true
           docker rm -f hatoo-app 2>/dev/null || true
-          docker pull ghcr.io/dandylsj/hatoo:latest
-          docker run -d --name hatoo-app --restart always --network hatoo -p 8080:8080 --env-file .env ghcr.io/dandylsj/hatoo:latest
+          docker pull ghcr.io/dandylsj/hatoo:ubuntu
+          docker run -d \
+            --name hatoo-app \
+            --restart always \
+            --network hatoo \
+            -p 8080:8080 \
+            --env-file .env \
+            ghcr.io/dandylsj/hatoo:ubuntu
+          docker image prune -f

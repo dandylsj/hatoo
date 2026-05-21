@@ -81,7 +81,7 @@ jobs:
           echo "SPRINGDOC_SWAGGER_UI_TAGS_SORTER=alpha" >> .env
           echo "SPRING_JPA_SHOW_SQL=false" >> .env
           echo "SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL=false" >> .env
-          echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+          echo "REDIS_HOST=redis-server" >> .env
           echo "REDIS_PORT=6379" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
 
@@ -90,11 +90,20 @@ jobs:
 
       - name: Redis 컨테이너 hatoo 네트워크 연결 확인
         run: |
-          if ! docker inspect redis --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | grep -q '"hatoo"'; then
-            echo "redis 컨테이너를 hatoo 네트워크에 연결합니다..."
-            docker network connect hatoo redis 2>/dev/null || true
+          if ! docker inspect redis-server --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | grep -q '"hatoo"'; then
+            echo "redis-server 컨테이너를 hatoo 네트워크에 연결합니다..."
+            docker network connect hatoo redis-server 2>/dev/null || true
           else
-            echo "redis 이미 hatoo 네트워크에 연결되어 있습니다."
+            echo "redis-server 이미 hatoo 네트워크에 연결되어 있습니다."
+          fi
+
+      - name: MySQL 컨테이너 hatoo 네트워크 연결 확인
+        run: |
+          if ! docker inspect mysql-server --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | grep -q '"hatoo"'; then
+            echo "mysql-server 컨테이너를 hatoo 네트워크에 연결합니다..."
+            docker network connect hatoo mysql-server 2>/dev/null || true
+          else
+            echo "mysql-server 이미 hatoo 네트워크에 연결되어 있습니다."
           fi
 
       - name: Ubuntu Server에 자동 배포

@@ -2,8 +2,11 @@ name: Spring Boot -> NAS Docker 배포
 
 on:
   push:
-    branches: [  ]
+    branches: [ dev ]
   workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:

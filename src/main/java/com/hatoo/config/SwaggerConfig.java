@@ -56,11 +56,17 @@ public class SwaggerConfig {
         awsServer.setUrl("https://43.203.92.102");
         awsServer.setDescription("Hatoo AWS EC2 Server");
 
+        // Ubuntu 서버
+        Server ubuntuServer = new Server();
+        ubuntuServer.setUrl("https://lsjyahoo.iptime.org");
+        ubuntuServer.setDescription("Hatoo Ubuntu Server");
+
         return new OpenAPI()
                 .info(apiInfo())
                 .addServersItem(localServer)
                 .addServersItem(productionServer)
                 .addServersItem(awsServer)
+                .addServersItem(ubuntuServer)
                 .addSecurityItem(securityRequirement)
                 .components(components);
     }

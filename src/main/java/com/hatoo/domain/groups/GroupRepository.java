@@ -15,6 +15,8 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
 
     Optional<Group> findByName(String name);
 
+    Optional<Group> findByAssignerIdAndIsPersonalTrue(UUID assignerId);
+
     List<Group> findAllByInviteCode(String token);
 
     // 최근 30일간 할일 변경이 없는 비활성 그룹 조회

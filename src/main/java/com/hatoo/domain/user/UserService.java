@@ -200,7 +200,13 @@ public class UserService {
                 request.getFcmToken()
         );
 
-        // 6. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에만 반영
+        // 6. 닉네임이 변경된 경우 기본그룹(isPersonal=true) 이름도 동기화
+        if (request.getNickname() != null && !request.getNickname().isBlank()) {
+            groupRepository.findByAssignerIdAndIsPersonalTrue(user.getId())
+                    .ifPresent(personalGroup -> personalGroup.updateName(request.getNickname()));
+        }
+
+        // 7. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에만 반영
         //    (이미 그룹에서 별도 프로필을 선택한 경우 덮어쓰지 않음)
         if (request.getProfileImg() != null) {
             List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
@@ -211,7 +217,7 @@ public class UserService {
             }
         }
 
-        // 7. 응답 DTO 생성 반환
+        // 8. 응답 DTO 생성 반환
         return new UserInfoModifyResponse(user.getId(), user.getNickname(), user.getProfileImg());
     }
 

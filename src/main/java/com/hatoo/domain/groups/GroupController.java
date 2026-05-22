@@ -1,6 +1,7 @@
 package com.hatoo.domain.groups;
 
 import com.hatoo.domain.groups.dto.*;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -104,6 +105,16 @@ public class GroupController {
             @RequestBody GroupJoinProfileRequest request, @PathVariable UUID groupId) {
         String authToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
         return ResponseEntity.ok(groupService.profileImgSelectApi(authToken, request, groupId));
+    }
+
+    @Operation(summary = "그룹 이름 수정", description = "방장이 그룹 이름을 수정합니다.")
+    @PatchMapping("/{groupId}/name")
+    public ResponseEntity<Boolean> updateGroupName(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @PathVariable UUID groupId,
+            @Valid @RequestBody GroupUpdateNameRequest request) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(groupService.updateGroupName(token, groupId, request));
     }
 
     @Operation(summary = "그룹별 알림 설정 조회", description = "특정 그룹의 알림 설정을 조회합니다.")

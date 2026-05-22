@@ -74,6 +74,11 @@ public class Group extends BaseEntity {
         this.inviteCodeExpiryDate = expiryDate;
     }
 
+    // 그룹 이름 수정
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     // 방장 변경
     public void changeAssigner(UUID newAssignerId) {
         this.assignerId = newAssignerId;

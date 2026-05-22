@@ -276,8 +276,36 @@ public class TaskService {
                 request.getStarter()
         );
 
-        // 담당자 및 완료 상태는 수정하지 않고 그대로 유지
+        // 기존 담당자 목록
         List<TaskAssignee> existingAssignees = taskAssigneeRepository.findByTaskId(taskId);
+        List<UUID> newAssigneeIds = request.getAssigneeIds();
+
+        // 새 담당자 목록이 있을 때만 담당자 변경 처리
+        if (newAssigneeIds != null) {
+            // 기존 담당자 ID → TaskAssignee 맵 (완료 상태 보존용)
+            Map<UUID, TaskAssignee> existingMap = existingAssignees.stream()
+                    .collect(Collectors.toMap(ta -> ta.getUser().getId(), ta -> ta));
+
+            // 제거된 담당자 삭제 (완료되지 않은 담당자만 삭제, 완료된 담당자는 유지)
+            existingAssignees.stream()
+                    .filter(ta -> !newAssigneeIds.contains(ta.getUser().getId()))
+                    .filter(ta -> !Boolean.TRUE.equals(ta.getFinished()))
+                    .forEach(taskAssigneeRepository::delete);
+
+            // 새로 추가된 담당자 등록
+            List<User> newAssignees = userRepository.findAllById(newAssigneeIds);
+            newAssignees.stream()
+                    .filter(user -> !existingMap.containsKey(user.getId()))
+                    .forEach(user -> taskAssigneeRepository.save(new TaskAssignee(task, user)));
+
+            // 모든 담당자가 완료됐는지 재계산
+            List<TaskAssignee> updatedAssignees = taskAssigneeRepository.findByTaskId(taskId);
+            boolean allDone = !updatedAssignees.isEmpty() &&
+                    updatedAssignees.stream().allMatch(ta -> Boolean.TRUE.equals(ta.getFinished()));
+            task.setFinished(allDone);
+
+            existingAssignees = updatedAssignees;
+        }
 
         log.info("[Task 수정] taskId={}, task.finished={}, assignees={}",
                 taskId,

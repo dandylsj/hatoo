@@ -2,7 +2,7 @@ name: Spring Boot -> Ubuntu Server 배포
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ prod ]
   workflow_dispatch:
 
 env:

@@ -409,6 +409,29 @@ public class GroupService {
         return GroupAlarmSettingResponse.from(setting);
     }
 
+    // 그룹 이름 수정
+    @Transactional
+    public boolean updateGroupName(String accessToken, UUID groupId, GroupUpdateNameRequest request) {
+
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
+
+        // 방장 여부 검증
+        if (!user.getId().equals(group.getAssignerId())) {
+            throw new CustomException(ErrorMessage.NO_DELETE_PERMISSION);
+        }
+
+        group.updateName(request.getName());
+
+        return true;
+    }
+
     // 초대코드 생성 유틸
     private String generateInviteCode() {
         return String.format("%04d", new Random().nextInt(10000));

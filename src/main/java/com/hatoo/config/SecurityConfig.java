@@ -42,6 +42,7 @@ public class SecurityConfig {
             "/users/find-password/**",
             "/users/check-login-id",
             "/users/check-nickname",
+            "/users/check-email",
             "/users/email/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",

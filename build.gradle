@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.3'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com.hatoo'
@@ -48,4 +49,41 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport  // 테스트 완료 후 자동으로 리포트 생성
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        html.required = true   // build/reports/jacoco/test/html/index.html
+        xml.required = false
+        csv.required = false
+    }
+    // 커버리지 측정에서 제외할 항목 (DTO, 설정 파일 등)
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/dto/**',
+                '**/config/**',
+                '**/*Application*',
+                '**/*Request*',
+                '**/*Response*',
+            ])
+        }))
+    }
+}
+
+// 커버리지 기준 미달 시 빌드 실패 처리 (선택사항)
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.60  // 전체 60% 이상 커버리지 요구
+            }
+        }
+    }
 }

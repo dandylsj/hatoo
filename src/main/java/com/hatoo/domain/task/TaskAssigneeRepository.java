@@ -1,6 +1,7 @@
 package com.hatoo.domain.task;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -19,4 +20,9 @@ public interface TaskAssigneeRepository extends JpaRepository<TaskAssignee, Task
     Optional<TaskAssignee> findByTaskIdAndUserId(@Param("taskId") UUID taskId, @Param("userId") UUID userId);
 
     void deleteByTaskId(UUID taskId);
+
+    // 회원탈퇴 시 해당 유저의 모든 task_assignees 레코드 제거 (FK 제약 해소용)
+    @Modifying
+    @Query("DELETE FROM TaskAssignee ta WHERE ta.user.id = :userId")
+    void deleteByUserId(@Param("userId") UUID userId);
 }

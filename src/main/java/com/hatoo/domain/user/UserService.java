@@ -15,6 +15,7 @@ import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.Task;
+import com.hatoo.domain.task.TaskAssigneeRepository;
 import com.hatoo.domain.task.TaskRepository;
 import com.hatoo.domain.oAuth.KakaoService;
 import com.hatoo.domain.oAuth.NaverService;
@@ -41,6 +42,7 @@ public class UserService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
     private final TaskRepository taskRepository;
+    private final TaskAssigneeRepository taskAssigneeRepository;
     private final AlarmUserAgreeRepository alarmUserAgreeRepository;
     private final GroupAlarmSettingRepository groupAlarmSettingRepository;
     private final SmtpEmailSender smtpEmailSender;
@@ -331,7 +333,11 @@ public class UserService {
             }
         }
 
-        // 6. 유저 삭제
+        // 6. 남아있을 수 있는 task_assignees FK 참조 제거 (유저 삭제 전 선행 필수)
+        //    - 그룹 처리 중 cascade가 미처 정리하지 못한 레코드 방어용
+        taskAssigneeRepository.deleteByUserId(user.getId());
+
+        // 7. 유저 삭제
         userRepository.delete(user);
 
         return true;

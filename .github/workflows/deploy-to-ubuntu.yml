@@ -42,6 +42,7 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/dandylsj/hatoo:ubuntu
+          provenance: false
 
   deploy:
     needs: build

@@ -58,7 +58,7 @@ public class SwaggerConfig {
 
         // Ubuntu 서버
         Server ubuntuServer = new Server();
-        ubuntuServer.setUrl("https://lsjyahoo.iptime.org");
+        ubuntuServer.setUrl("https://dandhomelab.uk");
         ubuntuServer.setDescription("Hatoo Ubuntu Server");
 
         return new OpenAPI()

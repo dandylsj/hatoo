@@ -67,6 +67,10 @@ public class User extends BaseEntity {
     @Column(unique = true)
     private String googleId;
 
+    @Setter
+    @Column(unique = true)
+    private String appleId;
+
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();
 

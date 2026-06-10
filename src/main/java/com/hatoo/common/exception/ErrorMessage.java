@@ -48,7 +48,8 @@ public enum ErrorMessage {
     /* --- 502 Bad Gateway --- */
     KAKAO_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "카카오 로그인에 실패했습니다."),
     NAVER_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "네이버 로그인에 실패했습니다."),
-    GOOGLE_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "구글 로그인에 실패했습니다.");
+    GOOGLE_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "구글 로그인에 실패했습니다."),
+    APPLE_LOGIN_FAILED(HttpStatus.BAD_GATEWAY, "애플 로그인에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;

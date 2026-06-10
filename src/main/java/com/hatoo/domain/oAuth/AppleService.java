@@ -42,7 +42,7 @@ public class AppleService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${apple.bundle-id}")
+    @Value("${apple.bundle-id:com.rfive.hatoo}")
     private String bundleId;
 
     /**

@@ -157,13 +157,11 @@ public class AppleService {
             return user;
         }
 
-        // 2. 같은 이메일로 일반/다른 소셜 가입한 유저가 있으면 → 기존 계정에 Apple ID 연동
+        // 2. 같은 이메일로 다른 방식으로 가입한 유저가 있으면 → 로그인 차단
         if (appleEmail != null && !appleEmail.isEmpty()) {
-            User existingUser = userRepository.findByEmail(appleEmail).orElse(null);
-            if (existingUser != null) {
-                log.info("[Apple] 기존 계정에 애플 연동 - email: {}, userId: {}", appleEmail, existingUser.getId());
-                existingUser.setAppleId(appleId);
-                return existingUser;
+            if (userRepository.findByEmail(appleEmail).isPresent()) {
+                log.warn("[Apple] 다른 소셜 계정으로 이미 가입된 이메일 - email: {}", appleEmail);
+                throw new CustomException(ErrorMessage.ALREADY_REGISTERED_WITH_OTHER_PROVIDER);
             }
         }
 

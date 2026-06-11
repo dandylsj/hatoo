@@ -91,13 +91,11 @@ public class GoogleService {
             return user;
         }
 
-        // 2. 같은 이메일로 일반/다른 소셜 가입한 유저가 있으면 → 기존 계정에 구글 ID 연동
+        // 2. 같은 이메일로 다른 방식으로 가입한 유저가 있으면 → 로그인 차단
         if (email != null && !email.isEmpty()) {
-            User existingUser = userRepository.findByEmail(email).orElse(null);
-            if (existingUser != null) {
-                log.info("[Google] 기존 계정에 구글 연동 - email: {}, userId: {}", email, existingUser.getId());
-                existingUser.setGoogleId(googleId);
-                return existingUser;
+            if (userRepository.findByEmail(email).isPresent()) {
+                log.warn("[Google] 다른 소셜 계정으로 이미 가입된 이메일 - email: {}", email);
+                throw new CustomException(ErrorMessage.ALREADY_REGISTERED_WITH_OTHER_PROVIDER);
             }
         }
 

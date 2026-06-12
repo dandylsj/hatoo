@@ -40,9 +40,6 @@ public class User extends BaseEntity {
     private String profileImg;
 
     @Column
-    private String fcmToken;
-
-    @Column
     private Boolean isTermsAgreed;
 
     @Column
@@ -88,7 +85,7 @@ public class User extends BaseEntity {
         this.isOverFourteen = isOverFourteen;
     }
 
-    public void updateInfo(String nickname, String password, String profileImg, String fcmToken) {
+    public void updateInfo(String nickname, String password, String profileImg) {
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname;
         }
@@ -98,13 +95,6 @@ public class User extends BaseEntity {
         if (profileImg != null) {
             this.profileImg = profileImg;
         }
-        if (fcmToken != null) {
-            this.fcmToken = fcmToken;
-        }
-    }
-
-    public void clearFcmToken() {
-        this.fcmToken = null;
     }
 
     public void changePassword(String encodedPassword) {

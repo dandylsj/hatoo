@@ -29,6 +29,7 @@ import java.util.UUID;
 public class FcmService {
 
     private final UserRepository userRepository;
+    private final UserFcmTokenRepository userFcmTokenRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final AlarmUserAgreeRepository alarmUserAgreeRepository;
     private final GroupAlarmSettingRepository groupAlarmSettingRepository;
@@ -156,12 +157,12 @@ public class FcmService {
             return;
         }
 
-        if (user.getFcmToken() == null || user.getFcmToken().isBlank()) {
+        List<UserFcmToken> tokens = userFcmTokenRepository.findByUser(user);
+        if (tokens.isEmpty()) {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
-
-        sendMessage(userId, type, user.getFcmToken(), type.getTitle(), body, taskId);
+        tokens.forEach(t -> sendMessage(userId, type, t.getFcmToken(), type.getTitle(), body, taskId));
     }
 
     // 그룹 알림: 개인 그룹 여부에 따라 분기
@@ -224,12 +225,12 @@ public class FcmService {
             }
         }
 
-        if (user.getFcmToken() == null || user.getFcmToken().isBlank()) {
+        List<UserFcmToken> tokens = userFcmTokenRepository.findByUser(user);
+        if (tokens.isEmpty()) {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
-
-        sendMessage(userId, type, user.getFcmToken(), type.getTitle(), body, taskId);
+        tokens.forEach(t -> sendMessage(userId, type, t.getFcmToken(), type.getTitle(), body, taskId));
     }
 
     // 실제 FCM 전송 + DB 저장 (이 메서드까지 왔으면 모든 권한 체크 통과)
@@ -253,9 +254,7 @@ public class FcmService {
             if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
                     || e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
                 log.warn("[FCM] 무효 토큰 감지, DB에서 삭제 - userId: {}, errorCode: {}", userId, e.getMessagingErrorCode());
-                userRepository.findById(userId).ifPresent(user -> {
-                    user.clearFcmToken();
-                });
+                userFcmTokenRepository.deleteByFcmToken(fcmToken);
             } else {
                 log.error("[FCM] 알림 전송 실패 - userId: {}, {}", userId, e.getMessage());
             }

@@ -83,7 +83,8 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "https://lsjyahoo.synology.me",
                 "http://43.203.92.102:8080",
-                "https://43.203.92.102"
+                "https://43.203.92.102",
+                "https://hatoo.dandyhomelab.uk"
         ));
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");

@@ -8,5 +8,4 @@ public class UserInfoModifyRequest {
     private String nickname;
     private String password;
     private String profileImg;
-    private String fcmToken;
 }

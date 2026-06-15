@@ -33,6 +33,9 @@ public enum ErrorMessage {
     /* --- 409 Conflict --- */
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),
     ALREADY_REGISTERED_WITH_OTHER_PROVIDER(HttpStatus.CONFLICT, "이미 다른 소셜 계정으로 가입된 이메일입니다."),
+
+    /* --- 422 Unprocessable Entity --- */
+    SOCIAL_LOGIN_ACCOUNT(HttpStatus.UNPROCESSABLE_ENTITY, "소셜 로그인으로 가입된 계정입니다."),
     NOT_SAME_INVITED(HttpStatus.CONFLICT, "초대코드가 맞지 않습니다."),
     ALREADY_JOINED_GROUP(HttpStatus.CONFLICT, "이미 해당 그룹에 가입되어 있습니다."),
     GROUP_FULL(HttpStatus.CONFLICT, "그룹 인원이 가득 찼습니다. (최대 5명)"),

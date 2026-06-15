@@ -89,7 +89,7 @@ public class UserController {
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
             @RequestBody FcmTokenRequest request) {
         String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
-        return ResponseEntity.ok(userService.updateFcmToken(token, request.getFcmToken()));
+        return ResponseEntity.ok(userService.updateFcmToken(token, request.getFcmToken(), request.getDeviceType()));
     }
 
     @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. 소셜 계정 연결 해제도 서버에서 자동으로 처리됩니다.")

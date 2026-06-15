@@ -17,6 +17,8 @@ import com.hatoo.domain.groups.GroupRepository;
 import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskAssigneeRepository;
 import com.hatoo.domain.task.TaskRepository;
+import com.hatoo.domain.alarm.UserFcmToken;
+import com.hatoo.domain.alarm.UserFcmTokenRepository;
 import com.hatoo.domain.oAuth.KakaoService;
 import com.hatoo.domain.oAuth.NaverService;
 import com.hatoo.domain.user.dto.*;
@@ -49,6 +51,7 @@ public class UserService {
     private final EmailRepository emailRepository;
     private final KakaoService kakaoService;
     private final NaverService naverService;
+    private final UserFcmTokenRepository userFcmTokenRepository;
 
     private static final int MAX_SEND_COUNT = 3;
     private static final int COOLDOWN_SECONDS = 10;
@@ -142,16 +145,24 @@ public class UserService {
         return getAlarmSetting(accessToken);
     }
 
-    // FCM 토큰 갱신 (앱 실행 시 호출)
+    // FCM 토큰 등록 (앱 실행 시 호출) - 기기별로 별도 저장
     @Transactional
-    public Boolean updateFcmToken(String accessToken, String fcmToken) {
+    public Boolean updateFcmToken(String accessToken, String fcmToken, String deviceType) {
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
 
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        user.updateInfo(null, null, null, fcmToken);
+        // 이미 존재하는 토큰이면 소유자 업데이트, 없으면 새로 저장
+        UserFcmToken existing = userFcmTokenRepository.findByFcmToken(fcmToken).orElse(null);
+        if (existing == null) {
+            userFcmTokenRepository.save(new UserFcmToken(user, fcmToken, deviceType));
+        } else if (!existing.getUser().getId().equals(user.getId())) {
+            // 다른 유저가 쓰던 토큰 → 삭제 후 현재 유저로 재등록 (기기 주인이 바뀐 경우)
+            userFcmTokenRepository.delete(existing);
+            userFcmTokenRepository.save(new UserFcmToken(user, fcmToken, deviceType));
+        }
         return true;
     }
 
@@ -198,8 +209,7 @@ public class UserService {
         user.updateInfo(
                 request.getNickname(),
                 encodedPassword,
-                request.getProfileImg(),
-                request.getFcmToken()
+                request.getProfileImg()
         );
 
         // 6. 닉네임이 변경된 경우 기본그룹(isPersonal=true) 이름도 동기화
@@ -287,7 +297,10 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 4. 소셜 계정 연결 해제 (DB에 저장된 정보로 서버에서 직접 처리)
+        // 4. FCM 토큰 전체 삭제
+        userFcmTokenRepository.deleteByUser(user);
+
+        // 5. 소셜 계정 연결 해제 (DB에 저장된 정보로 서버에서 직접 처리)
         if (user.getKakaoId() != null) {
             kakaoService.unlinkKakaoAccount(user.getKakaoId()); // admin key 사용
         }
@@ -360,10 +373,16 @@ public class UserService {
     // 아이디 찾기 - 이메일로 인증코드 발송
     @Transactional
     public Boolean findUserIdApi(String email) {
-        // 해당 이메일로 가입된 유저가 없으면 예외
-        if (userRepository.findByEmail(email).isEmpty()) {
-            throw new CustomException(ErrorMessage.USER_NOT_FOUND);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 소셜 로그인으로 가입된 계정이면 아이디 찾기 불가
+        String loginId = user.getLoginId();
+        if (loginId.startsWith("google_") || loginId.startsWith("apple_") ||
+                loginId.startsWith("kakao_") || loginId.startsWith("naver_")) {
+            throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
         }
+
         sendVerificationCode(email);
         return true;
     }

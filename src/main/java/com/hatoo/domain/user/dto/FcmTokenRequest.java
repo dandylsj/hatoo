@@ -7,4 +7,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class FcmTokenRequest {
     private String fcmToken;
+    private String deviceType; // "ANDROID" or "IOS"
 }

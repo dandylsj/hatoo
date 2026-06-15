@@ -373,10 +373,16 @@ public class UserService {
     // 아이디 찾기 - 이메일로 인증코드 발송
     @Transactional
     public Boolean findUserIdApi(String email) {
-        // 해당 이메일로 가입된 유저가 없으면 예외
-        if (userRepository.findByEmail(email).isEmpty()) {
-            throw new CustomException(ErrorMessage.USER_NOT_FOUND);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        // 소셜 로그인으로 가입된 계정이면 아이디 찾기 불가
+        String loginId = user.getLoginId();
+        if (loginId.startsWith("google_") || loginId.startsWith("apple_") ||
+                loginId.startsWith("kakao_") || loginId.startsWith("naver_")) {
+            throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
         }
+
         sendVerificationCode(email);
         return true;
     }

@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -146,7 +147,7 @@ public class UserService {
     }
 
     // FCM 토큰 등록 (앱 실행 시 호출) - 기기별로 별도 저장
-    @Transactional
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public Boolean updateFcmToken(String accessToken, String fcmToken, String deviceType) {
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
@@ -157,10 +158,15 @@ public class UserService {
         // 이미 존재하는 토큰이면 소유자 업데이트, 없으면 새로 저장
         UserFcmToken existing = userFcmTokenRepository.findByFcmToken(fcmToken).orElse(null);
         if (existing == null) {
-            userFcmTokenRepository.save(new UserFcmToken(user, fcmToken, deviceType));
+            try {
+                userFcmTokenRepository.saveAndFlush(new UserFcmToken(user, fcmToken, deviceType));
+            } catch (DataIntegrityViolationException ignored) {
+                // 동시 요청으로 이미 저장된 경우 무시 (중복 토큰은 이미 등록됨)
+            }
         } else if (!existing.getUser().getId().equals(user.getId())) {
             // 다른 유저가 쓰던 토큰 → 삭제 후 현재 유저로 재등록 (기기 주인이 바뀐 경우)
             userFcmTokenRepository.delete(existing);
+            userFcmTokenRepository.flush();
             userFcmTokenRepository.save(new UserFcmToken(user, fcmToken, deviceType));
         }
         return true;

@@ -27,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -147,7 +146,7 @@ public class UserService {
     }
 
     // FCM 토큰 등록 (앱 실행 시 호출) - 기기별로 별도 저장
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @Transactional
     public Boolean updateFcmToken(String accessToken, String fcmToken, String deviceType) {
         jwtUtil.validateToken(accessToken);
         String loginId = jwtUtil.extractLoginId(accessToken);
@@ -155,19 +154,14 @@ public class UserService {
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 이미 존재하는 토큰이면 소유자 업데이트, 없으면 새로 저장
         UserFcmToken existing = userFcmTokenRepository.findByFcmToken(fcmToken).orElse(null);
         if (existing == null) {
-            try {
-                userFcmTokenRepository.saveAndFlush(new UserFcmToken(user, fcmToken, deviceType));
-            } catch (DataIntegrityViolationException ignored) {
-                // 동시 요청으로 이미 저장된 경우 무시 (중복 토큰은 이미 등록됨)
-            }
+            // INSERT IGNORE로 중복 키 충돌을 예외 없이 처리 (동시 요청 race condition 방어)
+            userFcmTokenRepository.saveIgnore(user.getId().toString(), fcmToken, deviceType);
         } else if (!existing.getUser().getId().equals(user.getId())) {
             // 다른 유저가 쓰던 토큰 → 삭제 후 현재 유저로 재등록 (기기 주인이 바뀐 경우)
             userFcmTokenRepository.delete(existing);
-            userFcmTokenRepository.flush();
-            userFcmTokenRepository.save(new UserFcmToken(user, fcmToken, deviceType));
+            userFcmTokenRepository.saveIgnore(user.getId().toString(), fcmToken, deviceType);
         }
         return true;
     }

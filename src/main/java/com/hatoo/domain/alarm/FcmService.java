@@ -256,7 +256,8 @@ public class FcmService {
                 log.warn("[FCM] 무효 토큰 감지, DB에서 삭제 - userId: {}, errorCode: {}", userId, e.getMessagingErrorCode());
                 userFcmTokenRepository.deleteByFcmToken(fcmToken);
             } else {
-                log.error("[FCM] 알림 전송 실패 - userId: {}, {}", userId, e.getMessage());
+                log.error("[FCM] 알림 전송 실패 - userId: {}, errorCode: {}, message: {}",
+                        userId, e.getMessagingErrorCode(), e.getMessage());
             }
         }
     }

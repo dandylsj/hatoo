@@ -16,8 +16,12 @@ public interface UserFcmTokenRepository extends JpaRepository<UserFcmToken, Long
 
     Optional<UserFcmToken> findByFcmToken(String fcmToken);
 
+    @Modifying
+    @Transactional
     void deleteByFcmToken(String fcmToken);
 
+    @Modifying
+    @Transactional
     void deleteByUser(User user);
 
     // 중복 키 충돌 시 예외 없이 무시 (race condition 방어)

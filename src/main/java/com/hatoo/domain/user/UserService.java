@@ -218,12 +218,13 @@ public class UserService {
                     .ifPresent(personalGroup -> personalGroup.updateName(request.getNickname()));
         }
 
-        // 7. 프로필 이미지가 변경된 경우, profileImg가 null인 GroupMember에만 반영
-        //    (이미 그룹에서 별도 프로필을 선택한 경우 덮어쓰지 않음)
+        // 7. 프로필 이미지가 변경된 경우 GroupMember에 반영
+        //    - 개인 그룹(isPersonal=true): 항상 업데이트 (그룹 내 별도 프로필 개념 없음)
+        //    - 일반 그룹: profileImg가 null인 경우만 업데이트 (그룹 내 별도 프로필 선택 시 덮어쓰지 않음)
         if (request.getProfileImg() != null) {
             List<GroupMember> groupMembers = groupMemberRepository.findByUserId(user.getId());
             for (GroupMember gm : groupMembers) {
-                if (gm.getProfileImg() == null) {
+                if (gm.isPersonal() || gm.getProfileImg() == null) {
                     gm.updateProfileImg(request.getProfileImg());
                 }
             }

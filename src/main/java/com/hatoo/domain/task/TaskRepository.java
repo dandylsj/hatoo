@@ -20,7 +20,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
            "LEFT JOIN FETCH t.taskAssignees ta " +
            "LEFT JOIN FETCH ta.user " +
            "JOIN t.groups g WHERE g.id = :groupId " +
-           "ORDER BY CASE WHEN t.dueTo IS NULL THEN 1 ELSE 0 END DESC, t.dueTo DESC")
+           "ORDER BY CASE WHEN t.dueTo IS NULL THEN 1 ELSE 0 END ASC, t.dueTo ASC")
     List<Task> findByGroupsIdOrderByDueToDesc(@Param("groupId") UUID groupId);
 
     @Query("SELECT DISTINCT t FROM Task t JOIN t.taskAssignees ta WHERE ta.user.id = :userId")

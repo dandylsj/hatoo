@@ -237,14 +237,18 @@ public class FcmService {
     @Transactional
     public void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
         try {
-            Message message = Message.builder()
+            Message.Builder messageBuilder = Message.builder()
                     .setNotification(Notification.builder()
                             .setTitle(title)
                             .setBody(body)
                             .build())
-                    .setToken(fcmToken)
-                    .build();
-            FirebaseMessaging.getInstance().send(message);
+                    .setToken(fcmToken);
+
+            if (taskId != null) {
+                messageBuilder.putData("taskId", taskId.toString());
+            }
+
+            FirebaseMessaging.getInstance().send(messageBuilder.build());
 
             // 전송 성공 시에만 DB에 알림 내역 저장
             notificationHistoryRepository.save(new NotificationHistory(userId, type, title, body, taskId));

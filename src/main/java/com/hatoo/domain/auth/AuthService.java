@@ -40,9 +40,16 @@ public class AuthService {
     public TokenResponse signup(SignRequest request) {
 
         // 이메일 중복 확인
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        userRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
+            boolean isSocialAccount = existing.getKakaoId() != null
+                    || existing.getNaverId() != null
+                    || existing.getGoogleId() != null
+                    || existing.getAppleId() != null;
+            if (isSocialAccount) {
+                throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
+            }
             throw new CustomException(ErrorMessage.DUPLICATE_EMAIL);
-        }
+        });
 
         // 새 유저 생성
         User user = new User(

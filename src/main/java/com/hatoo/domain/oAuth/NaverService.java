@@ -128,7 +128,7 @@ public class NaverService {
         if (naverEmail != null && !naverEmail.isEmpty()) {
             if (userRepository.findByEmail(naverEmail).isPresent()) {
                 log.warn("[Naver] 다른 소셜 계정으로 이미 가입된 이메일 - email: {}", naverEmail);
-                throw new CustomException(ErrorMessage.ALREADY_REGISTERED_WITH_OTHER_PROVIDER);
+                throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
             }
         }
 

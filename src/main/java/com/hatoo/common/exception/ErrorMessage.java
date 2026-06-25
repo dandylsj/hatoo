@@ -32,7 +32,6 @@ public enum ErrorMessage {
 
     /* --- 409 Conflict --- */
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),
-    ALREADY_REGISTERED_WITH_OTHER_PROVIDER(HttpStatus.CONFLICT, "이미 다른 소셜 계정으로 가입된 이메일입니다."),
 
     /* --- 422 Unprocessable Entity --- */
     SOCIAL_LOGIN_ACCOUNT(HttpStatus.UNPROCESSABLE_ENTITY, "소셜 로그인으로 가입된 계정입니다."),

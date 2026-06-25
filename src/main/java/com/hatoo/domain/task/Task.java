@@ -120,10 +120,23 @@ public void updateTask(String title, String description, Frequency frequency, In
         this.description = description;
         this.frequency = frequency;
         this.interval = interval;
-        this.dueFrom = dueFrom;
-        this.dueTo = dueTo;
         this.deadLine = deadLine;
         this.starter = starter;
+
+        // 시작 시간이 바뀌면 시작 알람 플래그 리셋 → 새 시간에 알람 재발송
+        if (dueFrom != null && !dueFrom.equals(this.dueFrom)) {
+            this.startAlarmSent = false;
+        }
+        this.dueFrom = dueFrom;
+
+        // 마감 시간 또는 마감 설정이 바뀌면 마감/초과 알람 플래그 리셋
+        boolean dueToChanged = dueTo != null && !dueTo.equals(this.dueTo);
+        boolean deadLineChanged = deadLine != null && !deadLine.equals(this.deadLine);
+        if (dueToChanged || deadLineChanged) {
+            this.deadlineAlarmSent = false;
+            this.overdueAlarmSent = false;
+        }
+        this.dueTo = dueTo;
     }
 
     public void setFinished(boolean finished) {

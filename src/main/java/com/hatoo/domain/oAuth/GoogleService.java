@@ -95,7 +95,7 @@ public class GoogleService {
         if (email != null && !email.isEmpty()) {
             if (userRepository.findByEmail(email).isPresent()) {
                 log.warn("[Google] 다른 소셜 계정으로 이미 가입된 이메일 - email: {}", email);
-                throw new CustomException(ErrorMessage.ALREADY_REGISTERED_WITH_OTHER_PROVIDER);
+                throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
             }
         }
 

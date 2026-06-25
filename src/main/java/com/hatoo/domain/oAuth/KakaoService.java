@@ -155,7 +155,7 @@ public class KakaoService {
         if (kakaoEmail != null && !kakaoEmail.isEmpty()) {
             if (userRepository.findByEmail(kakaoEmail).isPresent()) {
                 log.warn("[Kakao] 다른 소셜 계정으로 이미 가입된 이메일 - email: {}", kakaoEmail);
-                throw new CustomException(ErrorMessage.ALREADY_REGISTERED_WITH_OTHER_PROVIDER);
+                throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
             }
         }
 

@@ -145,6 +145,22 @@ public class UserService {
         return getAlarmSetting(accessToken);
     }
 
+    // FCM 토큰 삭제 (로그아웃 시 호출) - 해당 기기 토큰만 제거
+    @Transactional
+    public Boolean removeFcmToken(String accessToken, String fcmToken) {
+        jwtUtil.validateToken(accessToken);
+        String loginId = jwtUtil.extractLoginId(accessToken);
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
+
+        UserFcmToken existing = userFcmTokenRepository.findByFcmToken(fcmToken).orElse(null);
+        if (existing != null && existing.getUser().getId().equals(user.getId())) {
+            userFcmTokenRepository.delete(existing);
+        }
+        return true;
+    }
+
     // FCM 토큰 등록 (앱 실행 시 호출) - 기기별로 별도 저장
     @Transactional
     public Boolean updateFcmToken(String accessToken, String fcmToken, String deviceType) {

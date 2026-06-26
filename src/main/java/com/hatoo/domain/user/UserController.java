@@ -92,6 +92,15 @@ public class UserController {
         return ResponseEntity.ok(userService.updateFcmToken(token, request.getFcmToken(), request.getDeviceType()));
     }
 
+    @Operation(summary = "로그아웃", description = "현재 기기의 FCM 토큰을 삭제합니다. 로그아웃 시 호출해주세요.")
+    @DeleteMapping("/fcm-token")
+    public ResponseEntity<Boolean> removeFcmToken(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
+            @RequestBody FcmTokenRequest request) {
+        String token = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
+        return ResponseEntity.ok(userService.removeFcmToken(token, request.getFcmToken()));
+    }
+
     @Operation(summary = "회원탈퇴", description = "회원탈퇴 처리합니다. 소셜 계정 연결 해제도 서버에서 자동으로 처리됩니다.")
     @DeleteMapping
     public ResponseEntity<Boolean> withdrawUser(

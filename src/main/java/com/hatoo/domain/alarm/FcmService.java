@@ -1,10 +1,14 @@
 package com.hatoo.domain.alarm;
 
+import com.google.firebase.messaging.ApnsConfig;
+import com.google.firebase.messaging.Aps;
+import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.MessagingErrorCode;
+import com.google.firebase.messaging.MulticastMessage;
 import com.google.firebase.messaging.Notification;
+import com.google.firebase.messaging.SendResponse;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgreeRepository;
@@ -18,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -163,7 +166,8 @@ public class FcmService {
             return;
         }
         notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId));
-        tokens.forEach(t -> sendMessage(userId, type, t.getFcmToken(), type.getTitle(), body, taskId));
+        sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
+                type.getTitle(), body, taskId);
     }
 
     // 그룹 알림: 개인 그룹 여부에 따라 분기
@@ -232,36 +236,50 @@ public class FcmService {
             return;
         }
         notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId));
-        tokens.forEach(t -> sendMessage(userId, type, t.getFcmToken(), type.getTitle(), body, taskId));
+        sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
+                type.getTitle(), body, taskId);
     }
 
-    // 실제 FCM 전송 (이 메서드까지 왔으면 모든 권한 체크 통과)
-    @Transactional
-    public void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
+    // 멀티캐스트 FCM 전송 - 한 유저의 여러 토큰을 Firebase API 1회로 처리
+    private void sendMulticast(UUID userId, AlarmType type, List<String> fcmTokens, String title, String body, UUID taskId) {
+        if (fcmTokens.isEmpty()) return;
         try {
-            Message.Builder messageBuilder = Message.builder()
+            MulticastMessage.Builder builder = MulticastMessage.builder()
                     .setNotification(Notification.builder()
                             .setTitle(title)
                             .setBody(body)
                             .build())
-                    .setToken(fcmToken);
+                    .setApnsConfig(ApnsConfig.builder()
+                            .setAps(Aps.builder().setSound("default").build())
+                            .build())
+                    .addAllTokens(fcmTokens);
 
             if (taskId != null) {
-                messageBuilder.putData("taskId", taskId.toString());
+                builder.putData("taskId", taskId.toString());
             }
 
-            FirebaseMessaging.getInstance().send(messageBuilder.build());
-            log.info("[FCM] 알림 전송 성공 - userId: {}, type: {}", userId, type);
-        } catch (FirebaseMessagingException e) {
-            // 토큰 만료 또는 앱 삭제 등으로 무효화된 토큰 → DB에서 자동 삭제
-            if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
-                    || e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
-                log.warn("[FCM] 무효 토큰 감지, DB에서 삭제 - userId: {}, errorCode: {}", userId, e.getMessagingErrorCode());
-                userFcmTokenRepository.deleteByFcmToken(fcmToken);
-            } else {
-                log.error("[FCM] 알림 전송 실패 - userId: {}, errorCode: {}, message: {}",
-                        userId, e.getMessagingErrorCode(), e.getMessage());
+            BatchResponse batchResponse = FirebaseMessaging.getInstance().sendEachForMulticast(builder.build());
+
+            List<SendResponse> responses = batchResponse.getResponses();
+            for (int i = 0; i < responses.size(); i++) {
+                SendResponse sr = responses.get(i);
+                if (!sr.isSuccessful()) {
+                    MessagingErrorCode errorCode = sr.getException().getMessagingErrorCode();
+                    if (errorCode == MessagingErrorCode.UNREGISTERED
+                            || errorCode == MessagingErrorCode.INVALID_ARGUMENT) {
+                        log.warn("[FCM] 무효 토큰 삭제 - userId: {}, errorCode: {}", userId, errorCode);
+                        userFcmTokenRepository.deleteByFcmToken(fcmTokens.get(i));
+                    } else {
+                        log.error("[FCM] 전송 실패 - userId: {}, errorCode: {}", userId, errorCode);
+                    }
+                }
             }
+
+            log.info("[FCM] 전송 완료 - userId: {}, type: {}, 성공: {}/{}",
+                    userId, type, batchResponse.getSuccessCount(), fcmTokens.size());
+
+        } catch (FirebaseMessagingException e) {
+            log.error("[FCM] 멀티캐스트 오류 - userId: {}, message: {}", userId, e.getMessage());
         }
     }
 }

@@ -162,6 +162,7 @@ public class FcmService {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
+        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId));
         tokens.forEach(t -> sendMessage(userId, type, t.getFcmToken(), type.getTitle(), body, taskId));
     }
 
@@ -230,10 +231,11 @@ public class FcmService {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
+        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId));
         tokens.forEach(t -> sendMessage(userId, type, t.getFcmToken(), type.getTitle(), body, taskId));
     }
 
-    // 실제 FCM 전송 + DB 저장 (이 메서드까지 왔으면 모든 권한 체크 통과)
+    // 실제 FCM 전송 (이 메서드까지 왔으면 모든 권한 체크 통과)
     @Transactional
     public void sendMessage(UUID userId, AlarmType type, String fcmToken, String title, String body, UUID taskId) {
         try {
@@ -249,9 +251,6 @@ public class FcmService {
             }
 
             FirebaseMessaging.getInstance().send(messageBuilder.build());
-
-            // 전송 성공 시에만 DB에 알림 내역 저장
-            notificationHistoryRepository.save(new NotificationHistory(userId, type, title, body, taskId));
             log.info("[FCM] 알림 전송 성공 - userId: {}, type: {}", userId, type);
         } catch (FirebaseMessagingException e) {
             // 토큰 만료 또는 앱 삭제 등으로 무효화된 토큰 → DB에서 자동 삭제

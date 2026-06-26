@@ -6,6 +6,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -24,6 +25,16 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
         log.error("MethodArgumentNotValidException 발생 : {}", message);
         return ResponseEntity.status(ex.getStatusCode()).body(GlobalResponse.fail(message));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<GlobalResponse<Void>> handleConstraintViolationException(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations().stream()
+                .findFirst()
+                .map(v -> v.getMessage())
+                .orElse("입력값이 올바르지 않습니다.");
+        log.warn("입력값 검증 실패 : {}", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(GlobalResponse.fail(message));
     }
 
     // CustomException → ErrorMessage에 정의된 메시지를 프론트로 전달

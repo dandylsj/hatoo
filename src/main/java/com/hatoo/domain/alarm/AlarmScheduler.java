@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,19 +33,21 @@ public class AlarmScheduler {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     // ──────────────────────────────────────────
-    // 1. 할일 시작 알림 - 매 30초마다 실행
+    // 1. 할일 시작 알림 - 매 분 정각 실행
     // ──────────────────────────────────────────
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     @Transactional
     public void sendTaskStartAlarm() {
         List<Task> tasks = taskRepository.findByStarterTrueAndFinishedFalseAndStartAlarmSentFalse();
-        LocalDateTime now = LocalDateTime.now(KST);
+        LocalDateTime nowMinute = LocalDateTime.now(KST).truncatedTo(ChronoUnit.MINUTES);
 
         tasks.forEach(task -> {
             LocalDateTime dueFromDateTime = parseDueDateTime(task.getDueFrom());
             if (dueFromDateTime == null) return;
 
-            if (!now.isBefore(dueFromDateTime) && now.isBefore(dueFromDateTime.plusMinutes(10))) {
+            // dueFrom이 현재 분(分) 안에 있을 때만 전송 (예: 13:52:xx → 13:52:00 정각에 발송)
+            LocalDateTime dueFromMinute = dueFromDateTime.truncatedTo(ChronoUnit.MINUTES);
+            if (dueFromMinute.equals(nowMinute)) {
                 if (!task.getAssignees().isEmpty()) {
                     task.getAssignees().forEach(assignee ->
                             fcmService.sendTaskStart(assignee.getId(), task.getTitle(), task.getId())
@@ -57,13 +60,13 @@ public class AlarmScheduler {
     }
 
     // ──────────────────────────────────────────
-    // 2. 마감 임박 알림 - 매 30초마다 실행
+    // 2. 마감 임박 알림 - 매 분 정각 실행
     // ──────────────────────────────────────────
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     @Transactional
     public void sendTaskDeadlineAlarm() {
         List<Task> tasks = taskRepository.findTasksForDeadlineAlarm();
-        LocalDateTime now = LocalDateTime.now(KST);
+        LocalDateTime nowMinute = LocalDateTime.now(KST).truncatedTo(ChronoUnit.MINUTES);
 
         tasks.forEach(task -> {
             LocalDateTime dueToDateTime = parseDueDateTime(task.getDueTo());
@@ -72,9 +75,9 @@ public class AlarmScheduler {
             Duration duration = getDeadLineDuration(task.getDeadLine());
             if (duration == null) return;
 
-            LocalDateTime notifyAt = dueToDateTime.minus(duration);
+            LocalDateTime notifyAt = dueToDateTime.minus(duration).truncatedTo(ChronoUnit.MINUTES);
 
-            if (!now.isBefore(notifyAt) && now.isBefore(notifyAt.plusMinutes(10))) {
+            if (notifyAt.equals(nowMinute)) {
                 if (!task.getAssignees().isEmpty()) {
                     task.getAssignees().forEach(assignee ->
                             fcmService.sendTaskDeadline(assignee.getId(), task.getTitle(), task.getId())
@@ -87,21 +90,21 @@ public class AlarmScheduler {
     }
 
     // ──────────────────────────────────────────
-    // 3. 마감 초과 알림 - 매 30초마다 실행
+    // 3. 마감 초과 알림 - 매 분 정각 실행
     // ──────────────────────────────────────────
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     @Transactional
     public void sendTaskOverdueAlarm() {
         List<Task> tasks = taskRepository.findByFinishedFalseAndOverdueAlarmSentFalse();
-        LocalDateTime now = LocalDateTime.now(KST);
+        LocalDateTime nowMinute = LocalDateTime.now(KST).truncatedTo(ChronoUnit.MINUTES);
 
         tasks.forEach(task -> {
             LocalDateTime dueToDateTime = parseDueDateTime(task.getDueTo());
             if (dueToDateTime == null) return;
 
-            LocalDateTime overdueAt = dueToDateTime.plusHours(2);
+            LocalDateTime overdueAt = dueToDateTime.plusHours(2).truncatedTo(ChronoUnit.MINUTES);
 
-            if (!now.isBefore(overdueAt) && now.isBefore(overdueAt.plusMinutes(15))) {
+            if (overdueAt.equals(nowMinute)) {
                 if (!task.getAssignees().isEmpty()) {
                     task.getAssignees().forEach(assignee ->
                             fcmService.sendTaskOverdue(assignee.getId(), task.getTitle(), task.getId())

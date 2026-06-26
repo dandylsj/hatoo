@@ -29,6 +29,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("SELECT DISTINCT t FROM Task t JOIN t.taskAssignees ta JOIN t.groups g WHERE ta.user.id = :userId AND g.id = :groupId")
     List<Task> findByAssigneesIdAndGroupsId(@Param("userId") UUID userId, @Param("groupId") UUID groupId);
 
+    @Query("SELECT DISTINCT t FROM Task t JOIN t.groups g WHERE t.creatorId = :userId AND g.id = :groupId")
+    List<Task> findByCreatorIdAndGroupsId(@Param("userId") UUID userId, @Param("groupId") UUID groupId);
+
     List<Task> findAllByGroupsContainingAndFinishedTrue(Group group);
 
     // 반복 할일 조회

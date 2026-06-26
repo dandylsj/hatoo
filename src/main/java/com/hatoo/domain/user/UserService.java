@@ -357,14 +357,20 @@ public class UserService {
         return true;
     }
 
-    // 특정 그룹에서 내가 담당자인 할일 삭제
+    // 특정 그룹에서 내가 담당자이거나 내가 만든 할일 삭제
     // TaskAssignee는 CascadeType.ALL + orphanRemoval = true 로 자동 삭제
     private void deleteMyTasksInGroup(UUID userId, UUID groupId) {
-        List<Task> myTasks = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
-        for (Task task : myTasks) {
-            task.getGroups().clear();
-        }
-        taskRepository.deleteAll(myTasks);
+        List<Task> assigneeTasks = taskRepository.findByAssigneesIdAndGroupsId(userId, groupId);
+        List<Task> createdTasks = taskRepository.findByCreatorIdAndGroupsId(userId, groupId);
+
+        // ID 기준 중복 제거 (담당자이면서 생성자인 경우)
+        java.util.Set<UUID> seen = new java.util.HashSet<>();
+        List<Task> toDelete = new java.util.ArrayList<>();
+        for (Task t : assigneeTasks) { if (seen.add(t.getId())) toDelete.add(t); }
+        for (Task t : createdTasks)  { if (seen.add(t.getId())) toDelete.add(t); }
+
+        toDelete.forEach(t -> t.getGroups().clear());
+        taskRepository.deleteAll(toDelete);
     }
 
     // ──────────────────────────────────────────

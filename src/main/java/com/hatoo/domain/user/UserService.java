@@ -383,10 +383,12 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
-        // 소셜 로그인으로 가입된 계정이면 아이디 찾기 불가
-        String loginId = user.getLoginId();
-        if (loginId.startsWith("google_") || loginId.startsWith("apple_") ||
-                loginId.startsWith("kakao_") || loginId.startsWith("naver_")) {
+        // 소셜 로그인으로 가입된 계정이면 아이디 찾기 불가 (loginId 접두사가 아닌 실제 소셜 ID 보유 여부로 판단)
+        boolean isSocialAccount = user.getKakaoId() != null
+                || user.getNaverId() != null
+                || user.getGoogleId() != null
+                || user.getAppleId() != null;
+        if (isSocialAccount) {
             throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
         }
 

@@ -165,7 +165,7 @@ public class FcmService {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
-        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId));
+        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName));
         sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
                 type.getTitle(), body, taskId, groupId, groupName);
     }
@@ -235,7 +235,7 @@ public class FcmService {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
-        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId));
+        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName));
         sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
                 type.getTitle(), body, taskId, groupId, groupName);
     }

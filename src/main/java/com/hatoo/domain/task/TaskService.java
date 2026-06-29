@@ -100,7 +100,7 @@ public class TaskService {
         final UUID creatorId = creator != null ? creator.getId() : null;
         assignees.forEach(assignee -> {
             if (creatorId == null || !creatorId.equals(assignee.getId())) {
-                fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname(), task.getId(), group.getId(), group.getName());
+                fcmService.sendTaskAssigned(assignee.getId(), creatorNickname, assignee.getNickname(), task.getId(), group.getId(), group.getName(), task.getTitle());
             }
         });
 

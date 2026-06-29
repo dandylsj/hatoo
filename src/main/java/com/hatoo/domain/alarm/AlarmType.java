@@ -8,15 +8,15 @@ import lombok.RequiredArgsConstructor;
 public enum AlarmType {
 
     // 스케줄러 기반
-    TASK_START("집안일 시작", "%s 할 일이 오늘 시작돼요!"),
-    TASK_DEADLINE("마감 임박", "%s 마감이 얼마 안남았어요! 서두르세요."),
-    TASK_OVERDUE("마감 초과", "%s 마감 시간이 지났어요. 빨리 완료해주세요!"),
-    WEEKLY_CHART("이번 주 차트", "이번 주 집안일 차트 결과가 공개됐어요! 지금 확인해보세요."),
+    TASK_START("집안일 시작", "집안일을 시작해볼까요?"),
+    TASK_DEADLINE("마감 알림", "마감까지 얼마 안남았어요!"),
+    TASK_OVERDUE("마감 시간 초과", "집안일 마감이 2시간 경과 됐어요."),
+    WEEKLY_CHART("집안일 차트 집계", "이번 주 집안일 차트 집계 확인하러 가기 ➡"),
     INACTIVE_GROUP("그룹 비활성화", "한 달 동안 활동이 없는 그룹이 있어요. 계속 사용하려면 할 일을 추가하거나, 사용하지 않는다면 삭제하세요."),
 
     // 이벤트 기반
-    NEW_MEMBER("새 멤버 참여", "%s에 새 멤버 %s님이 참여했어요!"),
-    TASK_CREATED("새 집안일 등록", "%s님이 새 집안일을 등록했어요. [%s]"),
+    NEW_MEMBER("새 멤버 추가", "새 멤버 %s님이 참여했어요."),
+    TASK_CREATED("집안일 등록", "%s님이 새 집안일을 등록했어요."),
     TASK_ASSIGNED("집안일 배정", "%s님이 %s님에게 새로운 집안일을 배정했어요. 지금 확인해보세요!"),
     FORCED_LEAVE("그룹 탈퇴", "%s 그룹에서 탈퇴되었습니다.");
 

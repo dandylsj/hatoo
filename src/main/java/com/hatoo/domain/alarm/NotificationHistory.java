@@ -44,7 +44,10 @@ public class NotificationHistory extends BaseEntity {
     @Column(length = 100)
     private String groupName;
 
-    public NotificationHistory(UUID userId, AlarmType type, String title, String body, UUID taskId, UUID groupId, String groupName) {
+    @Column(length = 200)
+    private String taskTitle;
+
+    public NotificationHistory(UUID userId, AlarmType type, String title, String body, UUID taskId, UUID groupId, String groupName, String taskTitle) {
         this.userId = userId;
         this.type = type;
         this.title = title;
@@ -53,6 +56,7 @@ public class NotificationHistory extends BaseEntity {
         this.taskId = taskId;
         this.groupId = groupId;
         this.groupName = groupName;
+        this.taskTitle = taskTitle;
     }
 
     public void markAsRead() {

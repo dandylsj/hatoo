@@ -44,8 +44,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     @Async
     public void sendTaskStart(UUID userId, String taskTitle, UUID taskId, UUID groupId, String groupName) {
-        String body = String.format(AlarmType.TASK_START.getBodyTemplate(), taskTitle);
-        sendToUserIfAllowed(userId, AlarmType.TASK_START, body, taskId, groupId, groupName);
+        sendToUserIfAllowed(userId, AlarmType.TASK_START, AlarmType.TASK_START.getBodyTemplate(), taskId, groupId, groupName, taskTitle);
     }
 
     // ──────────────────────────────────────────
@@ -53,8 +52,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     @Async
     public void sendTaskDeadline(UUID userId, String taskTitle, UUID taskId, UUID groupId, String groupName) {
-        String body = String.format(AlarmType.TASK_DEADLINE.getBodyTemplate(), taskTitle);
-        sendToUserIfAllowed(userId, AlarmType.TASK_DEADLINE, body, taskId, groupId, groupName);
+        sendToUserIfAllowed(userId, AlarmType.TASK_DEADLINE, AlarmType.TASK_DEADLINE.getBodyTemplate(), taskId, groupId, groupName, taskTitle);
     }
 
     // ──────────────────────────────────────────
@@ -62,8 +60,7 @@ public class FcmService {
     // ──────────────────────────────────────────
     @Async
     public void sendTaskOverdue(UUID userId, String taskTitle, UUID taskId, UUID groupId, String groupName) {
-        String body = String.format(AlarmType.TASK_OVERDUE.getBodyTemplate(), taskTitle);
-        sendToUserIfAllowed(userId, AlarmType.TASK_OVERDUE, body, taskId, groupId, groupName);
+        sendToUserIfAllowed(userId, AlarmType.TASK_OVERDUE, AlarmType.TASK_OVERDUE.getBodyTemplate(), taskId, groupId, groupName, taskTitle);
     }
 
     // ──────────────────────────────────────────
@@ -77,7 +74,7 @@ public class FcmService {
             if (notifiedUsers.contains(userId)) return;
             notifiedUsers.add(userId);
             sendToGroupMemberIfAllowed(userId, groupId, groupName, AlarmType.WEEKLY_CHART,
-                    AlarmType.WEEKLY_CHART.getBodyTemplate(), null);
+                    AlarmType.WEEKLY_CHART.getBodyTemplate(), null, null);
         });
     }
 
@@ -86,10 +83,10 @@ public class FcmService {
     // ──────────────────────────────────────────
     @Async
     public void sendNewMember(UUID groupId, String groupName, String newMemberNickname) {
-        String body = String.format(AlarmType.NEW_MEMBER.getBodyTemplate(), groupName, newMemberNickname);
+        String body = String.format(AlarmType.NEW_MEMBER.getBodyTemplate(), newMemberNickname);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.NEW_MEMBER, body, null)
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.NEW_MEMBER, body, null, null)
         );
     }
 
@@ -100,13 +97,13 @@ public class FcmService {
     // ──────────────────────────────────────────
     @Async
     public void sendTaskCreated(UUID groupId, String groupName, String creatorNickname, String taskTitle, UUID taskId, java.util.List<UUID> assigneeIds, UUID creatorId) {
-        String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname, taskTitle);
+        String body = String.format(AlarmType.TASK_CREATED.getBodyTemplate(), creatorNickname);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.stream()
                 .filter(gm -> !assigneeIds.contains(gm.getUser().getId()))
                 .filter(gm -> creatorId == null || !creatorId.equals(gm.getUser().getId()))
                 .forEach(gm ->
-                        sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.TASK_CREATED, body, taskId)
+                        sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.TASK_CREATED, body, taskId, taskTitle)
                 );
     }
 
@@ -114,9 +111,9 @@ public class FcmService {
     // 7. 집안일 배정 알림 (TaskService에서 호출) - 개인 알림
     // ──────────────────────────────────────────
     @Async
-    public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname, UUID taskId, UUID groupId, String groupName) {
+    public void sendTaskAssigned(UUID assigneeId, String assignerNickname, String assigneeNickname, UUID taskId, UUID groupId, String groupName, String taskTitle) {
         String body = String.format(AlarmType.TASK_ASSIGNED.getBodyTemplate(), assignerNickname, assigneeNickname);
-        sendToUserIfAllowed(assigneeId, AlarmType.TASK_ASSIGNED, body, taskId, groupId, groupName);
+        sendToUserIfAllowed(assigneeId, AlarmType.TASK_ASSIGNED, body, taskId, groupId, groupName, taskTitle);
     }
 
     // ──────────────────────────────────────────
@@ -127,7 +124,7 @@ public class FcmService {
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
                 sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.INACTIVE_GROUP,
-                        AlarmType.INACTIVE_GROUP.getBodyTemplate(), null)
+                        AlarmType.INACTIVE_GROUP.getBodyTemplate(), null, null)
         );
     }
 
@@ -137,7 +134,7 @@ public class FcmService {
     @Async
     public void sendForcedLeave(UUID userId, UUID groupId, String groupName) {
         String body = String.format(AlarmType.FORCED_LEAVE.getBodyTemplate(), groupName);
-        sendToUserIfAllowed(userId, AlarmType.FORCED_LEAVE, body, null, groupId, groupName);
+        sendToUserIfAllowed(userId, AlarmType.FORCED_LEAVE, body, null, groupId, groupName, null);
     }
 
     // ──────────────────────────────────────────
@@ -145,7 +142,7 @@ public class FcmService {
     // ──────────────────────────────────────────
 
     // 개인 알림: 전체 알림 마스터 → 개인 알림 토글 2단계 확인
-    private void sendToUserIfAllowed(UUID userId, AlarmType type, String body, UUID taskId, UUID groupId, String groupName) {
+    private void sendToUserIfAllowed(UUID userId, AlarmType type, String body, UUID taskId, UUID groupId, String groupName, String taskTitle) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
 
@@ -165,13 +162,13 @@ public class FcmService {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
-        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName));
+        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName, taskTitle));
         sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
                 type.getTitle(), body, taskId, groupId, groupName);
     }
 
     // 그룹 알림: 개인 그룹 여부에 따라 분기
-    private void sendToGroupMemberIfAllowed(UUID userId, UUID groupId, String groupName, AlarmType type, String body, UUID taskId) {
+    private void sendToGroupMemberIfAllowed(UUID userId, UUID groupId, String groupName, AlarmType type, String body, UUID taskId, String taskTitle) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
 
@@ -235,7 +232,7 @@ public class FcmService {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
         }
-        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName));
+        notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName, taskTitle));
         sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
                 type.getTitle(), body, taskId, groupId, groupName);
     }

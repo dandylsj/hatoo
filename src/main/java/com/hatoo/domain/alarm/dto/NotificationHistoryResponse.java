@@ -42,6 +42,9 @@ public class NotificationHistoryResponse {
     @Schema(description = "관련 그룹 이름")
     private final String groupName;
 
+    @Schema(description = "관련 할일 제목 (할일 관련 알림일 때만 존재)")
+    private final String taskTitle;
+
     public NotificationHistoryResponse(NotificationHistory n) {
         this.id = n.getId();
         this.type = n.getType();
@@ -53,5 +56,6 @@ public class NotificationHistoryResponse {
         this.taskId = n.getTaskId();
         this.groupId = n.getGroupId();
         this.groupName = n.getGroupName();
+        this.taskTitle = n.getTaskTitle();
     }
 }

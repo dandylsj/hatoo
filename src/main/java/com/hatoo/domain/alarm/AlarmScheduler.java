@@ -49,8 +49,11 @@ public class AlarmScheduler {
             LocalDateTime dueFromMinute = dueFromDateTime.truncatedTo(ChronoUnit.MINUTES);
             if (dueFromMinute.equals(nowMinute)) {
                 if (!task.getAssignees().isEmpty()) {
+                    Group taskGroup = task.getGroups().isEmpty() ? null : task.getGroups().get(0);
+                    UUID groupId = taskGroup != null ? taskGroup.getId() : null;
+                    String groupName = taskGroup != null ? taskGroup.getName() : null;
                     task.getAssignees().forEach(assignee ->
-                            fcmService.sendTaskStart(assignee.getId(), task.getTitle(), task.getId())
+                            fcmService.sendTaskStart(assignee.getId(), task.getTitle(), task.getId(), groupId, groupName)
                     );
                     task.markStartAlarmSent();
                     log.info("[AlarmScheduler] 할일 시작 알림 발송 - taskId: {}", task.getId());
@@ -79,8 +82,11 @@ public class AlarmScheduler {
 
             if (notifyAt.equals(nowMinute)) {
                 if (!task.getAssignees().isEmpty()) {
+                    Group taskGroup = task.getGroups().isEmpty() ? null : task.getGroups().get(0);
+                    UUID groupId = taskGroup != null ? taskGroup.getId() : null;
+                    String groupName = taskGroup != null ? taskGroup.getName() : null;
                     task.getAssignees().forEach(assignee ->
-                            fcmService.sendTaskDeadline(assignee.getId(), task.getTitle(), task.getId())
+                            fcmService.sendTaskDeadline(assignee.getId(), task.getTitle(), task.getId(), groupId, groupName)
                     );
                     task.markDeadlineAlarmSent();
                     log.info("[AlarmScheduler] 마감 임박 알림 발송 - taskId: {}", task.getId());
@@ -106,8 +112,11 @@ public class AlarmScheduler {
 
             if (overdueAt.equals(nowMinute)) {
                 if (!task.getAssignees().isEmpty()) {
+                    Group taskGroup = task.getGroups().isEmpty() ? null : task.getGroups().get(0);
+                    UUID groupId = taskGroup != null ? taskGroup.getId() : null;
+                    String groupName = taskGroup != null ? taskGroup.getName() : null;
                     task.getAssignees().forEach(assignee ->
-                            fcmService.sendTaskOverdue(assignee.getId(), task.getTitle(), task.getId())
+                            fcmService.sendTaskOverdue(assignee.getId(), task.getTitle(), task.getId(), groupId, groupName)
                     );
                     task.markOverdueAlarmSent();
                     log.info("[AlarmScheduler] 마감 초과 알림 발송 - taskId: {}", task.getId());
@@ -129,7 +138,7 @@ public class AlarmScheduler {
         java.util.Set<UUID> notifiedUsers = new java.util.HashSet<>();
 
         groups.forEach(group -> {
-            fcmService.sendWeeklyChart(group.getId(), notifiedUsers);
+            fcmService.sendWeeklyChart(group.getId(), group.getName(), notifiedUsers);
             log.info("[AlarmScheduler] 주간 차트 알림 발송 - groupId: {}", group.getId());
         });
     }
@@ -151,7 +160,7 @@ public class AlarmScheduler {
                             t.getCreatedAt().toLocalDate().isAfter(cutoff));
 
             if (!hasRecentTask) {
-                fcmService.sendInactiveGroup(group.getId());
+                fcmService.sendInactiveGroup(group.getId(), group.getName());
                 log.info("[AlarmScheduler] 비활성 그룹 알림 발송 - groupId: {}", group.getId());
             }
         });

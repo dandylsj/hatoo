@@ -163,7 +163,7 @@ public class FcmService {
         }
         notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName, taskTitle));
         sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
-                type.getTitle(), body, taskId, groupId, groupName);
+                type.getTitle(), body, taskId, groupId, groupName, taskTitle);
     }
 
     // 그룹 알림: 개인 그룹 여부에 따라 분기
@@ -233,11 +233,11 @@ public class FcmService {
         }
         notificationHistoryRepository.save(new NotificationHistory(userId, type, type.getTitle(), body, taskId, groupId, groupName, taskTitle));
         sendMulticast(userId, type, tokens.stream().map(UserFcmToken::getFcmToken).toList(),
-                type.getTitle(), body, taskId, groupId, groupName);
+                type.getTitle(), body, taskId, groupId, groupName, taskTitle);
     }
 
     // 멀티캐스트 FCM 전송 - 한 유저의 여러 토큰을 Firebase API 1회로 처리
-    private void sendMulticast(UUID userId, AlarmType type, List<String> fcmTokens, String title, String body, UUID taskId, UUID groupId, String groupName) {
+    private void sendMulticast(UUID userId, AlarmType type, List<String> fcmTokens, String title, String body, UUID taskId, UUID groupId, String groupName, String taskTitle) {
         if (fcmTokens.isEmpty()) return;
         try {
             MulticastMessage.Builder builder = MulticastMessage.builder()
@@ -257,6 +257,9 @@ public class FcmService {
             }
             if (groupName != null) {
                 builder.putData("groupName", groupName);
+            }
+            if (taskTitle != null) {
+                builder.putData("taskTitle", taskTitle);
             }
 
             BatchResponse batchResponse = FirebaseMessaging.getInstance().sendEachForMulticast(builder.build());

@@ -7,7 +7,6 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.MulticastMessage;
-import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.SendResponse;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
@@ -242,14 +241,13 @@ public class FcmService {
         if (fcmTokens.isEmpty()) return;
         try {
             MulticastMessage.Builder builder = MulticastMessage.builder()
-                    .setNotification(Notification.builder()
-                            .setTitle(title)
-                            .setBody(body)
-                            .build())
                     .setApnsConfig(ApnsConfig.builder()
-                            .setAps(Aps.builder().setSound("default").build())
+                            .setAps(Aps.builder().setContentAvailable(true).build())
                             .build())
-                    .addAllTokens(fcmTokens);
+                    .addAllTokens(fcmTokens)
+                    .putData("title", title)
+                    .putData("body", body)
+                    .putData("type", type.name());
 
             if (taskId != null) {
                 builder.putData("taskId", taskId.toString());

@@ -144,30 +144,7 @@ public class AlarmScheduler {
     }
 
     // ──────────────────────────────────────────
-    // 5. 비활성 그룹 알림 - 매월 1일 오전 9시
-    // ──────────────────────────────────────────
-    @Scheduled(cron = "0 0 9 1 * *", zone = "Asia/Seoul")
-    @Transactional
-    public void sendInactiveGroupAlarm() {
-        LocalDate cutoff = LocalDate.now(KST).minusDays(30);
-        List<Group> groups = groupRepository.findAll();
-
-        groups.forEach(group -> {
-            boolean hasRecentTask = taskRepository
-                    .findByGroupsId(group.getId())
-                    .stream()
-                    .anyMatch(t -> t.getCreatedAt() != null &&
-                            t.getCreatedAt().toLocalDate().isAfter(cutoff));
-
-            if (!hasRecentTask) {
-                fcmService.sendInactiveGroup(group.getId(), group.getName());
-                log.info("[AlarmScheduler] 비활성 그룹 알림 발송 - groupId: {}", group.getId());
-            }
-        });
-    }
-
-    // ──────────────────────────────────────────
-    // 6. 읽음 처리된 알림 삭제 - 매일 자정 (00:00 KST)
+    // 5. 읽음 처리된 알림 삭제 - 매일 자정 (00:00 KST)
     //    읽음 처리 후 7일이 지난 알림 자동 삭제
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")

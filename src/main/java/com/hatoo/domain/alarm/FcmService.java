@@ -116,18 +116,6 @@ public class FcmService {
     }
 
     // ──────────────────────────────────────────
-    // 8. 비활성 그룹 알림 (월간 스케줄러 호출)
-    // ──────────────────────────────────────────
-    @Async
-    public void sendInactiveGroup(UUID groupId, String groupName) {
-        List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
-        members.forEach(gm ->
-                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.INACTIVE_GROUP,
-                        AlarmType.INACTIVE_GROUP.getBodyTemplate(), null, null)
-        );
-    }
-
-    // ──────────────────────────────────────────
     // 9. 강제 탈퇴 알림 (GroupService에서 호출)
     // ──────────────────────────────────────────
     @Async

@@ -7,6 +7,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.MulticastMessage;
+import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.SendResponse;
 import com.hatoo.common.util.JwtUtil;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
@@ -227,7 +228,12 @@ public class FcmService {
     private void sendMulticast(UUID userId, AlarmType type, List<String> fcmTokens, String title, String body, UUID taskId, UUID groupId, String groupName, String taskTitle) {
         if (fcmTokens.isEmpty()) return;
         try {
+            String notificationBody = buildNotificationBody(groupName, body, taskTitle);
             MulticastMessage.Builder builder = MulticastMessage.builder()
+                    .setNotification(Notification.builder()
+                            .setTitle(title)
+                            .setBody(notificationBody)
+                            .build())
                     .setApnsConfig(ApnsConfig.builder()
                             .setAps(Aps.builder().setContentAvailable(true).build())
                             .build())
@@ -272,5 +278,17 @@ public class FcmService {
         } catch (FirebaseMessagingException e) {
             log.error("[FCM] 멀티캐스트 오류 - userId: {}, message: {}", userId, e.getMessage());
         }
+    }
+
+    // iOS 백그라운드/종료 상태에서 OS가 표시할 최종 알림 body 조합
+    // 형식: [그룹명] 내용\n할일제목
+    private String buildNotificationBody(String groupName, String body, String taskTitle) {
+        String result = (groupName != null && !groupName.isBlank())
+                ? "[" + groupName + "] " + body
+                : body;
+        if (taskTitle != null && !taskTitle.isBlank()) {
+            result += "\n" + taskTitle;
+        }
+        return result;
     }
 }

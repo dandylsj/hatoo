@@ -134,10 +134,12 @@ public class AlarmScheduler {
     public void sendWeeklyChartAlarm() {
         List<Group> groups = groupRepository.findAll();
 
-        groups.forEach(group -> {
-            fcmService.sendWeeklyChart(group.getId(), group.getName());
-            log.info("[AlarmScheduler] 주간 차트 알림 발송 - groupId: {}", group.getId());
-        });
+        groups.stream()
+                .filter(group -> !group.isPersonal())
+                .forEach(group -> {
+                    fcmService.sendWeeklyChart(group.getId(), group.getName());
+                    log.info("[AlarmScheduler] 주간 차트 알림 발송 - groupId: {}", group.getId());
+                });
     }
 
     // ──────────────────────────────────────────

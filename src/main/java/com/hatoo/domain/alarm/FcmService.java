@@ -67,7 +67,7 @@ public class FcmService {
     //    notifiedUsers: 이미 알림을 보낸 유저 Set — 여러 그룹에 속해도 1번만 발송
     // ──────────────────────────────────────────
     public void sendWeeklyChart(UUID groupId, String groupName) {
-        String body = String.format(AlarmType.WEEKLY_CHART.getBodyTemplate(), groupName);
+        String body = AlarmType.WEEKLY_CHART.getBodyTemplate();
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
         members.forEach(gm ->
                 sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.WEEKLY_CHART, body, null, null)

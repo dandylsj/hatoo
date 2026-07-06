@@ -66,15 +66,12 @@ public class FcmService {
     // 4. 주간 차트 공개 알림 (매주 월요일 8시 스케줄러 호출)
     //    notifiedUsers: 이미 알림을 보낸 유저 Set — 여러 그룹에 속해도 1번만 발송
     // ──────────────────────────────────────────
-    public void sendWeeklyChart(UUID groupId, String groupName, java.util.Set<UUID> notifiedUsers) {
+    public void sendWeeklyChart(UUID groupId, String groupName) {
+        String body = String.format(AlarmType.WEEKLY_CHART.getBodyTemplate(), groupName);
         List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
-        members.forEach(gm -> {
-            UUID userId = gm.getUser().getId();
-            if (notifiedUsers.contains(userId)) return;
-            notifiedUsers.add(userId);
-            sendToGroupMemberIfAllowed(userId, groupId, groupName, AlarmType.WEEKLY_CHART,
-                    AlarmType.WEEKLY_CHART.getBodyTemplate(), null, null);
-        });
+        members.forEach(gm ->
+                sendToGroupMemberIfAllowed(gm.getUser().getId(), groupId, groupName, AlarmType.WEEKLY_CHART, body, null, null)
+        );
     }
 
     // ──────────────────────────────────────────
@@ -145,6 +142,7 @@ public class FcmService {
         }
 
         List<UserFcmToken> tokens = userFcmTokenRepository.findByUser(user);
+        log.info("[FCM] 토큰 조회 - userId: {}, type: {}, 토큰수: {}", userId, type, tokens.size());
         if (tokens.isEmpty()) {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;
@@ -215,6 +213,7 @@ public class FcmService {
         }
 
         List<UserFcmToken> tokens = userFcmTokenRepository.findByUser(user);
+        log.info("[FCM] 토큰 조회 - userId: {}, type: {}, 토큰수: {}", userId, type, tokens.size());
         if (tokens.isEmpty()) {
             log.warn("[FCM] FCM 토큰 없음 - userId: {}", userId);
             return;

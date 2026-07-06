@@ -134,11 +134,8 @@ public class AlarmScheduler {
     public void sendWeeklyChartAlarm() {
         List<Group> groups = groupRepository.findAll();
 
-        // 전체 그룹에서 유저 UUID를 수집하되 중복 제거
-        java.util.Set<UUID> notifiedUsers = new java.util.HashSet<>();
-
         groups.forEach(group -> {
-            fcmService.sendWeeklyChart(group.getId(), group.getName(), notifiedUsers);
+            fcmService.sendWeeklyChart(group.getId(), group.getName());
             log.info("[AlarmScheduler] 주간 차트 알림 발송 - groupId: {}", group.getId());
         });
     }

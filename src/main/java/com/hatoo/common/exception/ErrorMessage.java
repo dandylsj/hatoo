@@ -29,6 +29,7 @@ public enum ErrorMessage {
     USER_NOT_IN_GROUP(HttpStatus.NOT_FOUND, "유저가 속한 그룹이 없습니다"),
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알람을 찾을 수 없습니다."),
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 할일입니다."),
+    TIP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 꿀팁입니다."),
 
     /* --- 409 Conflict --- */
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),

@@ -67,7 +67,8 @@ public class LifeTipService {
     // 북마크 토글
     @Transactional
     public boolean toggleBookmark(String token, UUID tipId) {
-        UUID userId = jwtUtil.extractUserId(token);
+        UUID userId = extractUserIdSafe(token);
+        if (userId == null) throw new CustomException(ErrorMessage.ACCESS_DENIED);
         lifeTipRepository.findById(tipId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TIP_NOT_FOUND));
 

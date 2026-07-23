@@ -45,8 +45,8 @@ public class MinioService {
             return url;
 
         } catch (Exception e) {
-            log.error("[MinIO] 업로드 실패: {}", e.getMessage());
-            throw new RuntimeException("이미지 업로드에 실패했습니다.");
+            log.error("[MinIO] 업로드 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("이미지 업로드에 실패했습니다. 원인: " + e.getMessage());
         }
     }
 

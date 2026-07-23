@@ -89,6 +89,10 @@ jobs:
           echo "SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE=30s" >> .env
           echo "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health" >> .env
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> .env
+          echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> .env
+          echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> .env
+          echo "MINIO_BUCKET=${{ secrets.MINIO_BUCKET }}" >> .env
 
       - name: Docker 네트워크 및 인프라 컨테이너 연결 확인
         run: |

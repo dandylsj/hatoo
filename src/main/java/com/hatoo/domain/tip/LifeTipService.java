@@ -3,6 +3,7 @@ package com.hatoo.domain.tip;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.tip.dto.LifeTipCreateRequest;
 import com.hatoo.domain.tip.dto.LifeTipDetailResponse;
 import com.hatoo.domain.tip.dto.LifeTipListResponse;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +68,36 @@ public class LifeTipService {
             tipBookmarkRepository.save(new TipBookmark(bookmarkId));
             return true;
         }
+    }
+
+    // ── 관리자용 ──
+
+    @Transactional
+    public LifeTipDetailResponse create(LifeTipCreateRequest req) {
+        LifeTip tip = LifeTip.create(req.title(), req.content(), req.imageUrl(), req.category());
+        lifeTipRepository.save(tip);
+        return LifeTipDetailResponse.of(tip, 0, false);
+    }
+
+    @Transactional
+    public LifeTipDetailResponse update(UUID tipId, LifeTipCreateRequest req) {
+        LifeTip tip = lifeTipRepository.findById(tipId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.TIP_NOT_FOUND));
+        tip.update(req.title(), req.content(), req.imageUrl(), req.category());
+        int bookmarkCount = tipBookmarkRepository.countById_TipId(tipId);
+        return LifeTipDetailResponse.of(tip, bookmarkCount, false);
+    }
+
+    @Transactional
+    public void delete(UUID tipId) {
+        LifeTip tip = lifeTipRepository.findById(tipId)
+                .orElseThrow(() -> new CustomException(ErrorMessage.TIP_NOT_FOUND));
+        tipBookmarkRepository.deleteAll(
+                tipBookmarkRepository.findAll().stream()
+                        .filter(b -> b.getId().getTipId().equals(tipId))
+                        .toList()
+        );
+        lifeTipRepository.delete(tip);
     }
 
     // 내가 저장한 꿀팁 목록

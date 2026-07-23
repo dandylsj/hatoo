@@ -49,6 +49,8 @@ dependencies {
     implementation 'com.nimbusds:nimbus-jose-jwt:9.37.3'
     // 헬스체크 엔드포인트 (/actuator/health)
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // MinIO 이미지 업로드
+    implementation 'io.minio:minio:8.5.17'
 }
 
 tasks.named('test') {

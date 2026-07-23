@@ -86,7 +86,7 @@ public class LifeTipService {
 
     @Transactional
     public LifeTipDetailResponse create(LifeTipCreateRequest req) {
-        LifeTip tip = LifeTip.create(req.title(), req.content(), req.imageUrl(), req.category());
+        LifeTip tip = LifeTip.create(req.title(), req.content(), req.imageUrls(), req.category());
         lifeTipRepository.save(tip);
         return LifeTipDetailResponse.of(tip, 0, false);
     }
@@ -95,7 +95,7 @@ public class LifeTipService {
     public LifeTipDetailResponse update(UUID tipId, LifeTipCreateRequest req) {
         LifeTip tip = lifeTipRepository.findById(tipId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TIP_NOT_FOUND));
-        tip.update(req.title(), req.content(), req.imageUrl(), req.category());
+        tip.update(req.title(), req.content(), req.imageUrls(), req.category());
         int bookmarkCount = tipBookmarkRepository.countById_TipId(tipId);
         return LifeTipDetailResponse.of(tip, bookmarkCount, false);
     }

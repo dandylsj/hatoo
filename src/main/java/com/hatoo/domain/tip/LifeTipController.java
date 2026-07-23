@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Tag(name = "LifeTip", description = "생활 꿀팁 API")
 @RestController
@@ -65,13 +66,15 @@ public class LifeTipController {
 
     // ── 관리자용 (Swagger로 직접 데이터 입력) ──
 
-    @Operation(summary = "[관리자] 이미지 업로드", description = "MinIO에 이미지를 업로드하고 URL을 반환합니다. 반환된 imageUrl을 꿀팁 등록 시 사용하세요.")
+    @Operation(summary = "[관리자] 이미지 업로드", description = "여러 이미지를 한번에 업로드하고 URL 목록을 반환합니다. 반환된 imageUrls를 꿀팁 등록 시 사용하세요.")
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Map<String, String>> uploadImage(
+    public ResponseEntity<Map<String, List<String>>> uploadImages(
             @Parameter(hidden = true) @RequestHeader("Authorization") String accessToken,
-            @RequestParam("file") MultipartFile file) {
-        String imageUrl = minioService.uploadImage(file);
-        return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
+            @RequestParam("files") List<MultipartFile> files) {
+        List<String> imageUrls = files.stream()
+                .map(minioService::uploadImage)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(Map.of("imageUrls", imageUrls));
     }
 
     @Operation(summary = "[관리자] 꿀팁 등록", description = "imageUrl: MinIO에 올린 이미지 URL 입력. category: KITCHEN / BATHROOM / LAUNDRY / RECYCLING")

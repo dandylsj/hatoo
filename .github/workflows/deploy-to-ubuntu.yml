@@ -88,6 +88,7 @@ jobs:
           echo "SERVER_SHUTDOWN=graceful" >> .env
           echo "SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE=30s" >> .env
           echo "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health" >> .env
+          echo "MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always" >> .env
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
           echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> .env
           echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> .env
@@ -194,8 +195,14 @@ jobs:
           done
 
           if [ "$HEALTH_OK" = "false" ]; then
-            echo "❌ 헬스체크 실패 - 컨테이너 로그:"
-            docker logs hatoo-$NEW_COLOR --tail 80
+            echo "❌ 헬스체크 실패 - 헬스 응답:"
+            curl -s $HEALTH_URL || true
+            echo ""
+            echo "❌ 컨테이너 ERROR 로그:"
+            docker logs hatoo-$NEW_COLOR 2>&1 | grep -E "ERROR|Exception|Caused by|FATAL" | head -30
+            echo ""
+            echo "❌ 컨테이너 시작 로그 (처음 80줄):"
+            docker logs hatoo-$NEW_COLOR 2>&1 | head -80
             echo "신규 컨테이너 롤백"
             docker rm -f hatoo-$NEW_COLOR
             exit 1

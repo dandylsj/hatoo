@@ -21,15 +21,25 @@ public class LifeTipService {
     private final TipBookmarkRepository tipBookmarkRepository;
     private final JwtUtil jwtUtil;
 
+    private UUID extractUserIdSafe(String token) {
+        try {
+            return jwtUtil.extractUserId(token);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // 목록 조회 (카테고리 필터)
     @Transactional(readOnly = true)
     public List<LifeTipListResponse> getList(String token, LifeTipCategory category) {
-        UUID userId = jwtUtil.extractUserId(token);
+        UUID userId = extractUserIdSafe(token);
         List<LifeTip> tips = (category == null)
                 ? lifeTipRepository.findAllByOrderByCreatedAtDesc()
                 : lifeTipRepository.findByCategoryOrderByCreatedAtDesc(category);
 
-        List<UUID> myBookmarkedTipIds = tipBookmarkRepository.findTipIdsByUserId(userId);
+        List<UUID> myBookmarkedTipIds = (userId != null)
+                ? tipBookmarkRepository.findTipIdsByUserId(userId)
+                : List.of();
 
         return tips.stream()
                 .map(tip -> LifeTipListResponse.of(
@@ -43,12 +53,13 @@ public class LifeTipService {
     // 상세 조회 (조회수 증가)
     @Transactional
     public LifeTipDetailResponse getDetail(String token, UUID tipId) {
-        UUID userId = jwtUtil.extractUserId(token);
+        UUID userId = extractUserIdSafe(token);
         LifeTip tip = lifeTipRepository.findById(tipId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TIP_NOT_FOUND));
         tip.incrementViewCount();
 
-        boolean bookmarked = tipBookmarkRepository.existsById(new TipBookmarkId(userId, tipId));
+        boolean bookmarked = (userId != null) &&
+                tipBookmarkRepository.existsById(new TipBookmarkId(userId, tipId));
         int bookmarkCount = tipBookmarkRepository.countById_TipId(tipId);
         return LifeTipDetailResponse.of(tip, bookmarkCount, bookmarked);
     }

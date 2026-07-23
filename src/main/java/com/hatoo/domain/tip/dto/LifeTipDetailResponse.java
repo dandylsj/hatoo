@@ -4,13 +4,14 @@ import com.hatoo.domain.tip.LifeTip;
 import com.hatoo.domain.tip.LifeTipCategory;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record LifeTipDetailResponse(
         UUID id,
         String title,
         String content,
-        String imageUrl,
+        List<String> imageUrls,
         LifeTipCategory category,
         String categoryDisplayName,
         int viewCount,
@@ -23,7 +24,7 @@ public record LifeTipDetailResponse(
                 tip.getId(),
                 tip.getTitle(),
                 tip.getContent(),
-                tip.getImageUrl(),
+                tip.getImageUrls(),
                 tip.getCategory(),
                 tip.getCategory().getDisplayName(),
                 tip.getViewCount(),

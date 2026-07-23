@@ -1,11 +1,14 @@
 package com.hatoo.domain.tip;
 
 import com.hatoo.common.BaseEntity;
+import com.hatoo.common.StringListConverter;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -25,8 +28,9 @@ public class LifeTip extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(length = 500)
-    private String imageUrl;
+    @Convert(converter = StringListConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private List<String> imageUrls = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -35,19 +39,19 @@ public class LifeTip extends BaseEntity {
     @Column(nullable = false)
     private int viewCount = 0;
 
-    public static LifeTip create(String title, String content, String imageUrl, LifeTipCategory category) {
+    public static LifeTip create(String title, String content, List<String> imageUrls, LifeTipCategory category) {
         LifeTip tip = new LifeTip();
         tip.title = title;
         tip.content = content;
-        tip.imageUrl = imageUrl;
+        tip.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
         tip.category = category;
         return tip;
     }
 
-    public void update(String title, String content, String imageUrl, LifeTipCategory category) {
+    public void update(String title, String content, List<String> imageUrls, LifeTipCategory category) {
         this.title = title;
         this.content = content;
-        this.imageUrl = imageUrl;
+        this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
         this.category = category;
     }
 

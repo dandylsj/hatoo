@@ -59,7 +59,7 @@ public class NaverService {
             User user = registerOrLogin(naverUserInfo, naverRefreshToken);
 
             // 우리 서비스 JWT 발급
-            String ourAccessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+            String ourAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getLoginId(), user.getNickname());
             String ourRefreshToken = jwtUtil.generateRefreshToken(user.getId());
 
             // RefreshToken DB 저장 (있으면 갱신, 없으면 새로 생성)

@@ -48,7 +48,7 @@ public class GoogleService {
             User user = registerOrLogin(tokenInfo);
 
             // 3단계: 우리 서비스 JWT 발급
-            String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+            String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getLoginId(), user.getNickname());
             String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
             // 4단계: RefreshToken DB 저장 (있으면 갱신, 없으면 새로 생성)

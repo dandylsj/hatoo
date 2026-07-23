@@ -83,7 +83,7 @@ public class AuthService {
         GroupMember defaultGroupMember = new GroupMember(user, defaultGroup, user.getProfileImg(), true);
         groupMemberRepository.save(defaultGroupMember);
 
-        String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getLoginId(), user.getNickname());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
@@ -105,7 +105,7 @@ public class AuthService {
             throw new CustomException(ErrorMessage.INVALID_PASSWORD);
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getLoginId(), user.getNickname());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByUserId(user.getId())
@@ -140,7 +140,7 @@ public class AuthService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.USER_NOT_FOUND));
 
         // 6. 새 토큰 쌍 발급
-        String newAccessToken = jwtUtil.generateAccessToken(user.getLoginId(), user.getNickname());
+        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getLoginId(), user.getNickname());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         // 7. DB 리프레시 토큰 갱신 (토큰 로테이션)

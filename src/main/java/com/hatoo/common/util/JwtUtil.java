@@ -37,10 +37,11 @@ public class JwtUtil {
                 .build();
     }
 
-    public String generateAccessToken(String loginId, String nickName) {
+    public String generateAccessToken(UUID userId, String loginId, String nickName) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(loginId)
+                .claim("userId", userId.toString())
                 .claim("nickName", nickName)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + ACCESS_TOKEN_TIME))
@@ -102,7 +103,7 @@ public class JwtUtil {
     }
 
     public UUID extractUserId(String token) {
-        return UUID.fromString(extractAllClaims(token).getSubject());
+        return UUID.fromString(extractAllClaims(token).get("userId", String.class));
     }
 
     public String extractUserEmail(String token) {

@@ -91,6 +91,7 @@ jobs:
           echo "MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always" >> .env
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
           echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> .env
+          echo "MINIO_PUBLIC_URL=${{ secrets.MINIO_PUBLIC_URL }}" >> .env
           echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> .env
           echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> .env
           echo "MINIO_BUCKET=${{ secrets.MINIO_BUCKET }}" >> .env
@@ -121,6 +122,11 @@ jobs:
               include /etc/nginx/conf.d/*.conf;
               server {
                   listen 80;
+                  location /storage/ {
+                      proxy_pass http://minio:9000/;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                  }
                   location / {
                       proxy_pass http://hatoo_app;
                       proxy_http_version 1.1;

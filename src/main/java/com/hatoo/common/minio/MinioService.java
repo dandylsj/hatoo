@@ -20,8 +20,8 @@ public class MinioService {
 
     private final MinioClient minioClient;
 
-    @Value("${minio.endpoint}")
-    private String endpoint;
+    @Value("${minio.public-url}")
+    private String publicUrl;
 
     @Value("${minio.bucket}")
     private String bucket;
@@ -40,7 +40,7 @@ public class MinioService {
                     .contentType(file.getContentType())
                     .build());
 
-            String url = endpoint + "/" + bucket + "/" + objectName;
+            String url = publicUrl + "/" + bucket + "/" + objectName;
             log.info("[MinIO] 이미지 업로드 완료: {}", url);
             return url;
 

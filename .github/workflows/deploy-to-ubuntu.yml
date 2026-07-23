@@ -88,7 +88,7 @@ jobs:
           echo "SERVER_SHUTDOWN=graceful" >> .env
           echo "SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE=30s" >> .env
           echo "MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health" >> .env
-          echo "MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always" >> .env
+          echo "MANAGEMENT_HEALTH_MAIL_ENABLED=false" >> .env
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
           echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> .env
           echo "MINIO_PUBLIC_URL=${{ secrets.MINIO_PUBLIC_URL }}" >> .env

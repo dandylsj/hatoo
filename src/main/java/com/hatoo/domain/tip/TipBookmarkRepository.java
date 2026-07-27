@@ -13,4 +13,7 @@ public interface TipBookmarkRepository extends JpaRepository<TipBookmark, TipBoo
     List<UUID> findTipIdsByUserId(UUID userId);
 
     int countById_TipId(UUID tipId);
+
+    @Query("SELECT tb.id.tipId, COUNT(tb) FROM TipBookmark tb GROUP BY tb.id.tipId")
+    List<Object[]> findAllTipBookmarkCounts();
 }

@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -88,5 +90,12 @@ public class AiChatService {
                 .stream()
                 .map(AiChatHistoryResponse::from)
                 .toList();
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    public void resetDailyChatHistory() {
+        aiChatHistoryRepository.deleteAllInBatch();
+        log.info("[AI] 매일 자정 챗봇 히스토리 초기화 완료");
     }
 }

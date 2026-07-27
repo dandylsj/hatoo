@@ -91,11 +91,13 @@ public class GoogleService {
             return user;
         }
 
-        // 2. 같은 이메일로 다른 방식으로 가입한 유저가 있으면 → 로그인 차단
+        // 2. 같은 이메일로 다른 방식으로 가입한 유저가 있으면 → googleId 연결 후 자동 로그인
         if (email != null && !email.isEmpty()) {
-            if (userRepository.findByEmail(email).isPresent()) {
-                log.warn("[Google] 다른 소셜 계정으로 이미 가입된 이메일 - email: {}", email);
-                throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
+            User existingUser = userRepository.findByEmail(email).orElse(null);
+            if (existingUser != null) {
+                existingUser.setGoogleId(googleId);
+                log.info("[Google] 기존 계정에 googleId 연결 후 로그인 - email: {}", email);
+                return existingUser;
             }
         }
 

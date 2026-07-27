@@ -17,9 +17,10 @@ public record LifeTipListResponse(
         int viewCount,
         int bookmarkCount,
         boolean bookmarked,
+        boolean hot,
         LocalDateTime createdAt
 ) {
-    public static LifeTipListResponse of(LifeTip tip, int bookmarkCount, boolean bookmarked) {
+    public static LifeTipListResponse of(LifeTip tip, int bookmarkCount, boolean bookmarked, boolean hot) {
         String summary = tip.getContent().length() > 60
                 ? tip.getContent().substring(0, 60) + "..."
                 : tip.getContent();
@@ -33,6 +34,7 @@ public record LifeTipListResponse(
                 tip.getViewCount(),
                 bookmarkCount,
                 bookmarked,
+                hot,
                 tip.getCreatedAt()
         );
     }

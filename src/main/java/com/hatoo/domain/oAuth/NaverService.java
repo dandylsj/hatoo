@@ -124,11 +124,14 @@ public class NaverService {
             return user;
         }
 
-        // 2. 같은 이메일로 다른 방식으로 가입한 유저가 있으면 → 로그인 차단
+        // 2. 같은 이메일로 다른 방식으로 가입한 유저가 있으면 → naverId 연결 후 자동 로그인
         if (naverEmail != null && !naverEmail.isEmpty()) {
-            if (userRepository.findByEmail(naverEmail).isPresent()) {
-                log.warn("[Naver] 다른 소셜 계정으로 이미 가입된 이메일 - email: {}", naverEmail);
-                throw new CustomException(ErrorMessage.SOCIAL_LOGIN_ACCOUNT);
+            User existingUser = userRepository.findByEmail(naverEmail).orElse(null);
+            if (existingUser != null) {
+                existingUser.setNaverId(naverId);
+                if (naverRefreshToken != null) existingUser.setNaverRefreshToken(naverRefreshToken);
+                log.info("[Naver] 기존 계정에 naverId 연결 후 로그인 - email: {}", naverEmail);
+                return existingUser;
             }
         }
 

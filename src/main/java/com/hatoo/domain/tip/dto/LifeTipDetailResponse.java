@@ -1,5 +1,6 @@
 package com.hatoo.domain.tip.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hatoo.domain.tip.LifeTip;
 import com.hatoo.domain.tip.LifeTipCategory;
 
@@ -16,11 +17,11 @@ public record LifeTipDetailResponse(
         String categoryDisplayName,
         int viewCount,
         int bookmarkCount,
-        boolean bookmarked,
-        boolean hot,
+        @JsonProperty("isBookMarked") boolean isBookMarked,
+        @JsonProperty("isHotTag") boolean isHotTag,
         LocalDateTime createdAt
 ) {
-    public static LifeTipDetailResponse of(LifeTip tip, int bookmarkCount, boolean bookmarked, boolean hot) {
+    public static LifeTipDetailResponse of(LifeTip tip, int bookmarkCount, boolean isBookMarked, boolean isHotTag) {
         return new LifeTipDetailResponse(
                 tip.getId(),
                 tip.getTitle(),
@@ -30,8 +31,8 @@ public record LifeTipDetailResponse(
                 tip.getCategory().getDisplayName(),
                 tip.getViewCount(),
                 bookmarkCount,
-                bookmarked,
-                hot,
+                isBookMarked,
+                isHotTag,
                 tip.getCreatedAt()
         );
     }

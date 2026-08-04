@@ -11,13 +11,13 @@ public record AiChatHistoryResponse(
         @Schema(description = "대화 이력 ID")
         UUID id,
 
-        @Schema(description = "사용자 질문")
+        @Schema(description = "사용자 질문", example = "화장실 곰팡이 어떻게 없애요?")
         String userMessage,
 
-        @Schema(description = "AI 답변")
+        @Schema(description = "AI 답변", example = "락스와 물을 1:10 비율로 희석해서 뿌려주세요...")
         String aiResponse,
 
-        @Schema(description = "답변 생성에 사용된 토큰 수")
+        @Schema(description = "답변 생성에 사용된 토큰 수", example = "256")
         int tokensUsed,
 
         @Schema(description = "대화 일시")

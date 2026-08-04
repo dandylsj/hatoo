@@ -17,16 +17,16 @@ public class MyGroupResponse {
     @Schema(description = "그룹 ID")
     private UUID id;
 
-    @Schema(description = "그룹 이름")
+    @Schema(description = "그룹 이름", example = "하투네")
     private String name;
 
-    @Schema(description = "그룹 설명")
+    @Schema(description = "그룹 설명", example = "우리집 청소 담당표")
     private String description;
 
     @Schema(description = "그룹장(방장) 사용자 ID")
     private UUID assignerId;
 
-    @Schema(description = "개인용(1인) 그룹 여부")
+    @Schema(description = "개인용(1인) 그룹 여부", example = "false")
     @JsonProperty("isPersonal")
     private boolean isPersonal;
 

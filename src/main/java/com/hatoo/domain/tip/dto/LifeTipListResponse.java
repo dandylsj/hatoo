@@ -14,31 +14,31 @@ public record LifeTipListResponse(
         @Schema(description = "꿀팁 ID")
         UUID id,
 
-        @Schema(description = "제목")
+        @Schema(description = "제목", example = "주방 기름때 3분만에 지우는 법")
         String title,
 
-        @Schema(description = "본문 요약 (60자 초과 시 말줄임)")
+        @Schema(description = "본문 요약 (60자 초과 시 말줄임)", example = "베이킹소다와 식초만 있으면 끝...")
         String summary,
 
         @Schema(description = "본문에 첨부된 이미지 URL 목록")
         List<String> imageUrls,
 
-        @Schema(description = "카테고리")
+        @Schema(description = "카테고리", example = "KITCHEN")
         LifeTipCategory category,
 
-        @Schema(description = "카테고리 화면 표시명")
+        @Schema(description = "카테고리 화면 표시명", example = "주방")
         String categoryDisplayName,
 
-        @Schema(description = "조회수")
+        @Schema(description = "조회수", example = "128")
         int viewCount,
 
-        @Schema(description = "북마크(저장) 수")
+        @Schema(description = "북마크(저장) 수", example = "12")
         int bookmarkCount,
 
-        @Schema(description = "요청한 사용자의 북마크 여부")
+        @Schema(description = "요청한 사용자의 북마크 여부", example = "false")
         @JsonProperty("isBookMarked") boolean isBookMarked,
 
-        @Schema(description = "HOT 태그 노출 여부")
+        @Schema(description = "HOT 태그 노출 여부", example = "true")
         @JsonProperty("isHotTag") boolean isHotTag,
 
         @Schema(description = "등록일시")

@@ -89,7 +89,7 @@ public class CoupangService {
 
             Map<?, ?> body = response.getBody();
             log.info("[Coupang] API 응답: {}", body);
-            if (body == null || !"00".equals(body.get("rCode"))) {
+            if (body == null || !"0".equals(body.get("rCode"))) {
                 log.warn("[Coupang] API 응답 오류 - rCode: {}, message: {}", body != null ? body.get("rCode") : "null", body != null ? body.get("rMessage") : "null");
                 return List.of();
             }

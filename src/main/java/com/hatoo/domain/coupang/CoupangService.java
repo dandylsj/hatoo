@@ -42,7 +42,9 @@ public class CoupangService {
             return cached.products();
         }
         List<CoupangProduct> products = fetchProducts(keyword);
-        cache.put(keyword, new CachedResult(products, System.currentTimeMillis()));
+        if (!products.isEmpty()) {
+            cache.put(keyword, new CachedResult(products, System.currentTimeMillis()));
+        }
         return products;
     }
 
@@ -58,7 +60,7 @@ public class CoupangService {
     @SuppressWarnings("unchecked")
     private List<CoupangProduct> fetchProducts(String keyword) {
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd'T'HHmmss'Z'");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             String datetime = sdf.format(new Date());
 
@@ -66,7 +68,9 @@ public class CoupangService {
             String message = datetime + "GET" + SEARCH_PATH + "?" + queryString;
             String signature = hmacSha256(secretKey, message);
 
-            String authorization = "CEA algorithm=HmacSHA256, access-key=" + accessKey
+            log.info("[Coupang] 요청 - datetime: {}, message: {}", datetime, message);
+
+            String authorization = "CEA algorithm=HmacSHA256, access-id=" + accessKey
                     + ", signed-date=" + datetime + ", signature=" + signature;
 
             HttpHeaders headers = new HttpHeaders();
@@ -78,8 +82,9 @@ public class CoupangService {
                     url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
 
             Map<?, ?> body = response.getBody();
+            log.info("[Coupang] API 응답: {}", body);
             if (body == null || !"00".equals(body.get("rCode"))) {
-                log.warn("[Coupang] API 응답 오류: {}", body);
+                log.warn("[Coupang] API 응답 오류 - rCode: {}, message: {}", body != null ? body.get("rCode") : "null", body != null ? body.get("rMessage") : "null");
                 return List.of();
             }
 

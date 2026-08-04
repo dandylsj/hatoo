@@ -71,7 +71,7 @@ public class CoupangService {
             log.info("[Coupang] 키 길이 - accessKey: {}자, secretKey: {}자", trimmedAccessKey.length(), trimmedSecretKey.length());
 
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-            String queryString = "keyword=" + encodedKeyword + "&limit=" + PRODUCT_LIMIT + "&subId=hatoo";
+            String queryString = "keyword=" + encodedKeyword + "&limit=" + PRODUCT_LIMIT;
             String message = datetime + "GET" + SEARCH_PATH + "?" + queryString;
             String signature = hmacSha256(trimmedSecretKey, message);
 
@@ -86,9 +86,9 @@ public class CoupangService {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", authorization);
 
-            String url = BASE_URL + SEARCH_PATH + "?" + queryString;
+            java.net.URI uri = java.net.URI.create(BASE_URL + SEARCH_PATH + "?" + queryString);
             ResponseEntity<Map> response = restTemplate.exchange(
-                    url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+                    uri, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
 
             Map<?, ?> body = response.getBody();
             log.info("[Coupang] API 응답: {}", body);

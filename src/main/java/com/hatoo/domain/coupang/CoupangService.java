@@ -12,6 +12,8 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,7 +66,8 @@ public class CoupangService {
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             String datetime = sdf.format(new Date());
 
-            String queryString = "keyword=" + keyword + "&limit=" + PRODUCT_LIMIT + "&subId=hatoo";
+            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+            String queryString = "keyword=" + encodedKeyword + "&limit=" + PRODUCT_LIMIT + "&subId=hatoo";
             String message = datetime + "GET" + SEARCH_PATH + "?" + queryString;
             String signature = hmacSha256(secretKey, message);
 

@@ -58,19 +58,15 @@ public class CoupangService {
     @SuppressWarnings("unchecked")
     private List<CoupangProduct> fetchProducts(String keyword) {
         try {
-            String datetime = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'")
-                    .format(new Date(System.currentTimeMillis()));
-            ((SimpleDateFormat) new SimpleDateFormat()).setTimeZone(TimeZone.getTimeZone("UTC"));
-
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd'T'HHmmss'Z'");
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-            datetime = sdf.format(new Date());
+            String datetime = sdf.format(new Date());
 
             String queryString = "keyword=" + keyword + "&limit=" + PRODUCT_LIMIT + "&subId=hatoo";
-            String message = datetime + "\n" + "GET" + "\n" + SEARCH_PATH + "\n" + queryString + "\n";
+            String message = datetime + "GET" + SEARCH_PATH + "?" + queryString;
             String signature = hmacSha256(secretKey, message);
 
-            String authorization = "CEA algorithm=HmacSHA256, access-id=" + accessKey
+            String authorization = "CEA algorithm=HmacSHA256, access-key=" + accessKey
                     + ", signed-date=" + datetime + ", signature=" + signature;
 
             HttpHeaders headers = new HttpHeaders();

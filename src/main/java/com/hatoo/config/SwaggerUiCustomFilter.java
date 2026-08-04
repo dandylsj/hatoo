@@ -16,19 +16,27 @@ import java.nio.charset.StandardCharsets;
 @Order(1)
 public class SwaggerUiCustomFilter extends OncePerRequestFilter {
 
-    private static final String CUSTOM_CSS = """
-            <style>
-            /* 개별 속성의 접기/펼치기 토글 화살표 숨기기 */
-            span.model > span.model-toggle,
-            .model-toggle { display: none !important; }
-
-            /* 속성 설명·예시 항상 표시 */
-            span.model > .inner-object,
-            .inner-object { display: block !important; visibility: visible !important; }
-
-            /* 'Collapse all' 텍스트도 포함된 헤더 토글 숨기기 */
-            .model-collapse-toggle { display: none !important; }
-            </style>
+    // Swagger UI는 React 렌더링이므로 DOMContentLoaded 이후 MutationObserver로 처리
+    private static final String CUSTOM_SCRIPT = """
+            <script>
+            (function() {
+                function hideCollapseToggles() {
+                    // "^ Collapse all" 버튼 숨기기
+                    document.querySelectorAll('.model-toggle').forEach(function(el) {
+                        el.style.setProperty('display', 'none', 'important');
+                    });
+                    // 속성 설명/예시 항상 펼침
+                    document.querySelectorAll('.inner-object').forEach(function(el) {
+                        el.style.setProperty('display', 'block', 'important');
+                    });
+                }
+                const observer = new MutationObserver(hideCollapseToggles);
+                document.addEventListener('DOMContentLoaded', function() {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                    hideCollapseToggles();
+                });
+            })();
+            </script>
             """;
 
     @Override
@@ -48,8 +56,8 @@ public class SwaggerUiCustomFilter extends OncePerRequestFilter {
         byte[] original = wrapper.getContentAsByteArray();
         String html = new String(original, StandardCharsets.UTF_8);
 
-        if (html.contains("</head>")) {
-            html = html.replace("</head>", CUSTOM_CSS + "</head>");
+        if (html.contains("</body>")) {
+            html = html.replace("</body>", CUSTOM_SCRIPT + "</body>");
         }
 
         byte[] modified = html.getBytes(StandardCharsets.UTF_8);

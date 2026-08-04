@@ -68,7 +68,7 @@ public class CoupangService {
 
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
             String queryString = "keyword=" + encodedKeyword + "&limit=" + PRODUCT_LIMIT + "&subId=hatoo";
-            String message = datetime + "GET" + SEARCH_PATH + "?" + queryString;
+            String message = datetime + "\n" + "GET" + "\n" + SEARCH_PATH + "\n" + queryString;
             String signature = hmacSha256(secretKey, message);
 
             log.info("[Coupang] 요청 - datetime: {}, message: {}", datetime, message);

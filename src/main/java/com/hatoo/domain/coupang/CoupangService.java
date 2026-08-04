@@ -62,25 +62,22 @@ public class CoupangService {
     @SuppressWarnings("unchecked")
     private List<CoupangProduct> fetchProducts(String keyword) {
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd'T'HHmmss'Z'");
+            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
             String datetime = sdf.format(new Date());
 
             String trimmedAccessKey = accessKey.trim();
             String trimmedSecretKey = secretKey.trim();
-            log.info("[Coupang] 키 길이 - accessKey: {}자, secretKey: {}자", trimmedAccessKey.length(), trimmedSecretKey.length());
 
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
             String queryString = "keyword=" + encodedKeyword + "&limit=" + PRODUCT_LIMIT;
-            String message = datetime + "GET" + SEARCH_PATH + "?" + queryString;
+            // 공식 SDK 기준: path 와 query 사이에 ? 없이 그대로 붙임
+            String message = datetime + "GET" + SEARCH_PATH + queryString;
             String signature = hmacSha256(trimmedSecretKey, message);
 
             log.info("[Coupang] 요청 - datetime: {}, message: {}", datetime, message);
-            log.info("[Coupang] Authorization: CEA algorithm=HmacSHA256, access-id={}..., signed-date={}, signature={}...",
-                    trimmedAccessKey.substring(0, Math.min(8, trimmedAccessKey.length())), datetime,
-                    signature.substring(0, Math.min(8, signature.length())));
 
-            String authorization = "CEA algorithm=HmacSHA256, access-id=" + trimmedAccessKey
+            String authorization = "CEA algorithm=HmacSHA256, access-key=" + trimmedAccessKey
                     + ", signed-date=" + datetime + ", signature=" + signature;
 
             HttpHeaders headers = new HttpHeaders();

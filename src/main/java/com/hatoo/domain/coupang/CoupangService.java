@@ -66,19 +66,25 @@ public class CoupangService {
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             String datetime = sdf.format(new Date());
 
+            String trimmedAccessKey = accessKey.trim();
+            String trimmedSecretKey = secretKey.trim();
+            log.info("[Coupang] 키 길이 - accessKey: {}자, secretKey: {}자", trimmedAccessKey.length(), trimmedSecretKey.length());
+
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
             String queryString = "keyword=" + encodedKeyword + "&limit=" + PRODUCT_LIMIT + "&subId=hatoo";
-            String message = datetime + "\n" + "GET" + "\n" + SEARCH_PATH + "\n" + queryString;
-            String signature = hmacSha256(secretKey, message);
+            String message = datetime + "GET" + SEARCH_PATH + "?" + queryString;
+            String signature = hmacSha256(trimmedSecretKey, message);
 
             log.info("[Coupang] 요청 - datetime: {}, message: {}", datetime, message);
+            log.info("[Coupang] Authorization: CEA algorithm=HmacSHA256, access-id={}..., signed-date={}, signature={}...",
+                    trimmedAccessKey.substring(0, Math.min(8, trimmedAccessKey.length())), datetime,
+                    signature.substring(0, Math.min(8, signature.length())));
 
-            String authorization = "CEA algorithm=HmacSHA256, access-id=" + accessKey
+            String authorization = "CEA algorithm=HmacSHA256, access-id=" + trimmedAccessKey
                     + ", signed-date=" + datetime + ", signature=" + signature;
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", authorization);
-            headers.set("Content-Type", "application/json;charset=UTF-8");
 
             String url = BASE_URL + SEARCH_PATH + "?" + queryString;
             ResponseEntity<Map> response = restTemplate.exchange(

@@ -9,13 +9,20 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
+@Schema(description = "그룹 멤버 정보")
 public class GroupMemberDto {
 
+    @Schema(description = "사용자 ID")
     private UUID id;
+
+    @Schema(description = "이메일")
     private String email;
+
+    @Schema(description = "닉네임")
     private String nickname;
-    @Schema(example = "PINK")
-    private String profileImg; // GroupMember에서 가져오는 그룹별 색상
+
+    @Schema(description = "그룹 내 프로필 색상 코드", example = "PINK")
+    private String profileImg;
 
     // GroupMember 엔티티를 DTO로 변환하는 팩토리 메서드
     public static GroupMemberDto from(GroupMember groupMember) {

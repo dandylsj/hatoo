@@ -1,12 +1,19 @@
 package com.hatoo.common.model.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 @Getter
+@Schema(description = "공통 응답 래퍼")
 public class GlobalResponse<T> {
 
+    @Schema(description = "성공 여부")
     private final boolean success;
+
+    @Schema(description = "실제 응답 데이터 (실패 시 null)")
     private final T data;
+
+    @Schema(description = "실패 메시지 (성공 시 null)")
     private final String message;
 
     private GlobalResponse(boolean success, T data, String message) {

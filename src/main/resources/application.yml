@@ -15,8 +15,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ksjsk0625@gmail.com
-    password: pnrxuodmgmrgpjqa
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -33,17 +33,16 @@ springdoc:
 
   api-docs:
     enabled: true
+    version: openapi_3_0
 
 kakao:
-  admin-key: 1585cbe3f924c538830fe68c09a6a7f8
+  admin-key: ${KAKAO_ADMIN_KEY}
 
 naver:
-  client-id: wC8m2I_nJzUIMRFV5Y4W
-  client-secret: A6u4b8FqrJ
+  client-id: ${NAVER_CLIENT_ID}
+  client-secret: ${NAVER_CLIENT_SECRET}
 
-
-
-JWT_SECRET_KEY: VGhpc0lzQVNlY3JldEtleUZvckp3dFRva2VuR2VuZXJhdGlvbkFuZFZhbGlkYXRpb25JdE11c3RCZUxvbmdFbm91Z2hUb0JlU2VjdXJl
+JWT_SECRET_KEY: ${JWT_SECRET_KEY}
 
 gemini:
   api-key: ${GEMINI_API_KEY}

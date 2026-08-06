@@ -252,6 +252,8 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(ErrorMessage.TASK_NOT_FOUND));
 
+        // TaskAssignee 먼저 명시적으로 삭제 (cascade에만 의존하면 기여도 집계에 남아있을 수 있음)
+        taskAssigneeRepository.deleteByTaskId(taskId);
         taskRepository.delete(task);
         return true;
     }
@@ -392,6 +394,11 @@ public class TaskService {
                 .orElseThrow(() -> new CustomException(ErrorMessage.GROUP_NOT_FOUND));
 
         List<Task> finishedTasks = taskRepository.findAllByGroupsContainingAndFinishedTrue(group);
+        if (finishedTasks.isEmpty()) return;
+
+        // TaskAssignee 먼저 명시적으로 일괄 삭제 (기여도 집계에 남아있는 문제 방지)
+        List<UUID> taskIds = finishedTasks.stream().map(Task::getId).collect(Collectors.toList());
+        taskAssigneeRepository.deleteByTaskIdIn(taskIds);
         taskRepository.deleteAll(finishedTasks);
     }
 

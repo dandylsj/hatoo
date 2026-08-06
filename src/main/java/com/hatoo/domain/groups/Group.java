@@ -2,7 +2,6 @@ package com.hatoo.domain.groups;
 
 import com.hatoo.common.BaseEntity;
 import com.hatoo.domain.groupMember.GroupMember;
-import com.hatoo.domain.task.Task;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -46,9 +45,6 @@ public class Group extends BaseEntity {
 
     @OneToMany(mappedBy = "group")
     private List<GroupMember> groupMembers = new ArrayList<>();
-
-    @ManyToMany
-    private List<Task> tasks = new ArrayList<>();
 
     public Group(String name, String description) {
         this.name = name;

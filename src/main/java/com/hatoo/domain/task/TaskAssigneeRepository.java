@@ -21,6 +21,10 @@ public interface TaskAssigneeRepository extends JpaRepository<TaskAssignee, Task
 
     void deleteByTaskId(UUID taskId);
 
+    @Modifying
+    @Query("DELETE FROM TaskAssignee ta WHERE ta.task.id IN :taskIds")
+    void deleteByTaskIdIn(@Param("taskIds") List<UUID> taskIds);
+
     // 회원탈퇴 시 해당 유저의 모든 task_assignees 레코드 제거 (FK 제약 해소용)
     @Modifying
     @Query("DELETE FROM TaskAssignee ta WHERE ta.user.id = :userId")

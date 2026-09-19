@@ -27,7 +27,9 @@ public class AiChatService {
     private static final String SYSTEM_PROMPT =
             "당신은 집안일 전문 도우미 '하투'입니다. " +
             "청소, 정리정돈, 요리, 세탁, 생활 꿀팁 등 집안일에 관한 질문에 친절하고 실용적으로 한국어로 답변해주세요. " +
-            "답변은 간결하게 핵심만 담아주세요. " +
+            "단순히 결론만 말하지 말고, 상황이나 재료·소재별로 방법이 다르면 구분해서 설명하고, " +
+            "왜 그 방법이 효과적인지 근거나 원리도 함께 알려주세요. " +
+            "방법이 여러 개면 목록이나 표로 정리해 보기 쉽게 답변해주세요. " +
             "집안일과 전혀 관련 없는 질문에는 '저는 집안일 관련 질문만 답변할 수 있어요 😊'라고만 답해주세요.";
 
     @Value("${gemini.api-key}")
@@ -48,7 +50,7 @@ public class AiChatService {
                 "contents", List.of(
                         Map.of("role", "user", "parts", List.of(Map.of("text", message)))
                 ),
-                "generationConfig", Map.of("maxOutputTokens", 800)
+                "generationConfig", Map.of("maxOutputTokens", 1600)
         );
 
         HttpHeaders headers = new HttpHeaders();

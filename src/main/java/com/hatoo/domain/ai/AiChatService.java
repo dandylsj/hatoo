@@ -22,7 +22,7 @@ import java.util.UUID;
 public class AiChatService {
 
     private static final String GEMINI_API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=";
 
     private static final String SYSTEM_PROMPT =
             "당신은 집안일 전문 도우미 '하투'입니다. " +

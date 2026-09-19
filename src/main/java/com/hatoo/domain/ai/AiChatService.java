@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -29,8 +30,17 @@ public class AiChatService {
             "청소, 정리정돈, 요리, 세탁, 생활 꿀팁 등 집안일에 관한 질문에 친절하고 실용적으로 한국어로 답변해주세요. " +
             "단순히 결론만 말하지 말고, 상황이나 재료·소재별로 방법이 다르면 구분해서 설명하고, " +
             "왜 그 방법이 효과적인지 근거나 원리도 함께 알려주세요. " +
-            "방법이 여러 개면 목록이나 표로 정리해 보기 쉽게 답변해주세요. " +
+            "답변은 채팅 앱의 말풍선에 그대로 표시되며 마크다운을 렌더링하지 않으니, " +
+            "마크다운 문법(#, *, **, |, -, <br> 등)을 절대 쓰지 마세요. " +
+            "제목이 필요하면 이모지와 줄바꿈으로 구분하고, 목록은 '1.', '2.' 같은 번호나 '· '로 표시하고, " +
+            "표 대신 각 항목을 줄바꿈으로 나열해주세요. " +
             "집안일과 전혀 관련 없는 질문에는 '저는 집안일 관련 질문만 답변할 수 있어요 😊'라고만 답해주세요.";
+
+    private static final Pattern MD_TABLE_ROW = Pattern.compile("(?m)^\\s*\\|?[:\\-\\s|]+\\|?\\s*$\\n?");
+    private static final Pattern MD_BR_TAG = Pattern.compile("(?i)<br\\s*/?>");
+    private static final Pattern MD_HEADING = Pattern.compile("(?m)^#{1,6}\\s*");
+    private static final Pattern MD_LIST_MARKER = Pattern.compile("(?m)^\\s*[-*]\\s+");
+    private static final Pattern MULTI_BLANK_LINE = Pattern.compile("\\n{3,}");
 
     @Value("${gemini.api-key}")
     private String apiKey;
@@ -67,7 +77,7 @@ public class AiChatService {
             Map<?, ?> candidate = (Map<?, ?>) candidates.get(0);
             Map<?, ?> content = (Map<?, ?>) candidate.get("content");
             List<?> parts = (List<?>) content.get("parts");
-            String answer = (String) ((Map<?, ?>) parts.get(0)).get("text");
+            String answer = stripMarkdown((String) ((Map<?, ?>) parts.get(0)).get("text"));
 
             // 토큰 사용량 파싱
             int tokensUsed = 0;
@@ -84,6 +94,17 @@ public class AiChatService {
             log.error("[AI] Gemini API 오류: {}", e.getMessage());
             return new AiChatResponse("죄송해요, 지금은 답변하기 어려워요. 잠시 후 다시 시도해주세요 😢");
         }
+    }
+
+    private String stripMarkdown(String text) {
+        String cleaned = MD_BR_TAG.matcher(text).replaceAll("\n");
+        cleaned = MD_TABLE_ROW.matcher(cleaned).replaceAll("");
+        cleaned = MD_HEADING.matcher(cleaned).replaceAll("");
+        cleaned = MD_LIST_MARKER.matcher(cleaned).replaceAll("· ");
+        cleaned = cleaned.replace("**", "").replace("`", "").replace("|", " ");
+        cleaned = cleaned.replaceAll("[ \\t]{2,}", " ");
+        cleaned = MULTI_BLANK_LINE.matcher(cleaned).replaceAll("\n\n");
+        return cleaned.trim();
     }
 
     public List<AiChatHistoryResponse> getHistory(String token) {

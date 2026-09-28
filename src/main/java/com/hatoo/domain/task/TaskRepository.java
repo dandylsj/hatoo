@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,15 +47,32 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByDueFromStartingWith(String date);
     List<Task> findByDueToStartingWith(String date);
 
-    List<Task> findByStarterTrueAndFinishedFalseAndStartAlarmSentFalse();
+    // AlarmScheduler용: 알림 시각이 [from, to) 구간(= 이번 1분)인 할일만 인덱스로 조회한다.
+    // 예전에는 미완료 할일 전체를 불러와 dueFrom/dueTo 문자열을 자바에서 파싱해 걸렀다 (TaskAlarmTimes 참고).
+    // 발송 대상은 어차피 담당자 목록을 읽으므로 담당자+유저를 fetch join 한다.
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "LEFT JOIN FETCH t.taskAssignees ta LEFT JOIN FETCH ta.user " +
+           "WHERE t.startAlarmAt >= :from AND t.startAlarmAt < :to " +
+           "AND t.starter = true AND t.finished = false AND t.startAlarmSent = false")
+    List<Task> findStartAlarmTargets(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("SELECT t FROM Task t WHERE t.deadLine IS NOT NULL " +
-           "AND t.deadLine != com.hatoo.domain.task.DeadLine.NONE " +
-           "AND t.finished = false " +
-           "AND t.deadlineAlarmSent = false")
-    List<Task> findTasksForDeadlineAlarm();
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "LEFT JOIN FETCH t.taskAssignees ta LEFT JOIN FETCH ta.user " +
+           "WHERE t.deadlineAlarmAt >= :from AND t.deadlineAlarmAt < :to " +
+           "AND t.finished = false AND t.deadlineAlarmSent = false")
+    List<Task> findDeadlineAlarmTargets(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    List<Task> findByFinishedFalseAndOverdueAlarmSentFalse();
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "LEFT JOIN FETCH t.taskAssignees ta LEFT JOIN FETCH ta.user " +
+           "WHERE t.overdueAlarmAt >= :from AND t.overdueAlarmAt < :to " +
+           "AND t.finished = false AND t.overdueAlarmSent = false")
+    List<Task> findOverdueAlarmTargets(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // 알림 시각 컬럼 추가 전에 저장된 미완료 할일 백필용 (TaskAlarmTimeBackfill)
+    @Query("SELECT t FROM Task t WHERE t.finished = false " +
+           "AND t.startAlarmAt IS NULL AND t.overdueAlarmAt IS NULL " +
+           "AND (t.dueFrom IS NOT NULL OR t.dueTo IS NOT NULL)")
+    List<Task> findUnfinishedTasksWithoutAlarmTimes();
 
     // 이번 주 그룹 내 담당자별 기여도 집계 (TaskAssignee.finished 기준)
     @Query("SELECT ta.user.id, ta.user.nickname, gm.profileImg, " +

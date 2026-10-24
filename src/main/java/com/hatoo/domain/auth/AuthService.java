@@ -3,6 +3,8 @@ package com.hatoo.domain.auth;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.activitylog.ActivityLogService;
+import com.hatoo.domain.activitylog.SignupProvider;
 import com.hatoo.domain.alarmUserAgree.AlarmUserAgree;
 import com.hatoo.domain.auth.dto.LoginRequest;
 import com.hatoo.domain.auth.dto.RefreshTokenReissuanceRequest;
@@ -34,6 +36,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final ActivityLogService activityLogService;
 
     //회원가입
     @Transactional
@@ -62,6 +65,7 @@ public class AuthService {
                 request.getIsOverFourteen()
         );
         userRepository.save(user);
+        activityLogService.recordSignup(user.getId(), user.getEmail(), user.getNickname(), SignupProvider.LOCAL);
 
         // 유저의 알람동의 테이블 생성
         AlarmUserAgree alarm = new AlarmUserAgree(

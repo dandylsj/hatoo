@@ -50,6 +50,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/actuator/health",
             "/test/alarm/**",
+            "/admin/logs/**",
     };
 
     @Bean

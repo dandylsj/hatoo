@@ -34,6 +34,7 @@ public class RecurringTaskScheduler {
     private final GroupMemberRepository groupMemberRepository;
     private final WeeklyStatsRepository weeklyStatsRepository;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter DUE_DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
@@ -62,8 +63,8 @@ public class RecurringTaskScheduler {
                 nextDueFrom = nextDueTo;
             }
 
-            String nextDueToStr = DueDateTimeParser.format(nextDueTo);
-            String nextDueFromStr = DueDateTimeParser.format(nextDueFrom);
+            String nextDueToStr = nextDueTo.format(DUE_DATETIME_FORMATTER);
+            String nextDueFromStr = nextDueFrom.format(DUE_DATETIME_FORMATTER);
 
             try {
                 Task newTask = new Task(
@@ -173,7 +174,7 @@ public class RecurringTaskScheduler {
     }
 
     private LocalDateTime calculateNextDate(String dateStr, Frequency frequency, Integer interval) {
-        LocalDateTime dateTime = DueDateTimeParser.parse(dateStr);
+        LocalDateTime dateTime = TaskAlarmTimes.parse(dateStr);
         if (dateTime == null) return null;
         int amount = interval != null ? interval : 1;
 

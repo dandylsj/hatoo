@@ -2,8 +2,6 @@ package com.hatoo.domain.alarm;
 
 import com.hatoo.domain.groups.Group;
 import com.hatoo.domain.groups.GroupRepository;
-import com.hatoo.domain.task.DeadLine;
-import com.hatoo.domain.task.DueDateTimeParser;
 import com.hatoo.domain.task.Task;
 import com.hatoo.domain.task.TaskRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +10,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -33,93 +30,60 @@ public class AlarmScheduler {
 
     // ──────────────────────────────────────────
     // 1. 할일 시작 알림 - 매 분 정각 실행
+    //    알림 시각(start_alarm_at)이 이번 1분 안에 있는 할일만 인덱스로 조회한다.
+    //    (예: 13:52:xx 시작 할일 → 13:52:00 정각 실행분에서 발송)
+    //    예전에는 미완료 할일 전체를 불러와 dueFrom 문자열을 파싱해서 걸렀다 - TaskAlarmTimes 참고.
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     @Transactional
     public void sendTaskStartAlarm() {
-        List<Task> tasks = taskRepository.findByStarterTrueAndFinishedFalseAndStartAlarmSentFalse();
-        LocalDateTime nowMinute = LocalDateTime.now(KST).truncatedTo(ChronoUnit.MINUTES);
+        sendTaskStartAlarm(currentMinute());
+    }
 
-        tasks.forEach(task -> {
-            LocalDateTime dueFromDateTime = parseDueDateTime(task.getDueFrom());
-            if (dueFromDateTime == null) return;
-
-            // dueFrom이 현재 분(分) 안에 있을 때만 전송 (예: 13:52:xx → 13:52:00 정각에 발송)
-            LocalDateTime dueFromMinute = dueFromDateTime.truncatedTo(ChronoUnit.MINUTES);
-            if (dueFromMinute.equals(nowMinute)) {
-                if (!task.getAssignees().isEmpty()) {
-                    Group taskGroup = task.getGroups().isEmpty() ? null : task.getGroups().get(0);
-                    UUID groupId = taskGroup != null ? taskGroup.getId() : null;
-                    String groupName = taskGroup != null ? taskGroup.getName() : null;
-                    task.getAssignees().forEach(assignee ->
-                            fcmService.sendTaskStart(assignee.getId(), task.getTitle(), task.getId(), groupId, groupName)
-                    );
-                    task.markStartAlarmSent();
-                    log.info("[AlarmScheduler] 할일 시작 알림 발송 - taskId: {}", task.getId());
-                }
+    @Transactional
+    public void sendTaskStartAlarm(LocalDateTime nowMinute) {
+        taskRepository.findStartAlarmTargets(nowMinute, nowMinute.plusMinutes(1)).forEach(task -> {
+            if (notifyAssignees(task, fcmService::sendTaskStart)) {
+                task.markStartAlarmSent();
+                log.info("[AlarmScheduler] 할일 시작 알림 발송 - taskId: {}", task.getId());
             }
         });
     }
 
     // ──────────────────────────────────────────
-    // 2. 마감 임박 알림 - 매 분 정각 실행
+    // 2. 마감 임박 알림 - 매 분 정각 실행 (알림 시각 = 마감 - 마감 임박 설정)
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     @Transactional
     public void sendTaskDeadlineAlarm() {
-        List<Task> tasks = taskRepository.findTasksForDeadlineAlarm();
-        LocalDateTime nowMinute = LocalDateTime.now(KST).truncatedTo(ChronoUnit.MINUTES);
+        sendTaskDeadlineAlarm(currentMinute());
+    }
 
-        tasks.forEach(task -> {
-            LocalDateTime dueToDateTime = parseDueDateTime(task.getDueTo());
-            if (dueToDateTime == null) return;
-
-            Duration duration = getDeadLineDuration(task.getDeadLine());
-            if (duration == null) return;
-
-            LocalDateTime notifyAt = dueToDateTime.minus(duration).truncatedTo(ChronoUnit.MINUTES);
-
-            if (notifyAt.equals(nowMinute)) {
-                if (!task.getAssignees().isEmpty()) {
-                    Group taskGroup = task.getGroups().isEmpty() ? null : task.getGroups().get(0);
-                    UUID groupId = taskGroup != null ? taskGroup.getId() : null;
-                    String groupName = taskGroup != null ? taskGroup.getName() : null;
-                    task.getAssignees().forEach(assignee ->
-                            fcmService.sendTaskDeadline(assignee.getId(), task.getTitle(), task.getId(), groupId, groupName)
-                    );
-                    task.markDeadlineAlarmSent();
-                    log.info("[AlarmScheduler] 마감 임박 알림 발송 - taskId: {}", task.getId());
-                }
+    @Transactional
+    public void sendTaskDeadlineAlarm(LocalDateTime nowMinute) {
+        taskRepository.findDeadlineAlarmTargets(nowMinute, nowMinute.plusMinutes(1)).forEach(task -> {
+            if (notifyAssignees(task, fcmService::sendTaskDeadline)) {
+                task.markDeadlineAlarmSent();
+                log.info("[AlarmScheduler] 마감 임박 알림 발송 - taskId: {}", task.getId());
             }
         });
     }
 
     // ──────────────────────────────────────────
-    // 3. 마감 초과 알림 - 매 분 정각 실행
+    // 3. 마감 초과 알림 - 매 분 정각 실행 (알림 시각 = 마감 + 2시간)
     // ──────────────────────────────────────────
     @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     @Transactional
     public void sendTaskOverdueAlarm() {
-        List<Task> tasks = taskRepository.findByFinishedFalseAndOverdueAlarmSentFalse();
-        LocalDateTime nowMinute = LocalDateTime.now(KST).truncatedTo(ChronoUnit.MINUTES);
+        sendTaskOverdueAlarm(currentMinute());
+    }
 
-        tasks.forEach(task -> {
-            LocalDateTime dueToDateTime = parseDueDateTime(task.getDueTo());
-            if (dueToDateTime == null) return;
-
-            LocalDateTime overdueAt = dueToDateTime.plusHours(2).truncatedTo(ChronoUnit.MINUTES);
-
-            if (overdueAt.equals(nowMinute)) {
-                if (!task.getAssignees().isEmpty()) {
-                    Group taskGroup = task.getGroups().isEmpty() ? null : task.getGroups().get(0);
-                    UUID groupId = taskGroup != null ? taskGroup.getId() : null;
-                    String groupName = taskGroup != null ? taskGroup.getName() : null;
-                    task.getAssignees().forEach(assignee ->
-                            fcmService.sendTaskOverdue(assignee.getId(), task.getTitle(), task.getId(), groupId, groupName)
-                    );
-                    task.markOverdueAlarmSent();
-                    log.info("[AlarmScheduler] 마감 초과 알림 발송 - taskId: {}", task.getId());
-                }
+    @Transactional
+    public void sendTaskOverdueAlarm(LocalDateTime nowMinute) {
+        taskRepository.findOverdueAlarmTargets(nowMinute, nowMinute.plusMinutes(1)).forEach(task -> {
+            if (notifyAssignees(task, fcmService::sendTaskOverdue)) {
+                task.markOverdueAlarmSent();
+                log.info("[AlarmScheduler] 마감 초과 알림 발송 - taskId: {}", task.getId());
             }
         });
     }
@@ -156,22 +120,23 @@ public class AlarmScheduler {
     // ──────────────────────────────────────────
     // 유틸 메서드
     // ──────────────────────────────────────────
-    private LocalDateTime parseDueDateTime(String due) {
-        return DueDateTimeParser.parse(due);
+    private LocalDateTime currentMinute() {
+        return LocalDateTime.now(KST).truncatedTo(ChronoUnit.MINUTES);
     }
 
-    /**
-     * DeadLine 열거형을 Duration으로 변환
-     */
-    private Duration getDeadLineDuration(DeadLine deadLine) {
-        if (deadLine == null) return null;
-        return switch (deadLine) {
-            case MIN_10 -> Duration.ofMinutes(10);
-            case MIN_30 -> Duration.ofMinutes(30);
-            case HOUR_1 -> Duration.ofHours(1);
-            case DAY_1  -> Duration.ofDays(1);
-            case WEEK_1 -> Duration.ofDays(7);
-            case NONE   -> null;
-        };
+    /** 담당자 전원에게 알림을 보낸다. 담당자가 없으면 보내지 않고 false (발송 플래그도 세우지 않음 - 기존 동작 유지). */
+    private boolean notifyAssignees(Task task, TaskAlarmSender sender) {
+        if (task.getAssignees().isEmpty()) return false;
+        Group taskGroup = task.getGroups().isEmpty() ? null : task.getGroups().get(0);
+        UUID groupId = taskGroup != null ? taskGroup.getId() : null;
+        String groupName = taskGroup != null ? taskGroup.getName() : null;
+        task.getAssignees().forEach(assignee ->
+                sender.send(assignee.getId(), task.getTitle(), task.getId(), groupId, groupName));
+        return true;
+    }
+
+    @FunctionalInterface
+    private interface TaskAlarmSender {
+        void send(UUID userId, String taskTitle, UUID taskId, UUID groupId, String groupName);
     }
 }

@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -16,7 +17,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "tasks")
+@Table(name = "tasks", indexes = {
+        @Index(name = "idx_tasks_start_alarm_at", columnList = "start_alarm_at"),
+        @Index(name = "idx_tasks_deadline_alarm_at", columnList = "deadline_alarm_at"),
+        @Index(name = "idx_tasks_overdue_alarm_at", columnList = "overdue_alarm_at")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Task extends BaseEntity {
@@ -74,6 +79,20 @@ public class Task extends BaseEntity {
     @Column(name = "overdue_alarm_sent")
     private Boolean overdueAlarmSent = false;
 
+    // ──────────────────────────────────────────
+    // 알림 발송 시각 (KST, 분 단위) - dueFrom/dueTo 문자열을 저장 시점에 한 번만 파싱해둔 값.
+    // AlarmScheduler가 매 분 "이 1분에 보낼 알림"을 인덱스로 바로 찾기 위해 쓴다 (TaskAlarmTimes 참고).
+    // ──────────────────────────────────────────
+
+    @Column(name = "start_alarm_at")
+    private LocalDateTime startAlarmAt;
+
+    @Column(name = "deadline_alarm_at")
+    private LocalDateTime deadlineAlarmAt;
+
+    @Column(name = "overdue_alarm_at")
+    private LocalDateTime overdueAlarmAt;
+
     @Column(columnDefinition = "BINARY(16)")
     private UUID creatorId;
 
@@ -82,6 +101,7 @@ public class Task extends BaseEntity {
     private List<TaskAssignee> taskAssignees = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
+    @BatchSize(size = 100)
     @JoinTable(
             name = "group_tasks",
             joinColumns = @JoinColumn(name = "task_id"),
@@ -98,6 +118,7 @@ public class Task extends BaseEntity {
         this.deadLine = deadLine;
         this.starter = starter;
         this.interval = interval;
+        recalculateAlarmTimes();
     }
 
     // 편의 메서드: User 목록 반환 (AlarmScheduler 등 기존 호출부 호환)
@@ -137,6 +158,14 @@ public void updateTask(String title, String description, Frequency frequency, In
             this.overdueAlarmSent = false;
         }
         this.dueTo = dueTo;
+        recalculateAlarmTimes();
+    }
+
+    /** dueFrom/dueTo/deadLine이 바뀔 때마다 알림 발송 시각을 다시 계산한다. 기존 데이터 백필에도 쓴다. */
+    public void recalculateAlarmTimes() {
+        this.startAlarmAt = TaskAlarmTimes.startAlarmAt(this.dueFrom);
+        this.deadlineAlarmAt = TaskAlarmTimes.deadlineAlarmAt(this.dueTo, this.deadLine);
+        this.overdueAlarmAt = TaskAlarmTimes.overdueAlarmAt(this.dueTo);
     }
 
     public void setFinished(boolean finished) {

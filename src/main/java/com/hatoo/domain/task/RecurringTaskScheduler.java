@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
@@ -36,11 +36,11 @@ public class RecurringTaskScheduler {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     @Transactional
     public void createRecurringTasks() {
 
-        String today = LocalDate.now().format(FORMATTER);
+        String today = LocalDate.now(KST).format(FORMATTER);
         log.info("[TaskScheduler] 반복 할일 생성 시작 - 기준일: {}", today);
 
         // dueTo 가 오늘이고 반복 설정된 Task 조회
@@ -48,18 +48,30 @@ public class RecurringTaskScheduler {
         log.info("[TaskScheduler] 반복 할일 조회 결과 - {}건 발견", recurringTasks.size());
 
         recurringTasks.forEach(task -> {
-            try {
-                LocalDate nextDueTo = calculateNextDate(task.getDueTo(), task.getFrequency(), task.getInterval());
-                LocalDate nextDueFrom = task.getDueFrom() != null
-                        ? calculateNextDate(task.getDueFrom(), task.getFrequency(), task.getInterval())
-                        : nextDueTo;
+            // 원래 시각(시:분)을 유지한 채 다음 회차 날짜만 계산 (시간이 유실되면 자정 기준으로
+            // 재해석되어 마감 임박 알림이 하루 전날 밤에 울리는 문제가 발생함)
+            LocalDateTime nextDueTo = calculateNextDate(task.getDueTo(), task.getFrequency(), task.getInterval());
+            if (nextDueTo == null) {
+                log.error("[TaskScheduler] 날짜 파싱 실패 - taskId: {}, dueTo: {}", task.getId(), task.getDueTo());
+                return;
+            }
+            LocalDateTime nextDueFrom = task.getDueFrom() != null
+                    ? calculateNextDate(task.getDueFrom(), task.getFrequency(), task.getInterval())
+                    : nextDueTo;
+            if (nextDueFrom == null) {
+                nextDueFrom = nextDueTo;
+            }
 
+            String nextDueToStr = DueDateTimeParser.format(nextDueTo);
+            String nextDueFromStr = DueDateTimeParser.format(nextDueFrom);
+
+            try {
                 Task newTask = new Task(
                         task.getTitle(),
                         task.getDescription(),
                         task.getFrequency(),
-                        nextDueFrom.format(FORMATTER),
-                        nextDueTo.format(FORMATTER),
+                        nextDueFromStr,
+                        nextDueToStr,
                         task.getDeadLine(),
                         task.getStarter(),
                         task.getInterval()
@@ -72,8 +84,8 @@ public class RecurringTaskScheduler {
                 newTask.setRecurringTaskId(recurringId);
 
                 // 중복 생성 방지: 동일한 recurringTaskId + nextDueTo 할일이 이미 있으면 건너뜀
-                if (taskRepository.existsByRecurringTaskIdAndDueTo(recurringId, nextDueTo.format(FORMATTER))) {
-                    log.info("[TaskScheduler] 이미 생성된 할일 - title: {}, 다음 마감일: {}", task.getTitle(), nextDueTo);
+                if (taskRepository.existsByRecurringTaskIdAndDueTo(recurringId, nextDueToStr)) {
+                    log.info("[TaskScheduler] 이미 생성된 할일 - title: {}, 다음 마감일: {}", task.getTitle(), nextDueToStr);
                     return;
                 }
 
@@ -89,10 +101,10 @@ public class RecurringTaskScheduler {
                     TaskAssignee newTa = new TaskAssignee(newTask, ta.getUser());
                     taskAssigneeRepository.save(newTa);
                 });
-                log.info("[TaskScheduler] 반복 할일 생성 완료 - title: {}, 다음 마감일: {}", task.getTitle(), nextDueTo);
+                log.info("[TaskScheduler] 반복 할일 생성 완료 - title: {}, 다음 마감일: {}", task.getTitle(), nextDueToStr);
 
-            } catch (DateTimeParseException e) {
-                log.error("[TaskScheduler] 날짜 파싱 실패 - taskId: {}, dueTo: {}", task.getId(), task.getDueTo());
+            } catch (Exception e) {
+                log.error("[TaskScheduler] 반복 할일 생성 실패 - taskId: {}, error: {}", task.getId(), e.getMessage());
             }
         });
     }
@@ -160,21 +172,17 @@ public class RecurringTaskScheduler {
         log.info("[WeeklyStats] 전체 주차 통계 저장 완료 - {}~{}", weekStart, weekEnd);
     }
 
-    private LocalDate calculateNextDate(String dateStr, Frequency frequency, Integer interval) {
-        LocalDate date = LocalDate.parse(normalizeDate(dateStr), FORMATTER);
+    private LocalDateTime calculateNextDate(String dateStr, Frequency frequency, Integer interval) {
+        LocalDateTime dateTime = DueDateTimeParser.parse(dateStr);
+        if (dateTime == null) return null;
         int amount = interval != null ? interval : 1;
 
         return switch (frequency) {
-            case HOURLY -> date.plusDays(amount);
-            case DAILY -> date.plusDays(amount);
-            case WEEKLY -> date.plusWeeks(amount);
-            case MONTHLY -> date.plusMonths(amount);
-            default -> date.plusDays(1);
+            case HOURLY -> dateTime.plusDays(amount);
+            case DAILY -> dateTime.plusDays(amount);
+            case WEEKLY -> dateTime.plusWeeks(amount);
+            case MONTHLY -> dateTime.plusMonths(amount);
+            default -> dateTime.plusDays(1);
         };
-    }
-
-    private String normalizeDate(String dateStr) {
-        if (dateStr == null || dateStr.length() < 10) return LocalDate.now().format(FORMATTER);
-        return dateStr.substring(0, 10);
     }
 }

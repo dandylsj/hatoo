@@ -3,6 +3,8 @@ package com.hatoo.domain.oAuth;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.activitylog.ActivityLogService;
+import com.hatoo.domain.activitylog.SignupProvider;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
@@ -33,6 +35,7 @@ public class GoogleService {
     private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final ActivityLogService activityLogService;
     private final RestTemplate restTemplate = new RestTemplate();
 
     private static final String GOOGLE_TOKEN_INFO_URL =
@@ -116,6 +119,7 @@ public class GoogleService {
                 .build();
         user.setGoogleId(googleId);
         userRepository.save(user);
+        activityLogService.recordSignup(user.getId(), user.getEmail(), user.getNickname(), SignupProvider.GOOGLE);
 
         // 기본 그룹 자동 생성
         Group defaultGroup = new Group(nickname, "기본 그룹", user.getId(), true);

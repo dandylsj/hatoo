@@ -17,12 +17,16 @@ FROM eclipse-temurin:17-jre-alpine
 
 # 보안을 위해 non-root 유저 생성
 RUN addgroup -S spring && adduser -S spring -G spring
-USER spring
 
 WORKDIR /app
 
 # 빌드된 JAR 복사 (이름은 프로젝트에 맞게)
 COPY --from=builder /app/build/libs/*.jar app.jar
+
+# 로그 파일 디렉토리를 non-root 유저가 쓸 수 있도록 미리 생성 및 소유권 이전
+RUN mkdir -p /app/logs && chown -R spring:spring /app
+
+USER spring
 
 # 포트 노출 (Spring Boot 기본 8080)
 EXPOSE 8080

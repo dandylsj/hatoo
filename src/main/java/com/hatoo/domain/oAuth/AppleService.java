@@ -3,6 +3,8 @@ package com.hatoo.domain.oAuth;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.activitylog.ActivityLogService;
+import com.hatoo.domain.activitylog.SignupProvider;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
@@ -41,6 +43,7 @@ public class AppleService {
     private final GroupMemberRepository groupMemberRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final ActivityLogService activityLogService;
 
     @Value("${apple.bundle-id:com.rfive.hatoo}")
     private String bundleId;
@@ -184,6 +187,7 @@ public class AppleService {
                 .build();
         user.setAppleId(appleId);
         userRepository.save(user);
+        activityLogService.recordSignup(user.getId(), user.getEmail(), user.getNickname(), SignupProvider.APPLE);
 
         // 기본 그룹 자동 생성
         Group defaultGroup = new Group(finalNickname, "기본 그룹", user.getId(), true);

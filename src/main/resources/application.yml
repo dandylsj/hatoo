@@ -57,3 +57,6 @@ minio:
 coupang:
   access-key: ${COUPANG_ACCESS_KEY}
   secret-key: ${COUPANG_SECRET_KEY}
+
+admin:
+  secret-key: ${ADMIN_SECRET_KEY:hatoo-admin-secret}

@@ -97,6 +97,7 @@ jobs:
           echo "MINIO_BUCKET=${{ secrets.MINIO_BUCKET }}" >> .env
           echo "COUPANG_ACCESS_KEY=${{ secrets.COUPANG_ACCESS_KEY }}" >> .env
           echo "COUPANG_SECRET_KEY=${{ secrets.COUPANG_SECRET_KEY }}" >> .env
+          echo "ADMIN_SECRET_KEY=${{ secrets.ADMIN_SECRET_KEY }}" >> .env
 
       - name: Docker 네트워크 및 인프라 컨테이너 연결 확인
         run: |
@@ -177,11 +178,14 @@ jobs:
           docker pull $IMAGE
 
           # ── 3. 새 컨테이너 시작 (포트 노출 없이 내부 네트워크만) ──
+          mkdir -p $HOME/hatoo-logs
+
           docker run -d \
             --name hatoo-$NEW_COLOR \
             --network hatoo \
             --restart always \
             --env-file .env \
+            -v $HOME/hatoo-logs:/app/logs \
             $IMAGE
 
           echo "hatoo-$NEW_COLOR 컨테이너 시작됨"

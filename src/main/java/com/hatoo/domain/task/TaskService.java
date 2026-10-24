@@ -3,6 +3,7 @@ package com.hatoo.domain.task;
 import com.hatoo.common.exception.CustomException;
 import com.hatoo.common.exception.ErrorMessage;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.activitylog.ActivityLogService;
 import com.hatoo.domain.groupMember.GroupMember;
 import com.hatoo.domain.groupMember.GroupMemberRepository;
 import com.hatoo.domain.groups.Group;
@@ -44,6 +45,7 @@ public class TaskService {
     private final WeeklyStatsRepository weeklyStatsRepository;
     private final FcmService fcmService;
     private final JwtUtil jwtUtil;
+    private final ActivityLogService activityLogService;
 
     // 할일 생성
     @Transactional
@@ -89,6 +91,8 @@ public class TaskService {
         if (creator != null) {
             task.setCreatorId(creator.getId());
         }
+
+        activityLogService.recordTaskCreation(task.getId(), task.getCreatorId(), creatorNickname, group.getId(), task.getTitle());
 
         // 배정된 유저 ID 목록
         List<UUID> assigneeIds = assignees.stream().map(User::getId).collect(Collectors.toList());

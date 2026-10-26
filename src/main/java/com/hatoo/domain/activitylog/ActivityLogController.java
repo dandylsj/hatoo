@@ -1,7 +1,9 @@
 package com.hatoo.domain.activitylog;
 
 import com.hatoo.domain.activitylog.dto.TaskCreationLogResponse;
+import com.hatoo.domain.activitylog.dto.UserActivityResponse;
 import com.hatoo.domain.activitylog.dto.UserSignupLogResponse;
+import com.hatoo.domain.user.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class ActivityLogController {
 
     private final UserSignupLogRepository userSignupLogRepository;
     private final TaskCreationLogRepository taskCreationLogRepository;
+    private final UserRepository userRepository;
 
     @Value("${admin.secret-key:hatoo-admin-secret}")
     private String secretKey;
@@ -71,5 +74,17 @@ public class ActivityLogController {
         }
 
         return ResponseEntity.ok(logs.stream().map(TaskCreationLogResponse::new).collect(Collectors.toList()));
+    }
+
+    @Operation(summary = "유저 최근 활동 시각 조회", description = "인증된 요청을 가장 최근에 보낸 순서대로 반환합니다. 아직 한 번도 활동 기록이 없는 유저는 lastActiveAt이 null입니다.")
+    @GetMapping("/active-users")
+    public ResponseEntity<?> getUserActivity(@RequestHeader("X-Admin-Secret") String requestSecret) {
+        if (!secretKey.equals(requestSecret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("잘못된 키입니다.");
+        }
+
+        return ResponseEntity.ok(userRepository.findAllByOrderByLastActiveAtDesc().stream()
+                .map(UserActivityResponse::new)
+                .collect(Collectors.toList()));
     }
 }

@@ -3,6 +3,7 @@ package com.hatoo.config;
 import com.hatoo.common.exception.JwtAccessDeniedHandler;
 import com.hatoo.common.exception.JwtAuthenticationEntryPoint;
 import com.hatoo.common.util.JwtUtil;
+import com.hatoo.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final UserRepository userRepository;
 
     // 인증 없이 접근 가능한 경로
     private static final String[] PUBLIC_URLS = {
@@ -73,7 +75,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
-                .addFilterBefore(new JwtAuthFilter(jwtUtil),
+                .addFilterBefore(new JwtAuthFilter(jwtUtil, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

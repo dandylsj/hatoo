@@ -6,6 +6,7 @@ import com.hatoo.domain.groupMember.GroupMember;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -67,6 +68,10 @@ public class User extends BaseEntity {
     @Setter
     @Column(unique = true)
     private String appleId;
+
+    // 인증된 요청이 올 때마다 JwtAuthFilter가 (너무 잦은 쓰기를 피해 어느 정도 텀을 두고) 갱신
+    @Column
+    private LocalDateTime lastActiveAt;
 
     @OneToMany(mappedBy = "user")
     private List<GroupMember> groupMembers = new ArrayList<>();

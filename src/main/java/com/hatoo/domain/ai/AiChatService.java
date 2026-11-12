@@ -10,6 +10,8 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -35,6 +37,9 @@ public class AiChatService {
             "제목이 필요하면 이모지와 줄바꿈으로 구분하고, 목록은 '1.', '2.' 같은 번호나 '· '로 표시하고, " +
             "표 대신 각 항목을 줄바꿈으로 나열해주세요. " +
             "집안일과 전혀 관련 없는 질문에는 '저는 집안일 관련 질문만 답변할 수 있어요 😊'라고만 답해주세요.";
+
+    // Gemini가 일시적으로 과부하(429/503)일 때 재시도할 횟수 및 대기 시간
+    private static final long[] RETRY_BACKOFF_MS = {800, 2000};
 
     private static final Pattern MD_TABLE_ROW = Pattern.compile("(?m)^\\s*\\|?[:\\-\\s|]+\\|?\\s*$\\n?");
     private static final Pattern MD_BR_TAG = Pattern.compile("(?i)<br\\s*/?>");
@@ -67,8 +72,7 @@ public class AiChatService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    url, new HttpEntity<>(requestBody, headers), Map.class);
+            ResponseEntity<Map> response = postWithRetry(url, new HttpEntity<>(requestBody, headers));
 
             Map<?, ?> body = response.getBody();
 
@@ -93,6 +97,30 @@ public class AiChatService {
         } catch (Exception e) {
             log.error("[AI] Gemini API 오류: {}", e.getMessage());
             return new AiChatResponse("죄송해요, 지금은 답변하기 어려워요. 잠시 후 다시 시도해주세요 😢");
+        }
+    }
+
+    // Gemini가 "일시적으로 수요 초과(503)" 또는 "요청 과다(429)"를 반환하면 잠깐 대기 후 재시도.
+    // 그 외 오류(인증 실패, 모델 미지원 등)는 재시도해도 소용없으니 바로 던진다.
+    @SuppressWarnings("rawtypes")
+    private ResponseEntity<Map> postWithRetry(String url, HttpEntity<Map<String, Object>> entity) {
+        for (int attempt = 0; ; attempt++) {
+            try {
+                return restTemplate.postForEntity(url, entity, Map.class);
+            } catch (HttpServerErrorException.ServiceUnavailable | HttpClientErrorException.TooManyRequests e) {
+                if (attempt >= RETRY_BACKOFF_MS.length) {
+                    throw e;
+                }
+                long delayMs = RETRY_BACKOFF_MS[attempt];
+                log.warn("[AI] Gemini API 일시 과부하({}) - {}ms 후 재시도 ({}/{})",
+                        e.getStatusCode(), delayMs, attempt + 1, RETRY_BACKOFF_MS.length);
+                try {
+                    Thread.sleep(delayMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
         }
     }
 
